@@ -1,0 +1,50 @@
+{
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
+    "target": "ESNext",
+    "useDefineForClassFields": true,
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "types": ["vite/client"],
+    "skipLibCheck": true,
+
+    /* Bundler mode */
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "moduleDetection": "force",
+    "noEmit": true,
+    "jsx": "react-jsx",
+
+    /* Path mapping */
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"],
+      "@assets/*": ["./src/assets/*"],
+      "@app/*": ["./src/app/*"],
+      "@auth/*": ["./src/features/auth/*"],
+      "@shared/*": ["./src/shared/*"],
+      "@dashboard/*": ["./src/features/dashboard/*"],
+      "@uploadMusic/*": ["./src/features/upload-music/*"],
+      "@uploadVideo/*": ["./src/features/upload-video/*"],
+      "@musicVideos/*": ["./src/features/music-and-videos/*"],
+      "@earningRoyalty/*": ["./src/features/earnings-and-royalty/*"],
+      "@leaderboard/*": ["./src/features/leaderboard/*"],
+      "@fansSubscribers/*": ["./src/features/fans-and-subscribers/*"],
+      "@salesReport/*": ["./src/features/sales-report/*"],
+      "@payments/*": ["./src/features/payments/*"],
+      "@addArtist/*": ["./src/features/add-artists/*"],
+      "@settings/*": ["./src/features/settings/*"],
+      "@onboarding/*": ["./src/features/onboarding/*"]
+    },
+
+    /* Linting */
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "erasableSyntaxOnly": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedSideEffectImports": true
+  },
+  "include": ["src"]
+}
