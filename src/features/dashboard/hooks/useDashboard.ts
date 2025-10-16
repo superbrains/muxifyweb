@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useDashboardStore } from "../store/useDashboardStore";
 import { dashboardService } from "../services/dashboardService";
-import { useToast } from "@shared/hooks";
+import { useChakraToast } from "@shared/hooks";
 
 export const useDashboard = () => {
   const {
@@ -15,7 +15,7 @@ export const useDashboard = () => {
     setLoading,
   } = useDashboardStore();
 
-  const { toast } = useToast();
+  const toast = useChakraToast();
 
   const loadDashboardData = async () => {
     setLoading(true);

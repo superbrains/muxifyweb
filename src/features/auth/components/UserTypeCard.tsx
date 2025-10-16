@@ -33,7 +33,7 @@ export const UserTypeCard: React.FC<UserTypeCardProps> = ({
             cursor="pointer"
             shadow="sm"
             _hover={{
-                bg: "#FFF9F8",
+                bg: "primary.25",
                 borderColor: "primary.500",
                 transform: "translateY(-2px)",
                 boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
@@ -60,7 +60,7 @@ export const UserTypeCard: React.FC<UserTypeCardProps> = ({
                         borderRadius="full"
                         h="32px"
                         w="32px"
-                        bg="#FFECEC"
+                        bg="primary.200"
                         color="white"
                         display="flex"
                         alignItems="center"

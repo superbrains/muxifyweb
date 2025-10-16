@@ -1,14 +1,14 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@app/hooks/useAuth";
-import { useToast } from "@shared/hooks";
+import { useChakraToast } from "@shared/hooks";
 import { authService } from "../services/authService";
 import type { LoginCredentials } from "../services/authService";
 
 export const useLogin = () => {
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
-  const { toast } = useToast();
+  const toast = useChakraToast();
   const navigate = useNavigate();
 
   const handleLogin = async (credentials: LoginCredentials) => {

@@ -2,13 +2,13 @@ import { useState } from "react";
 import { useUploadMusicStore } from "../store/useUploadMusicStore";
 import { uploadMusicService } from "../services/uploadMusicService";
 import type { UploadMusicData } from "../services/uploadMusicService";
-import { useToast } from "@shared/hooks";
+import { useChakraToast } from "@shared/hooks";
 
 export const useUploadMusic = () => {
   const [loading, setLoading] = useState(false);
   const { addTrack, removeTrack, addUpload, removeUpload, updateUpload } =
     useUploadMusicStore();
-  const { toast } = useToast();
+  const toast = useChakraToast();
 
   const uploadMusic = async (data: UploadMusicData) => {
     setLoading(true);

@@ -11,7 +11,7 @@ import {
     Portal,
     createListCollection,
 } from '@chakra-ui/react';
-import { useToast } from '@shared/hooks';
+import { useChakraToast } from '@shared/hooks';
 
 // Collection for location options
 const locations = createListCollection({
@@ -46,7 +46,7 @@ export const CompleteInformationForm: React.FC = () => {
     const [loading, setLoading] = useState(false);
     const [errors, setErrors] = useState<Partial<CompleteInformationData>>({});
 
-    const { toast } = useToast();
+    const toast = useChakraToast();
     const navigate = useNavigate();
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {

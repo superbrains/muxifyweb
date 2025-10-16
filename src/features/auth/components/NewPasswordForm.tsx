@@ -8,9 +8,8 @@ import {
     Text,
     VStack,
 } from '@chakra-ui/react';
-import { useToast } from '@shared/hooks';
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { authService } from '@shared/services/auth';
+import { useChakraToast } from '@shared/hooks';
+// import { authService } from '@shared/services/auth';
 import { PasswordInput } from "@/components/ui/password-input";
 
 interface NewPasswordFormProps {
@@ -20,10 +19,8 @@ interface NewPasswordFormProps {
 }
 
 export const NewPasswordForm: React.FC<NewPasswordFormProps> = ({
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    email,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    verificationCode,
+    email: _email,
+    verificationCode: _verificationCode,
     onBack
 }) => {
     const [formData, setFormData] = useState({
@@ -36,7 +33,7 @@ export const NewPasswordForm: React.FC<NewPasswordFormProps> = ({
         confirmPassword?: string;
     }>({});
 
-    const { toast } = useToast();
+    const toast = useChakraToast();
     const navigate = useNavigate();
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {

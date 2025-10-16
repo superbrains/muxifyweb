@@ -14,6 +14,7 @@ export default defineConfig({
       "@auth": path.resolve(__dirname, "./src/features/auth"),
       "@shared": path.resolve(__dirname, "./src/shared"),
       "@dashboard": path.resolve(__dirname, "./src/features/dashboard"),
+      "@upload": path.resolve(__dirname, "./src/features/upload"),
       "@uploadMusic": path.resolve(__dirname, "./src/features/upload-music"),
       "@uploadVideo": path.resolve(__dirname, "./src/features/upload-video"),
       "@musicVideos": path.resolve(

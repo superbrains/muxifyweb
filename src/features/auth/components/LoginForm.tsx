@@ -9,7 +9,7 @@ import {
     Text,
 } from '@chakra-ui/react';
 import { useAuth } from '@app/hooks/useAuth';
-import { useToast } from '@shared/hooks';
+import { useChakraToast } from '@shared/hooks';
 import { authService } from '@shared/services/auth';
 import type { LoginCredentials } from '@shared/services/auth';
 import { PasswordInput } from "@/components/ui/password-input"
@@ -23,7 +23,7 @@ export const LoginForm: React.FC = () => {
     const [errors, setErrors] = useState<Partial<LoginCredentials>>({});
 
     const { login } = useAuth();
-    const { toast } = useToast();
+    const toast = useChakraToast();
     const navigate = useNavigate();
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {

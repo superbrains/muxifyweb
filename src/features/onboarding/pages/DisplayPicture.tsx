@@ -4,7 +4,7 @@ import {
     VStack,
 } from '@chakra-ui/react';
 import MuxifyLogoIcon from '@/shared/icons/CustomIcons';
-import { DisplayPictureUpload } from '../components/DisplayPictureUpload';
+import { ReusableImageUpload } from '../components/ReusableImageUpload';
 
 export const DisplayPicture: React.FC = () => {
     return (
@@ -38,7 +38,12 @@ export const DisplayPicture: React.FC = () => {
                     px={10}
                     pb={10}
                 >
-                    <DisplayPictureUpload />
+                    <ReusableImageUpload
+                        title="Display Picture"
+                        subtitle="This is the image of you the fans will see"
+                        nextRoute="/onboarding/artist/identity-verification"
+                        uploadType="display-picture"
+                    />
                 </Box>
             </VStack>
         </Box>

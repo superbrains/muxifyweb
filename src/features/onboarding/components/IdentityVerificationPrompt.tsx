@@ -6,13 +6,13 @@ import {
     Text,
     VStack,
 } from '@chakra-ui/react';
-import { useToast } from '@shared/hooks';
+import { useChakraToast } from '@shared/hooks';
 import { VerifyIcon } from '@/shared/icons/CustomIcons';
 
 export const IdentityVerificationPrompt: React.FC = () => {
     const [loading, setLoading] = useState(false);
 
-    const { toast } = useToast();
+    const toast = useChakraToast();
     const navigate = useNavigate();
 
     const handleStartVerification = async () => {

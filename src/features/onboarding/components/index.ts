@@ -1,5 +1,11 @@
 export { ArtistRegistrationForm } from "./ArtistRegistrationForm";
-export { ArtistEmailVerification } from "./ArtistEmailVerification";
 export { CompleteInformationForm } from "./CompleteInformationForm";
-export { DisplayPictureUpload } from "./DisplayPictureUpload";
 export { IdentityVerificationPrompt } from "./IdentityVerificationPrompt";
+export { CompanyRegistrationForm } from "./CompanyRegistrationForm";
+export { ReusableEmailVerification } from "./ReusableEmailVerification";
+export { CompanyInformationForm } from "./CompanyInformationForm";
+export { DirectorInformationForm } from "./DirectorInformationForm";
+export { ReusableImageUpload } from "./ReusableImageUpload";
+export { AdManagerRegistrationForm } from "./AdManagerRegistrationForm";
+export { AdManagerInformationForm } from "./AdManagerInformationForm";
+export { AdManagerDirectorInformationForm } from "./AdManagerDirectorInformationForm";

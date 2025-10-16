@@ -8,15 +8,27 @@ import {
     Image,
     Input,
 } from '@chakra-ui/react';
-import { useToast } from '@shared/hooks';
+import { useChakraToast } from '@shared/hooks';
 import { GalleryAddIcon } from '@/shared/icons/CustomIcons';
 
-export const DisplayPictureUpload: React.FC = () => {
+interface ReusableImageUploadProps {
+    title: string;
+    subtitle: string;
+    nextRoute: string;
+    uploadType?: 'logo' | 'display-picture';
+}
+
+export const ReusableImageUpload: React.FC<ReusableImageUploadProps> = ({
+    title,
+    subtitle,
+    nextRoute,
+    uploadType = 'display-picture'
+}) => {
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const { toast } = useToast();
+    const toast = useChakraToast();
     const navigate = useNavigate();
 
     const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -48,7 +60,7 @@ export const DisplayPictureUpload: React.FC = () => {
 
     const handleSubmit = async () => {
         if (!selectedImage) {
-            toast.error('No image selected', 'Please select a display picture.');
+            toast.error('No image selected', `Please select a ${uploadType === 'logo' ? 'logo' : 'display picture'}.`);
             return;
         }
 
@@ -57,8 +69,8 @@ export const DisplayPictureUpload: React.FC = () => {
             // Here you would typically upload the image to your server
             await new Promise(resolve => setTimeout(resolve, 1000));
 
-            toast.success('Display picture uploaded!', 'Your profile picture has been updated.');
-            navigate('/onboarding/artist/identity-verification');
+            toast.success(`${uploadType === 'logo' ? 'Logo' : 'Display picture'} uploaded!`, `Your ${uploadType === 'logo' ? 'logo' : 'profile picture'} has been updated.`);
+            navigate(nextRoute);
         } catch {
             toast.error('Upload failed', 'Please try again.');
         } finally {
@@ -70,10 +82,10 @@ export const DisplayPictureUpload: React.FC = () => {
         <VStack gap={4} align="center">
             <Box textAlign="center">
                 <Text fontSize="lg" fontWeight="semibold" color="black" mb={1}>
-                    Display Picture
+                    {title}
                 </Text>
                 <Text fontSize="xs" color="gray.600" mb={4}>
-                    This is the image of you the fans will see
+                    {subtitle}
                 </Text>
             </Box>
 
@@ -99,7 +111,7 @@ export const DisplayPictureUpload: React.FC = () => {
                     {selectedImage ? (
                         <Image
                             src={selectedImage}
-                            alt="Display picture preview"
+                            alt={`${uploadType} preview`}
                             w="full"
                             h="full"
                             borderRadius="full"
@@ -132,7 +144,6 @@ export const DisplayPictureUpload: React.FC = () => {
                     bg="primary.500"
                     color="white"
                     size="md"
-                    mt="40px"
                     fontSize="xs"
                     width="full"
                     fontWeight="medium"
@@ -144,7 +155,6 @@ export const DisplayPictureUpload: React.FC = () => {
                 </Button>
 
             </VStack>
-
         </VStack>
     );
 };

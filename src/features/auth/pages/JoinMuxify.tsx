@@ -25,21 +25,21 @@ export const JoinMuxify: React.FC = () => {
             title: 'Artist, Creators & DJs',
             description: 'Lorem ipsum dolor sit amet consecte, lorem dolor.',
             icon: ArtistIcon,
-            route: '/onboarding/artist'
+            route: '/onboarding/artist/register'
         },
         {
             id: 'company',
             title: 'Recording & Distribution Company',
             description: 'Lorem ipsum dolor sit amet consecte, lorem dolor.',
             icon: MusicDashboardIcon,
-            route: '/onboarding/company'
+            route: '/onboarding/company/register'
         },
         {
             id: 'ad-manager',
             title: 'Ad Manager',
             description: 'Lorem ipsum dolor sit amet consecte, lorem dolor.',
             icon: ChartSquareIcon,
-            route: '/onboarding/ad-manager'
+            route: '/onboarding/ad-manager/register'
         }
     ];
 

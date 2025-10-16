@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button, Input } from '@shared/components';
 import { useAuth } from '@app/hooks/useAuth';
-import { useToast } from '@shared/hooks';
+import { useChakraToast } from '@shared/hooks';
 import { authService } from '@shared/services/auth';
 import type { RegisterData } from '@shared/services/auth';
 
@@ -18,7 +18,7 @@ export const RegisterForm: React.FC = () => {
     const [errors, setErrors] = useState<Partial<RegisterData & { confirmPassword: string }>>({});
 
     const { login } = useAuth();
-    const { toast } = useToast();
+    const toast = useChakraToast();
     const navigate = useNavigate();
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {

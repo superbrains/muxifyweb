@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useToast } from '@shared/hooks';
+import { useChakraToast } from '@shared/hooks';
 import { authService } from '@shared/services/auth';
 import { NewPasswordForm } from './NewPasswordForm';
 import { InitialResetForm } from './InitialResetForm';
@@ -16,7 +16,7 @@ export const ResetPassword: React.FC = () => {
     const [error, setError] = useState('');
     const [resendTimer, setResendTimer] = useState(0);
 
-    const { toast } = useToast();
+    const toast = useChakraToast();
 
     // Resend timer effect
     useEffect(() => {

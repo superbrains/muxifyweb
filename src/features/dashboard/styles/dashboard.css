@@ -1,35 +1,21 @@
-.dashboard-card {
-  @apply bg-white rounded-lg shadow-sm border border-gray-200 p-6;
+
+
+/* ApexCharts Font Size Override */
+.apexcharts-text,
+.apexcharts-xaxis-label,
+.apexcharts-yaxis-label,
+.apexcharts-legend-text,
+.apexcharts-datalabel,
+.apexcharts-datalabel-label,
+.apexcharts-datalabel-value {
+  font-size: 9px !important;
 }
 
-.dashboard-stat {
-  @apply flex items-center;
+.apexcharts-xaxis text,
+.apexcharts-yaxis text {
+  font-size: 9px !important;
 }
 
-.dashboard-stat-icon {
-  @apply rounded-lg p-3;
-}
-
-.dashboard-stat-content {
-  @apply ml-4 flex-1;
-}
-
-.dashboard-stat-title {
-  @apply text-sm font-medium text-gray-600;
-}
-
-.dashboard-stat-value {
-  @apply text-2xl font-semibold text-gray-900;
-}
-
-.dashboard-stat-change {
-  @apply text-sm;
-}
-
-.dashboard-stat-change.positive {
-  @apply text-green-600;
-}
-
-.dashboard-stat-change.negative {
-  @apply text-red-600;
+.apexcharts-legend-text {
+  font-size: 9px !important;
 }

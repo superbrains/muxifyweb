@@ -13,7 +13,9 @@ import {
     Portal,
     createListCollection,
 } from '@chakra-ui/react';
-import { useToast } from '@shared/hooks';
+import { PhoneInput } from 'react-international-phone';
+import 'react-international-phone/style.css';
+import { useChakraToast } from '@shared/hooks';
 import { PasswordInput } from "@/components/ui/password-input";
 
 // Collections for select options
@@ -25,20 +27,10 @@ const userTypes = createListCollection({
     ],
 });
 
-const countryCodes = createListCollection({
-    items: [
-        { label: "🇳🇬 +234", value: "+234" },
-        { label: "🇺🇸 +1", value: "+1" },
-        { label: "🇬🇧 +44", value: "+44" },
-        { label: "🇫🇷 +33", value: "+33" },
-    ],
-});
-
 interface ArtistRegistrationData {
     userType: string;
     email: string;
-    phoneNumber: string;
-    countryCode: string;
+    phone: string;
     password: string;
     agreeToTerms: boolean;
 }
@@ -46,8 +38,7 @@ interface ArtistRegistrationData {
 interface ArtistRegistrationErrors {
     userType?: string;
     email?: string;
-    phoneNumber?: string;
-    countryCode?: string;
+    phone?: string;
     password?: string;
     agreeToTerms?: string;
 }
@@ -56,15 +47,14 @@ export const ArtistRegistrationForm: React.FC = () => {
     const [formData, setFormData] = useState<ArtistRegistrationData>({
         userType: 'artist',
         email: '',
-        phoneNumber: '',
-        countryCode: '+234',
+        phone: '',
         password: '',
         agreeToTerms: false,
     });
     const [loading, setLoading] = useState(false);
     const [errors, setErrors] = useState<ArtistRegistrationErrors>({});
 
-    const { toast } = useToast();
+    const toast = useChakraToast();
     const navigate = useNavigate();
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -92,8 +82,8 @@ export const ArtistRegistrationForm: React.FC = () => {
             newErrors.email = 'Email is invalid';
         }
 
-        if (!formData.phoneNumber) {
-            newErrors.phoneNumber = 'Phone number is required';
+        if (!formData.phone) {
+            newErrors.phone = 'Phone number is required';
         }
 
         if (!formData.password) {
@@ -224,65 +214,41 @@ export const ArtistRegistrationForm: React.FC = () => {
                         <Text fontSize="xs" fontWeight="medium" color="grey.500" mb={1}>
                             Phone Number
                         </Text>
-                        <HStack gap={2}>
-                            <Select.Root
-                                size="sm"
-                                fontSize="xs"
-                                collection={countryCodes}
-                                flex={1}
-                                value={[formData.countryCode]}
-                                onValueChange={(details) => {
-                                    setFormData(prev => ({ ...prev, countryCode: details.value[0] }));
-                                    if (errors.countryCode) {
-                                        setErrors(prev => ({ ...prev, countryCode: undefined }));
-                                    }
-                                }}
-                            >
-                                <Select.HiddenSelect name="countryCode" />
-                                <Select.Control w="100px">
-                                    <Select.Trigger>
-                                        <Select.ValueText placeholder="+234" />
-                                    </Select.Trigger>
-                                    <Select.IndicatorGroup>
-                                        <Select.Indicator />
-                                    </Select.IndicatorGroup>
-                                </Select.Control>
-                                <Portal>
-                                    <Select.Positioner>
-                                        <Select.Content>
-                                            {countryCodes.items.map((country) => (
-                                                <Select.Item fontSize="xs" item={country} key={country.value}>
-                                                    {country.label}
-                                                    <Select.ItemIndicator />
-                                                </Select.Item>
-                                            ))}
-                                        </Select.Content>
-                                    </Select.Positioner>
-                                </Portal>
-                            </Select.Root>
-                            <Input
-                                name="phoneNumber"
-                                type="tel"
-                                variant="subtle"
-                                value={formData.phoneNumber}
-                                size="sm"
-                                fontSize="xs"
-                                flex={9}
-                                _placeholder={{
-                                    fontSize: 'xs',
-                                }}
-                                onChange={handleChange}
-                                placeholder="e.g 90 345 6789"
-                                borderColor={errors.phoneNumber ? 'red.300' : 'transparent'}
-                                _focus={{
-                                    borderColor: 'primary.500',
-                                    boxShadow: '0 0 0 1px #f94444',
-                                }}
-                            />
-                        </HStack>
-                        {errors.phoneNumber && (
+                        <PhoneInput
+                            defaultCountry="ng"
+                            value={formData.phone}
+                            showDisabledDialCodeAndPrefix={true}
+                            disableDialCodeAndPrefix={true}
+                            disableFormatting={false}
+                            onChange={(phone) => {
+                                setFormData(prev => ({ ...prev, phone }));
+                                if (errors.phone) {
+                                    setErrors(prev => ({ ...prev, phone: undefined }));
+                                }
+                            }}
+                            style={{
+                                width: '100%',
+                            }}
+                            inputStyle={{
+                                width: '100%',
+                                height: '36px',
+                                fontSize: '12px',
+                                borderColor: errors.phone ? '#fc8181' : 'transparent',
+                                backgroundColor: '#f7fafc',
+                                borderRadius: '6px',
+                            }}
+                            countrySelectorStyleProps={{
+                                buttonStyle: {
+                                    height: '36px',
+                                    backgroundColor: '#f7fafc',
+                                    borderColor: 'transparent',
+                                    borderRadius: '6px',
+                                },
+                            }}
+                        />
+                        {errors.phone && (
                             <Text color="red.500" fontSize="xs" mt={0.5}>
-                                {errors.phoneNumber}
+                                {errors.phone}
                             </Text>
                         )}
                     </Box>

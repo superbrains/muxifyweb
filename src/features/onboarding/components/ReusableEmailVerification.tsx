@@ -8,19 +8,31 @@ import {
     VStack,
     HStack,
 } from '@chakra-ui/react';
-import { useToast } from '@shared/hooks';
+import { useChakraToast } from '@shared/hooks';
 
-export const ArtistEmailVerification: React.FC = () => {
+interface ReusableEmailVerificationProps {
+    title?: string;
+    description?: string;
+    nextRoute: string;
+    email?: string;
+}
+
+export const ReusableEmailVerification: React.FC<ReusableEmailVerificationProps> = ({
+    title = "Verify Email Address",
+    description,
+    nextRoute,
+    email: propEmail
+}) => {
     const [verificationCode, setVerificationCode] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [resendTimer, setResendTimer] = useState(0);
 
-    const { toast } = useToast();
+    const toast = useChakraToast();
     const navigate = useNavigate();
     const location = useLocation();
 
-    const email = location.state?.email || 'johndoe@gmail.com';
+    const email = propEmail || location.state?.email || 'johndoe@gmail.com';
 
     // Resend timer effect
     React.useEffect(() => {
@@ -66,7 +78,7 @@ export const ArtistEmailVerification: React.FC = () => {
             // Here you would typically verify the code with your backend
             await new Promise(resolve => setTimeout(resolve, 1000));
             toast.success('Verification successful!', 'Your email has been verified.');
-            navigate('/onboarding/artist/complete-information');
+            navigate(nextRoute);
         } catch {
             const errorMessage = 'Invalid verification code';
             setError(errorMessage);
@@ -100,10 +112,10 @@ export const ArtistEmailVerification: React.FC = () => {
         <VStack gap={4} align="center">
             <Box textAlign="center">
                 <Text fontSize="md" fontWeight="semibold" color="black" mb={1}>
-                    Verify Email Address
+                    {title}
                 </Text>
                 <Text fontSize="xs" color="gray.600" mb={4}>
-                    An verification code has sent to{' '}
+                    {description || `An verification code has sent to`}{' '}
                     <Text as="span" color="primary.500" fontWeight="medium">
                         {email}
                     </Text>
@@ -180,8 +192,6 @@ export const ArtistEmailVerification: React.FC = () => {
                     Verify Now
                 </Button>
             </VStack>
-
-
         </VStack>
     );
 };

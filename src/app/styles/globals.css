@@ -7,3 +7,78 @@
   --color-primary-100: #fff4f4;
   --color-primary-50: #fff9f8;
 }
+
+:root {
+  --react-international-phone-flag-width: 24px;
+  --react-international-phone-flag-height: 24px;
+}
+
+/* Make flag images circular instead of rectangular */
+.react-international-phone-flag-emoji,
+.react-international-phone-flag-img {
+  border-radius: 50%;
+  object-fit: cover;
+  width: var(--react-international-phone-flag-width);
+  height: var(--react-international-phone-flag-height);
+}
+
+.react-international-phone-flag-emoji {
+  border-radius: 50px;
+}
+
+.react-international-phone-dial-code-preview {
+  border-top: 1px solid transparent !important;
+  border-bottom: 1px solid transparent !important;
+  border-left: 1px solid transparent !important;
+  border-right: 1px solid #efefef !important;
+  background-color: #fafafa !important;
+  margin-right: 0px !important;
+  display: flex !important;
+  align-items: center !important;
+  position: relative !important;
+  padding-right: 24px !important;
+}
+
+/* Add dropdown arrow icon after the dial code */
+.react-international-phone-dial-code-preview::after {
+  content: "";
+  position: absolute;
+  right: 8px;
+  width: 0;
+  height: 0;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 5px solid #666;
+  pointer-events: none;
+}
+
+.react-international-phone-country-selector-button__dropdown-arrow {
+  display: none !important;
+}
+
+/* Dropdown container styling */
+.react-international-phone-country-selector-dropdown {
+  background: white !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+  padding: 4px !important;
+  margin-top: 4px !important;
+  max-height: 200px !important;
+  min-height: auto !important;
+  overflow-y: auto !important;
+}
+
+/* Dropdown list item styling */
+.react-international-phone-country-selector-dropdown__list-item {
+  padding: 6px 10px !important;
+  border-radius: 4px !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+  color: #2d3748 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  min-height: 32px !important;
+}

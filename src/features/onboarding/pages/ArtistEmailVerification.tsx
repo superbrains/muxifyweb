@@ -4,7 +4,7 @@ import {
     VStack,
 } from '@chakra-ui/react';
 import MuxifyLogoIcon from '@/shared/icons/CustomIcons';
-import { ArtistEmailVerification as ArtistEmailVerificationComponent } from '../components/ArtistEmailVerification';
+import { ReusableEmailVerification } from '../components/ReusableEmailVerification';
 
 export const ArtistEmailVerification: React.FC = () => {
     return (
@@ -38,7 +38,10 @@ export const ArtistEmailVerification: React.FC = () => {
                     px={10}
                     pb={10}
                 >
-                    <ArtistEmailVerificationComponent />
+                    <ReusableEmailVerification
+                        title="Verify Email Address"
+                        nextRoute="/onboarding/artist/complete-information"
+                    />
                 </Box>
             </VStack>
         </Box>
