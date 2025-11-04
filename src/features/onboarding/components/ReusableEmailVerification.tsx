@@ -9,6 +9,7 @@ import {
     HStack,
 } from '@chakra-ui/react';
 import { useChakraToast } from '@shared/hooks';
+import { useUserManagementStore } from '@/features/auth/store/useUserManagementStore';
 
 interface ReusableEmailVerificationProps {
     title?: string;
@@ -31,8 +32,10 @@ export const ReusableEmailVerification: React.FC<ReusableEmailVerificationProps>
     const toast = useChakraToast();
     const navigate = useNavigate();
     const location = useLocation();
+    const { markEmailVerified, setCurrentUser } = useUserManagementStore();
 
     const email = propEmail || location.state?.email || 'johndoe@gmail.com';
+    const userId = (location.state as { userId?: string })?.userId;
 
     // Resend timer effect
     React.useEffect(() => {
@@ -75,10 +78,18 @@ export const ReusableEmailVerification: React.FC<ReusableEmailVerificationProps>
         setError('');
 
         try {
+            // Mark email as verified in store
+            if (userId) {
+                setCurrentUser(userId);
+                markEmailVerified(userId);
+            }
+
             // Here you would typically verify the code with your backend
             await new Promise(resolve => setTimeout(resolve, 1000));
             toast.success('Verification successful!', 'Your email has been verified.');
-            navigate(nextRoute);
+            navigate(nextRoute, {
+                state: { userId }
+            });
         } catch {
             const errorMessage = 'Invalid verification code';
             setError(errorMessage);

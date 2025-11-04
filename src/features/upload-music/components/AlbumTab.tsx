@@ -34,7 +34,9 @@ interface AlbumTabProps {
     allowSponsorship: string[];
     releaseYear: string;
     onAudioFileSelect: (file: File) => void;
+    onAudioFileReady: (file: UploadFile) => void;
     onCoverArtSelect: (file: File) => void;
+    onCoverArtReady: (file: UploadFile) => void;
     onRemoveTrack: (trackId: string) => void;
     onRemoveCoverArt: () => void;
     onTrackTitleChange: (trackId: string, title: string) => void;
@@ -63,7 +65,9 @@ export const AlbumTab: React.FC<AlbumTabProps> = ({
     allowSponsorship,
     releaseYear,
     onAudioFileSelect,
+    onAudioFileReady,
     onCoverArtSelect,
+    onCoverArtReady,
     onRemoveTrack,
     onRemoveCoverArt,
     onTrackTitleChange,
@@ -80,8 +84,6 @@ export const AlbumTab: React.FC<AlbumTabProps> = ({
     unlockCostOptions,
     sponsorshipOptions,
 }) => {
-    const uploadingTracks = tracks.filter(track => track.status === 'uploading');
-    const readyTracks = tracks.filter(track => track.status === 'ready');
 
     return (
         <Flex gap={5} direction={{ base: 'column', lg: 'row' }}>
@@ -93,28 +95,16 @@ export const AlbumTab: React.FC<AlbumTabProps> = ({
                         accept=".mp3,.m4a"
                         maxSize={50}
                         onFileSelect={onAudioFileSelect}
+                        onFileReady={onAudioFileReady}
                         title="Upload a new file"
                         supportedFormats="Support M4A, MP3"
                         Icon={UploadFileIcon}
+                        fileType="audio"
                     />
-
-                    {/* Uploading Files */}
-                    {uploadingTracks.map((track) => (
-                        <UploadedFileCard
-                            key={track.id}
-                            fileName={track.name}
-                            fileSize={track.size}
-                            progress={track.progress}
-                            status={track.status}
-                            onRemove={() => onRemoveTrack(track.id)}
-                            type="audio"
-                            file={track.file}
-                        />
-                    ))}
 
                     {/* Uploaded Items */}
                     <VStack align="stretch" gap={4}>
-                        {readyTracks.map((track, index) => (
+                        {tracks.map((track, index) => (
                             <TrackItem
                                 key={track.id}
                                 fileName={track.name}
@@ -146,9 +136,11 @@ export const AlbumTab: React.FC<AlbumTabProps> = ({
                             accept=".jpg,.jpeg,.png,.gif"
                             maxSize={50}
                             onFileSelect={onCoverArtSelect}
+                            onFileReady={onCoverArtReady}
                             title="Album Art Cover"
                             supportedFormats="Support JPG, JPEG, PNG, GIF"
                             Icon={UploadImageIcon}
+                            fileType="image"
                         />
                         {coverArt && (
                             <Box mt={3}>
