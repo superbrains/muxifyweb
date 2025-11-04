@@ -39,4 +39,13 @@ export default defineConfig({
       "@ads": path.resolve(__dirname, "./src/features/ads"),
     },
   },
+  build: {
+    rollupOptions: {
+      input: {
+        main: path.resolve(__dirname, "index.html"),
+      },
+    },
+    copyPublicDir: true,
+  },
+  publicDir: "public",
 });
