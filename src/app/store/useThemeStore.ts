@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { indexedDbStorage } from "@/shared/lib/indexedDbStorage";
 
 type Theme = "light" | "dark";
 
@@ -19,6 +20,7 @@ export const useThemeStore = create<ThemeState>()(
     }),
     {
       name: "theme-storage",
+      storage: indexedDbStorage,
     }
   )
 );

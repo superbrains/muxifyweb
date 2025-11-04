@@ -121,7 +121,7 @@ export const ArtistInput: React.FC<ArtistInputProps> = ({
                                                     {suggestion}
                                                 </Text>
                                                 <Text fontSize="11px" color="gray.500" lineClamp={1}>
-                                                    Artist/Musician
+                                                    Artist
                                                 </Text>
                                             </VStack>
                                         </HStack>

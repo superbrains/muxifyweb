@@ -17,13 +17,16 @@ import { PhoneInput } from 'react-international-phone';
 import 'react-international-phone/style.css';
 import { useChakraToast } from '@shared/hooks';
 import { PasswordInput } from "@/components/ui/password-input";
+import { useUserManagementStore } from '@/features/auth/store/useUserManagementStore';
 
 // Collections for select options
 const userTypes = createListCollection({
     items: [
-        { label: "Artist/Musician", value: "artist" },
+        { label: "Artist", value: "artist" },
+        { label: "Musician", value: "musician" },
         { label: "Creator", value: "creator" },
         { label: "DJ", value: "dj" },
+        { label: "Podcaster", value: "podcaster" },
     ],
 });
 
@@ -45,7 +48,7 @@ interface ArtistRegistrationErrors {
 
 export const ArtistRegistrationForm: React.FC = () => {
     const [formData, setFormData] = useState<ArtistRegistrationData>({
-        userType: 'artist',
+        userType: 'artist', // Default to 'artist'
         email: '',
         phone: '',
         password: '',
@@ -56,6 +59,7 @@ export const ArtistRegistrationForm: React.FC = () => {
 
     const toast = useChakraToast();
     const navigate = useNavigate();
+    const { initializeUser } = useUserManagementStore();
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
@@ -107,13 +111,16 @@ export const ArtistRegistrationForm: React.FC = () => {
 
         setLoading(true);
         try {
+            // Initialize user in the store
+            const userId = initializeUser('artist', formData.email, formData.phone, formData.userType);
+
             // Here you would typically register the user
             // For now, we'll simulate success and navigate to email verification
             await new Promise(resolve => setTimeout(resolve, 1000));
 
             toast.success('Registration successful!', 'Please verify your email to continue.');
             navigate('/onboarding/artist/verify-email', {
-                state: { email: formData.email, userType: formData.userType }
+                state: { email: formData.email, userType: formData.userType, userId }
             });
         } catch (error: unknown) {
             const errorMessage = error && typeof error === 'object' && 'response' in error
@@ -129,7 +136,7 @@ export const ArtistRegistrationForm: React.FC = () => {
         <VStack gap={4} align="center">
             <Box textAlign="center">
                 <Text fontSize="lg" fontWeight="semibold" color="black" mb={1}>
-                    Artists, Creators, & DJs
+                    Artists, Creators, DJs & Podcasters
                 </Text>
                 <Text fontSize="xs" color="gray.600" mb={4}>
                     Lorem ipsum dolor sit amet consectetur. Mauris placerat nulla sit duis.

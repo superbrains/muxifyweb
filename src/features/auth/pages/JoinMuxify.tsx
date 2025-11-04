@@ -22,7 +22,7 @@ export const JoinMuxify: React.FC = () => {
     const userTypes = [
         {
             id: 'artist',
-            title: 'Artist, Creators & DJs',
+            title: 'Artist, Creators, DJs & Podcasters',
             description: 'Lorem ipsum dolor sit amet consecte, lorem dolor.',
             icon: ArtistIcon,
             route: '/onboarding/artist/register'
