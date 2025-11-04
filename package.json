@@ -7,8 +7,9 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
-    
+    "preview": "vite preview",
+    "push:all": "git push -u private main && git push -u origin main"
+
   },
   "dependencies": {
     "@chakra-ui/react": "^3.27.1",
