@@ -21,7 +21,7 @@ export const useLogin = () => {
       login(user);
 
       toast.success("Welcome back!", "You have been successfully logged in.");
-      navigate("/dashboard");
+      navigate("/");
     } catch (error: any) {
       toast.error(
         "Login failed",

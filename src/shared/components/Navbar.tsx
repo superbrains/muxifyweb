@@ -113,7 +113,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     const pageTitle = useMemo(() => {
         const path = location.pathname;
         const routeTitles: Record<string, string> = {
-            '/dashboard': `Hi ${displayName}`,
+            '/': `Hi ${displayName}`,
             '/upload': 'Upload Media',
             '/upload/review': 'Review',
             '/music-videos': 'Music & Videos',

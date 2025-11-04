@@ -37,7 +37,7 @@ export const AddArtistIdentityVerificationPrompt: React.FC = () => {
 
             toast.success('Artist added successfully!', 'The artist has been added to your record label.');
             // Navigate to dashboard
-            navigate('/dashboard');
+            navigate('/');
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Please try again.';
             toast.error('Verification failed', errorMessage);
