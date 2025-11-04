@@ -1,7 +1,10 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { useUserType } from '@/features/auth/hooks/useUserType';
-import Dashboard from '@dashboard/pages/Dashboard';
-import AdsDashboard from '@ads/pages/AdsDashboard';
+import { LoadingScreen } from '@shared/components';
+
+// Lazy load dashboards to avoid dynamic/static import conflicts
+const Dashboard = lazy(() => import('@dashboard/pages/Dashboard'));
+const AdsDashboard = lazy(() => import('@ads/pages/AdsDashboard'));
 
 /**
  * DashboardRouter component that renders the appropriate dashboard
@@ -12,13 +15,11 @@ import AdsDashboard from '@ads/pages/AdsDashboard';
 const DashboardRouter: React.FC = () => {
     const { isAdManager } = useUserType();
 
-    // Check if user is an ads manager
-    if (isAdManager) {
-        return <AdsDashboard />;
-    }
-
-    // Default to regular Dashboard for all other users
-    return <Dashboard />;
+    return (
+        <Suspense fallback={<LoadingScreen />}>
+            {isAdManager ? <AdsDashboard /> : <Dashboard />}
+        </Suspense>
+    );
 };
 
 export default DashboardRouter;
