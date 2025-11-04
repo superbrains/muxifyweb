@@ -111,10 +111,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed }) => {
     return (
         <motion.div
             initial={{
-                width: isMobile ? (shouldShowCollapsed ? 72 : 230) : (shouldShowCollapsed ? 105 : 230),
+                width: isMobile ? (shouldShowCollapsed ? 72 : 245) : (shouldShowCollapsed ? 105 : 245),
             }}
             animate={{
-                width: isMobile ? (shouldShowCollapsed ? 72 : 230) : (shouldShowCollapsed ? 105 : 230),
+                width: isMobile ? (shouldShowCollapsed ? 72 : 245) : (shouldShowCollapsed ? 105 : 245),
             }}
             transition={isInitialRender ? { duration: 0 } : {
                 duration: 0.3,
