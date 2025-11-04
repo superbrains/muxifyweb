@@ -72,7 +72,7 @@ export const RegisterForm: React.FC = () => {
             login(user);
 
             toast.success('Welcome to Muxify!', 'Your account has been created successfully.');
-            navigate('/dashboard');
+            navigate('/');
         } catch (error: unknown) {
             const errorMessage = error && typeof error === 'object' && 'response' in error
                 ? (error as { response?: { data?: { message?: string } } }).response?.data?.message || 'Something went wrong'

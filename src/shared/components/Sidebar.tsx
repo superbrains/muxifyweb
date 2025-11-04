@@ -39,7 +39,7 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-    { icon: DashboardIcon, label: 'Dashboard', path: '/dashboard' },
+    { icon: DashboardIcon, label: 'Dashboard', path: '/' },
     { icon: LeaderboardIcon, label: 'Leaderboard', path: '/leaderboard' },
     { icon: EarningsAndRoyaltyIcon, label: 'Earnings & Royalty', path: '/earning-royalty' },
     { icon: MusicIcon, label: 'Music/Videos', path: '/music-videos' },
@@ -73,7 +73,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed }) => {
 
     // Ad Manager specific nav items
     const adManagerNavItems: NavItem[] = [
-        { icon: DashboardIcon, label: 'Dashboard', path: '/ads/dashboard' },
+        { icon: DashboardIcon, label: 'Dashboard', path: '/' },
         { icon: LeaderboardIcon, label: 'Leaderboard', path: '/ads/leaderboard' },
         { icon: StatusUpIcon, label: 'Spending', path: '/ads/spending' },
         { icon: GraphIcon, label: 'Ad Report', path: '/ads/report' },

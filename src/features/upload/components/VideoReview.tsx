@@ -62,7 +62,7 @@ export const VideoReview: React.FC<VideoReviewProps> = ({ onPublish }) => {
     };
 
     const handleDone = () => {
-        navigate('/dashboard');
+        navigate('/');
     };
 
     const handleUploadMore = () => {

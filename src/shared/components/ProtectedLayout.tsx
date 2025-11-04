@@ -59,7 +59,7 @@ export const ProtectedLayout: React.FC<ProtectedLayoutProps> = ({ children }) =>
             if (isAdManager && campaigns.length === 0 && !location.pathname.startsWith('/ads')) {
                 navigate('/ads', { replace: true });
             } else if (isAdManager && campaigns.length > 0 && location.pathname === '/ads') {
-                navigate('/ads/dashboard', { replace: true });
+                navigate('/', { replace: true });
             }
         }
     }, [isAdManager, campaigns.length, navigate, location.pathname]);

@@ -68,7 +68,7 @@ export const IdentityVerificationPrompt: React.FC = () => {
             if (isRecordLabel && artists.length === 0) {
                 navigate('/add-artist');
             } else {
-                navigate('/dashboard');
+                navigate('/');
             }
         } catch (error) {
             console.error('Verification error:', error);

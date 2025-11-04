@@ -109,7 +109,7 @@ export const MusicReview: React.FC<MusicReviewProps> = ({ albumTab, setAlbumTab,
 
     const handleUnderstand = () => {
         // Navigate to dashboard
-        navigate('/dashboard');
+        navigate('/');
     };
 
     const handleUploadMore = () => {
