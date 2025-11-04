@@ -37,5 +37,29 @@ export const chakraTheme = createSystem(defaultConfig, {
         },
       },
     },
+    recipes: {
+      button: {
+        base: {
+          _focus: {
+            boxShadow: "none",
+            outline: "none",
+          },
+          _focusVisible: {
+            boxShadow: "none",
+            outline: "none",
+          },
+          _hover: {
+            _before: {
+              content: "none",
+            },
+          },
+          _active: {
+            _before: {
+              content: "none",
+            },
+          },
+        },
+      },
+    },
   },
 });

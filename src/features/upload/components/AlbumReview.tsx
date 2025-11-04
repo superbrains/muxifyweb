@@ -1,25 +1,18 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
     Box,
     Flex,
-    Icon,
     Image,
     Text,
     VStack,
-    SelectRoot,
-    SelectTrigger,
-    SelectValueText,
-    SelectContent,
-    SelectItem,
-    createListCollection,
-    HStack,
 } from '@chakra-ui/react';
-import { FiArrowRight } from 'react-icons/fi';
 import { useUploadMusicStore } from '@uploadMusic/store/useUploadMusicStore';
-import { ReviewTrackItem } from './ReviewTrackItem';
+import { ReviewTrackItem, ReleaseScheduler } from './';
+import { useUserType } from '@/features/auth/hooks/useUserType';
 
 export const AlbumReview: React.FC = () => {
     const { album } = useUploadMusicStore();
+    const { isRecordLabelOnly, userData } = useUserType();
     const {
         tracks,
         coverArt,
@@ -31,37 +24,30 @@ export const AlbumReview: React.FC = () => {
         trackTitles,
         selectedArtists,
     } = album;
-
-    console.log('[AlbumReview] Rendering with:', {
-        tracksCount: tracks.length,
-        tracks,
-        coverArt: coverArt?.name,
-        trackTitles,
-        selectedArtists,
-    });
-
-    const [releaseOption, setReleaseOption] = useState<string[]>(['now']);
-    const [selectedGenre, setSelectedGenre] = useState<string[]>(genre);
-
-    const releaseOptions = createListCollection({
-        items: [
-            { label: 'Now', value: 'now' },
-            { label: 'Schedule Release', value: 'schedule' },
-        ],
-    });
-
-    const genreOptions = createListCollection({
-        items: [
-            { label: 'Afrobeat', value: 'afrobeat' },
-            { label: 'Hip Hop', value: 'hip-hop' },
-            { label: 'Pop', value: 'pop' },
-            { label: 'R&B', value: 'rnb' },
-        ],
-    });
+    
+    // Get artist name - for record labels, use selected artists; otherwise use logged in user
+    const getArtistName = () => {
+        if (selectedArtists.length > 0) {
+            return selectedArtists.map(artist => artist.name).join(', ');
+        }
+        if (isRecordLabelOnly) {
+            return 'Select Artist';
+        }
+        // For non-record labels, use logged in user's name
+        const artistData = userData as any;
+        return artistData?.performingName || artistData?.fullName || 'Artist';
+    };
 
     const readyTracks = tracks.filter(track => track.status === 'ready');
     const firstTrack = tracks[0];
     const coverArtUrl = coverArt ? URL.createObjectURL(coverArt.file) : '';
+
+    const genreLabels: Record<string, string> = {
+        'afrobeat': 'Afrobeat',
+        'hip-hop': 'Hip Hop',
+        'pop': 'Pop',
+        'rnb': 'R&B',
+    };
 
     const releaseTypeLabels: Record<string, string> = {
         'new-release': 'New Release',
@@ -153,23 +139,17 @@ export const AlbumReview: React.FC = () => {
                             <Text fontSize="12px" fontWeight="semibold" color="gray.900" mb={2}>
                                 Genre
                             </Text>
-                            <SelectRoot
-                                collection={genreOptions}
-                                size="sm"
-                                value={selectedGenre}
-                                onValueChange={(details) => setSelectedGenre(details.value)}
+                            <Box
+                                bg="gray.50"
+                                border="1px solid"
+                                borderColor="gray.200"
+                                borderRadius="md"
+                                p={3}
+                                fontSize="11px"
+                                color="gray.700"
                             >
-                                <SelectTrigger h="40px" fontSize="11px">
-                                    <SelectValueText placeholder="Select genre" />
-                                </SelectTrigger>
-                                <SelectContent fontSize="11px">
-                                    {genreOptions.items.map((item) => (
-                                        <SelectItem item={item} key={item.value}>
-                                            {item.label}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </SelectRoot>
+                                {genreLabels[genre[0]] || genre[0]}
+                            </Box>
                         </Box>
 
                         <Box>
@@ -227,7 +207,7 @@ export const AlbumReview: React.FC = () => {
                             color="gray.900"
                             textAlign="center"
                         >
-                            {selectedArtists.length > 0 ? selectedArtists[0].name : 'Davido'}
+                            {getArtistName()}
                         </Text>
                         <Text
                             fontSize="16px"
@@ -235,58 +215,11 @@ export const AlbumReview: React.FC = () => {
                             color="primary.500"
                             textAlign="center"
                         >
-                            {firstTrack?.title || firstTrack?.name?.split('.')[0] || '5ive'}
+                            {Object.values(trackTitles)[0] || firstTrack?.name?.split('.')[0] || 'Untitled Album'}
                         </Text>
 
                         {/* Release */}
-                        <Box>
-                            <Text fontSize="12px" fontWeight="semibold" color="gray.900" mb={2}>
-                                Release
-                            </Text>
-                            <SelectRoot
-                                collection={releaseOptions}
-                                size="sm"
-                                value={releaseOption}
-                                onValueChange={(details) => setReleaseOption(details.value)}
-                            >
-                                <SelectTrigger h="40px" fontSize="11px">
-                                    <SelectValueText placeholder="Select release option" />
-                                </SelectTrigger>
-                                <SelectContent fontSize="11px">
-                                    {releaseOptions.items.map((item) => (
-                                        <SelectItem item={item} key={item.value}>
-                                            {item.label}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </SelectRoot>
-                        </Box>
-
-                        {/* Schedule Release */}
-                        {releaseOption[0] === 'schedule' && (
-                            <Box
-                                bg="gray.50"
-                                border="1px solid"
-                                borderColor="gray.200"
-                                borderRadius="md"
-                                p={4}
-                            >
-                                <VStack align="stretch" gap={2}>
-                                    <Text fontSize="11px" color="gray.700">
-                                        Now
-                                    </Text>
-                                    <HStack
-                                        cursor="pointer"
-                                        color="primary.500"
-                                        _hover={{ color: 'primary.600' }}
-                                    >
-                                        <Text fontSize="11px">Schedule Release</Text>
-                                        <Icon as={FiArrowRight} boxSize={3} />
-                                        <Text fontSize="11px">Calendar</Text>
-                                    </HStack>
-                                </VStack>
-                            </Box>
-                        )}
+                        <ReleaseScheduler />
                     </VStack>
                 </Box>
             </Flex>

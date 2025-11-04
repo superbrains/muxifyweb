@@ -17,6 +17,7 @@ import { PhoneInput } from 'react-international-phone';
 import 'react-international-phone/style.css';
 import { useChakraToast } from '@shared/hooks';
 import { PasswordInput } from "@/components/ui/password-input";
+import { useUserManagementStore } from '@/features/auth/store/useUserManagementStore';
 
 // Collections for select options
 const companyTypes = createListCollection({
@@ -57,6 +58,7 @@ export const CompanyRegistrationForm: React.FC = () => {
 
     const toast = useChakraToast();
     const navigate = useNavigate();
+    const { initializeUser } = useUserManagementStore();
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
@@ -107,12 +109,15 @@ export const CompanyRegistrationForm: React.FC = () => {
 
         setLoading(true);
         try {
+            // Initialize user in the store
+            const userId = initializeUser('company', formData.email, formData.phone, formData.userType);
+
             // Here you would typically register the company
             await new Promise(resolve => setTimeout(resolve, 1000));
 
             toast.success('Registration successful!', 'Please verify your email to continue.');
             navigate('/onboarding/company/verify-email', {
-                state: { email: formData.email, userType: formData.userType }
+                state: { email: formData.email, userType: formData.userType, userId }
             });
         } catch (error: unknown) {
             const errorMessage = error && typeof error === 'object' && 'response' in error

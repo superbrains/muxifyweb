@@ -17,6 +17,7 @@ export default defineConfig({
       "@upload": path.resolve(__dirname, "./src/features/upload"),
       "@uploadMusic": path.resolve(__dirname, "./src/features/upload-music"),
       "@uploadVideo": path.resolve(__dirname, "./src/features/upload-video"),
+      "@musicVideo": path.resolve(__dirname, "./src/features/music-video"),
       "@musicVideos": path.resolve(
         __dirname,
         "./src/features/music-and-videos"
@@ -35,6 +36,7 @@ export default defineConfig({
       "@addArtist": path.resolve(__dirname, "./src/features/add-artists"),
       "@settings": path.resolve(__dirname, "./src/features/settings"),
       "@onboarding": path.resolve(__dirname, "./src/features/onboarding"),
+      "@ads": path.resolve(__dirname, "./src/features/ads"),
     },
   },
 });

@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { indexedDbStorage } from "@/shared/lib/indexedDbStorage";
 
 export interface User {
   id: string;
@@ -37,6 +38,7 @@ export const useUserStore = create<UserState>()(
     }),
     {
       name: "user-storage",
+      storage: indexedDbStorage,
       partialize: (state) => ({
         user: state.user,
         isAuthenticated: state.isAuthenticated,

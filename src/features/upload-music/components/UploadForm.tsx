@@ -3,6 +3,8 @@ import { Button, Input } from '@shared/components';
 import { useUploadMusic } from '../hooks/useUploadMusic';
 import { validateFileType, validateFileSize, formatFileSize } from '@shared/lib';
 import { MAX_FILE_SIZES, FILE_TYPES } from '@app/lib/constants';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 
 export const UploadForm: React.FC = () => {
     const [formData, setFormData] = useState({
@@ -109,14 +111,31 @@ export const UploadForm: React.FC = () => {
                     required
                 />
 
-                <Input
-                    label="Release Date"
-                    name="releaseDate"
-                    type="date"
-                    value={formData.releaseDate}
-                    onChange={handleInputChange}
-                    placeholder="Select release date"
-                />
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Release Date
+                    </label>
+                    <DatePicker
+                        selected={formData.releaseDate ? new Date(formData.releaseDate) : null}
+                        onChange={(date: Date | null) => {
+                            if (date) {
+                                const isoString = date.toISOString().split('T')[0];
+                                setFormData(prev => ({ ...prev, releaseDate: isoString }));
+                                if (errors.releaseDate) {
+                                    setErrors(prev => ({ ...prev, releaseDate: '' }));
+                                }
+                            } else {
+                                setFormData(prev => ({ ...prev, releaseDate: '' }));
+                            }
+                        }}
+                        dateFormat="dd MMM, yyyy"
+                        placeholderText="Select release date"
+                        className="input bg-white border border-gray-200 w-full px-3 py-2 rounded-md text-xs h-10 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        wrapperClassName="w-full"
+                        calendarClassName="text-sm"
+                        maxDate={new Date()}
+                    />
+                </div>
             </div>
 
             <div>

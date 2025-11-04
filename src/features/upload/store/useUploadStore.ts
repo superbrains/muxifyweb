@@ -40,6 +40,11 @@ interface UploadState {
   activeTab: "music" | "video";
   albumTab: "mix" | "album";
 
+  // Editing session
+  isEditing: boolean;
+  editingType: "mix" | "album" | "video" | null;
+  editingId: string | null;
+
   // Actions
   setTracks: (tracks: Track[]) => void;
   addTrack: (track: Track) => void;
@@ -56,6 +61,10 @@ interface UploadState {
   setTrackTitles: (trackTitles: Record<string, string>) => void;
   setActiveTab: (activeTab: "music" | "video") => void;
   setAlbumTab: (albumTab: "mix" | "album") => void;
+
+  // Editing actions
+  startEditing: (type: "mix" | "album" | "video", id: string) => void;
+  stopEditing: () => void;
 
   // Reset
   reset: () => void;
@@ -74,6 +83,9 @@ const initialState = {
   trackTitles: {},
   activeTab: "music" as const,
   albumTab: "mix" as const,
+  isEditing: false,
+  editingType: null as null,
+  editingId: null as null,
 };
 
 export const useUploadStore = create<UploadState>((set) => ({
@@ -123,6 +135,11 @@ export const useUploadStore = create<UploadState>((set) => ({
   setTrackTitles: (trackTitles) => set({ trackTitles }),
   setActiveTab: (activeTab) => set({ activeTab }),
   setAlbumTab: (albumTab) => set({ albumTab }),
+
+  startEditing: (type, id) =>
+    set({ isEditing: true, editingType: type, editingId: id }),
+  stopEditing: () =>
+    set({ isEditing: false, editingType: null, editingId: null }),
 
   reset: () => {
     console.log("[UploadStore] reset");

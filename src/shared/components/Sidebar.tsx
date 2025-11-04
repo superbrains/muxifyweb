@@ -7,6 +7,7 @@ import {
     Box,
 } from '@chakra-ui/react';
 import { HiOutlineMenu } from 'react-icons/hi';
+import { FiPlus } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useSidebarStore } from '@/shared/store/useSidebarStore';
@@ -19,8 +20,12 @@ import {
     FansAndSubscribersIcon,
     PaymentsIcon,
     MuxifyLogoIcon,
+    StatusUpIcon,
+    GraphIcon,
+    WalletMoneyIcon,
 } from '@/shared/icons/CustomIcons';
 import { useWindowWidth } from '../hooks/useWindowsWidth';
+import { useUserType } from '@/features/auth/hooks/useUserType';
 
 interface SidebarProps {
     isCollapsed: boolean;
@@ -48,6 +53,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed }) => {
     const location = useLocation();
     const { toggleCollapse, setMobileOpen, isMobileOpen } = useSidebarStore();
     const [isInitialRender, setIsInitialRender] = React.useState(true);
+    const { isRecordLabel, isAdManager } = useUserType();
 
     const bgColor = 'white';
     const borderColor = 'gray.200';
@@ -64,6 +70,25 @@ export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed }) => {
 
     // On mobile, show full width when menu is open, otherwise collapsed
     const shouldShowCollapsed = isMobile ? !isMobileOpen : isCollapsed;
+
+    // Ad Manager specific nav items
+    const adManagerNavItems: NavItem[] = [
+        { icon: DashboardIcon, label: 'Dashboard', path: '/ads/dashboard' },
+        { icon: LeaderboardIcon, label: 'Leaderboard', path: '/ads/leaderboard' },
+        { icon: StatusUpIcon, label: 'Spending', path: '/ads/spending' },
+        { icon: GraphIcon, label: 'Ad Report', path: '/ads/report' },
+        { icon: WalletMoneyIcon, label: 'Payments', path: '/ads/payments' },
+    ];
+
+    // Get the appropriate nav items based on user type
+    const getNavItems = () => {
+        if (isAdManager) {
+            return adManagerNavItems;
+        }
+        return navItems;
+    };
+
+    const currentNavItems = getNavItems();
 
     const handleNavClick = (path: string) => {
         // If we're on the same path, toggle collapse state
@@ -186,7 +211,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed }) => {
 
                 {/* Navigation Items */}
                 <VStack gap={3} flex={1} align="stretch" zIndex={1000}>
-                    {navItems.map((item) => {
+                    {currentNavItems.map((item) => {
                         const isActive = location.pathname === item.path;
                         const IconComponent = item.icon;
 
@@ -263,6 +288,98 @@ export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed }) => {
                         );
                     })}
                 </VStack>
+
+                {/* Add Artist Button - Only for Record Labels */}
+                {isRecordLabel && (
+                    <motion.div
+                        style={{
+                            marginTop: 'auto',
+                            paddingBottom: windowWidth < 768 ? '16px' : '16px',
+
+                        }}
+                        initial={false}
+                        animate={{
+                            width: shouldShowCollapsed ? 'auto' : '100%',
+                        }}
+                        transition={isInitialRender ? { duration: 0 } : {
+                            duration: 0.3,
+                            ease: "easeInOut",
+                        }}
+                    >
+                        {shouldShowCollapsed ? (
+                            <motion.button
+                                style={{
+                                    background: '#f94444',
+                                    color: 'white',
+                                    borderRadius: '7px',
+                                    width: '40px',
+                                    height: '40px',
+                                    minWidth: '40px',
+                                    padding: 0,
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                }}
+                                onClick={() => navigate('/add-artist')}
+                                whileHover={{ backgroundColor: '#ff5353', x: 2 }}
+                                whileTap={{ x: 0 }}
+                                transition={{
+                                    duration: 0.2,
+                                    ease: "easeInOut",
+                                }}
+                                aria-label="Add Artist"
+                            >
+                                <Icon as={FiPlus} boxSize={5} />
+                            </motion.button>
+                        ) : (
+                            <motion.button
+                                style={{
+                                    background: '#f94444',
+                                    color: 'white',
+                                    borderRadius: '9px',
+                                    width: '100%',
+                                    height: '40px',
+                                    fontSize: '12px',
+                                    fontWeight: '600',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: '8px',
+                                }}
+                                onClick={() => navigate('/add-artist')}
+                                whileHover={{ backgroundColor: '#ff5353', x: 2 }}
+                                whileTap={{ x: 0 }}
+                                transition={{
+                                    duration: 0.2,
+                                    ease: "easeInOut",
+                                }}
+                            >
+                                <Icon as={FiPlus} boxSize={4} />
+                                <AnimatePresence mode="wait">
+                                    {!shouldShowCollapsed && (
+                                        <motion.span
+                                            key="add-artist-text"
+                                            initial={isInitialRender ? { opacity: 1 } : { opacity: 0 }}
+                                            animate={{ opacity: 1 }}
+                                            exit={{ opacity: 0 }}
+                                            transition={isInitialRender ? { duration: 0 } : {
+                                                duration: 0.2,
+                                                ease: "easeInOut",
+                                            }}
+                                            className='white-space-nowrap'
+                                        >
+                                            Add New Artist
+                                        </motion.span>
+                                    )}
+                                </AnimatePresence>
+                            </motion.button>
+                        )}
+                    </motion.div>
+                )}
             </VStack>
         </motion.div>
     );

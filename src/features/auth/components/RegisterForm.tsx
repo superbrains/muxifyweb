@@ -73,8 +73,11 @@ export const RegisterForm: React.FC = () => {
 
             toast.success('Welcome to Muxify!', 'Your account has been created successfully.');
             navigate('/dashboard');
-        } catch (error: any) {
-            toast.error('Registration failed', error.response?.data?.message || 'Something went wrong');
+        } catch (error: unknown) {
+            const errorMessage = error && typeof error === 'object' && 'response' in error
+                ? (error as { response?: { data?: { message?: string } } }).response?.data?.message || 'Something went wrong'
+                : 'Something went wrong';
+            toast.error('Registration failed', errorMessage);
         } finally {
             setLoading(false);
         }

@@ -1,21 +1,102 @@
-import React from 'react';
+import React, { useState } from 'react';
+import {
+    Box,
+    Text,
+    VStack,
+    HStack,
+} from '@chakra-ui/react';
+import { AnimatedTabs } from '@/shared/components/AnimatedTabs';
+import { ProfileTab, VerificationTab, PaymentTab, SecurityTab } from '../components';
+import { useUserManagementStore } from '@/features/auth/store/useUserManagementStore';
+import { useUserType } from '@/features/auth/hooks/useUserType';
+import { ArtistDropdown } from '@/shared/components/ArtistDropdown';
 
 export const Settings: React.FC = () => {
-    return (
-        <div className="p-6">
-            <div className="mb-8">
-                <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
-                <p className="text-gray-600 mt-2">Manage your account settings and preferences.</p>
-            </div>
+    const [activeTab, setActiveTab] = useState('profile');
+    const { getCurrentUserData, getCurrentUserType } = useUserManagementStore();
+    const { isRecordLabel } = useUserType();
+    const userData = getCurrentUserData();
+    const userType = getCurrentUserType();
+    
+    // Get settings title based on user type
+    const getSettingsTitle = () => {
+        if (!userType) return 'Settings';
+        if (userType === 'artist') {
+            const artistData = userData as any;
+            if (artistData?.userType === 'artist') return 'Artist Settings';
+            if (artistData?.userType === 'musician') return 'Musician Settings';
+            if (artistData?.userType === 'creator') return 'Creator Settings';
+            if (artistData?.userType === 'dj') return 'DJ Settings';
+            if (artistData?.userType === 'podcaster') return 'Podcaster Settings';
+            return 'Artist Settings';
+        }
+        if (userType === 'company') {
+            const companyData = userData as any;
+            if (companyData?.userType === 'record_label') return 'Record Label Settings';
+            if (companyData?.userType === 'distribution') return 'Distribution Company Settings';
+            if (companyData?.userType === 'publisher') return 'Music Publisher Settings';
+            if (companyData?.userType === 'management') return 'Management Company Settings';
+            return 'Company Settings';
+        }
+        if (userType === 'ad-manager') return 'Ad Manager Settings';
+        return 'Settings';
+    };
 
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <div className="text-center py-12">
-                    <div className="text-6xl mb-4">⚙️</div>
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">Account Settings</h3>
-                    <p className="text-gray-500">Your account settings will be displayed here.</p>
-                </div>
-            </div>
-        </div>
+    const tabs = [
+        { id: 'profile', label: 'Profile' },
+        { id: 'verification', label: 'Verification' },
+        { id: 'payment', label: 'Payment' },
+        { id: 'security', label: 'Security' },
+    ];
+
+
+    const renderTabContent = () => {
+        switch (activeTab) {
+            case 'profile':
+                return <ProfileTab />;
+            case 'verification':
+                return <VerificationTab />;
+            case 'payment':
+                return <PaymentTab />;
+            case 'security':
+                return <SecurityTab />;
+            default:
+                return <ProfileTab />;
+        }
+    };
+
+    return (
+        <Box p={4}>
+            <VStack align="stretch" gap={6}>
+                {/* Header */}
+                <HStack justify="space-between" align="center">
+                    <VStack align="start" gap={1}>
+                        <Text fontSize="xl" fontWeight="bold" color="gray.900">
+                            {getSettingsTitle()}
+                        </Text>
+                    </VStack>
+                    {isRecordLabel && (
+                        <ArtistDropdown />
+                    )}
+                </HStack>
+
+                {/* Animated Tabs */}
+                <AnimatedTabs
+                    tabs={tabs}
+                    activeTab={activeTab}
+                    onTabChange={setActiveTab}
+                    selectedColor="primary.500"
+                    backgroundColor="gray.100"
+                    tabStyle={1}
+                    size="sm"
+                />
+
+                {/* Tab Content */}
+                <Box>
+                    {renderTabContent()}
+                </Box>
+            </VStack>
+        </Box>
     );
 };
 

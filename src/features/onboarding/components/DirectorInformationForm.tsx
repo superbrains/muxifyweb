@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
     Box,
     Button,
@@ -15,6 +15,7 @@ import {
 } from '@chakra-ui/react';
 import { HiOutlineTrash } from 'react-icons/hi';
 import { useChakraToast } from '@shared/hooks';
+import { useUserManagementStore } from '@/features/auth/store/useUserManagementStore';
 
 // Collection for ID types
 const idTypes = createListCollection({
@@ -66,6 +67,10 @@ export const DirectorInformationForm: React.FC<DirectorInformationFormProps> = (
 
     const toast = useChakraToast();
     const navigate = useNavigate();
+    const location = useLocation();
+    const { saveDirectorsInfo, setCurrentUser } = useUserManagementStore();
+    
+    const userId = (location.state as { userId?: string })?.userId;
 
     const handleDirectorChange = (index: number, field: keyof DirectorData, value: string) => {
         const newDirectors = [...formData.directors];
@@ -142,11 +147,19 @@ export const DirectorInformationForm: React.FC<DirectorInformationFormProps> = (
 
         setLoading(true);
         try {
+            // Save directors info to store
+            if (userId) {
+                setCurrentUser(userId);
+                saveDirectorsInfo(userId, formData.directors);
+            }
+
             // Here you would typically save the director information
             await new Promise(resolve => setTimeout(resolve, 1000));
 
             toast.success('Director information saved!', 'Director details have been updated.');
-            navigate(nextRoute);
+            navigate(nextRoute, {
+                state: { userId }
+            });
         } catch (error: unknown) {
             const errorMessage = error && typeof error === 'object' && 'response' in error
                 ? (error as { response?: { data?: { message?: string } } }).response?.data?.message || 'Please try again.'

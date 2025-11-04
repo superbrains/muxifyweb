@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "react-datepicker/dist/react-datepicker.css";
 
 @theme {
   --color-grey: #333333;
@@ -81,4 +82,126 @@
   align-items: center !important;
   gap: 6px !important;
   min-height: 32px !important;
+}
+
+/* React DatePicker Custom Styles */
+.react-datepicker {
+  font-family: inherit !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+}
+
+.react-datepicker__header {
+  background-color: #f7fafc !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  border-radius: 8px 8px 0 0 !important;
+}
+
+.react-datepicker__day--selected {
+  background-color: #f94444 !important;
+  color: white !important;
+}
+
+.react-datepicker__day--selected:hover {
+  background-color: #e53e3e !important;
+}
+
+.react-datepicker__day:hover {
+  background-color: #f94444 !important;
+  color: white !important;
+}
+
+.react-datepicker__year-dropdown,
+.react-datepicker__month-dropdown {
+  background-color: white !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+}
+
+.react-datepicker__year-option:hover,
+.react-datepicker__month-option:hover {
+  background-color: #f94444 !important;
+  color: white !important;
+}
+
+/* DatePicker Input Styling */
+.react-datepicker__input-container input {
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 6px !important;
+  padding: 8px 12px !important;
+  font-size: 12px !important;
+  height: 40px !important;
+  background-color: white !important;
+  color: #2d3748 !important;
+  width: 100% !important;
+}
+
+.react-datepicker__input-container input:focus {
+  outline: none !important;
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1) !important;
+}
+
+.react-datepicker__input-container input::placeholder {
+  color: #9ca3af !important;
+  font-size: 12px !important;
+}
+
+/* Specific styling for date-picker-input class */
+.date-picker-input {
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 6px !important;
+  padding: 8px 12px !important;
+  font-size: 12px !important;
+  height: 40px !important;
+  background-color: white !important;
+  color: #2d3748 !important;
+  width: 100% !important;
+  font-family: inherit !important;
+}
+
+.date-picker-input:focus {
+  outline: none !important;
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1) !important;
+}
+
+.date-picker-input::placeholder {
+  color: #9ca3af !important;
+  font-size: 12px !important;
+}
+
+/* ApexCharts Font Size Override */
+.apexcharts-text,
+.apexcharts-xaxis-label,
+.apexcharts-yaxis-label,
+.apexcharts-legend-text,
+.apexcharts-datalabel,
+.apexcharts-datalabel-label,
+.apexcharts-datalabel-value {
+  font-size: 9px !important;
+}
+
+.apexcharts-xaxis text,
+.apexcharts-yaxis text {
+  font-size: 9px !important;
+}
+
+.apexcharts-legend-text {
+  font-size: 9px !important;
+}
+
+/* Donut chart center text override */
+.apexcharts-datalabel-label,
+.apexcharts-datalabel-value {
+  font-size: 9px !important;
+}
+
+/* Ensure all chart text elements are properly sized */
+.apexcharts-text tspan {
+  font-size: 9px !important;
 }

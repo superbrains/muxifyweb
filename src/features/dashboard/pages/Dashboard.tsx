@@ -376,7 +376,6 @@ export const Dashboard: React.FC = () => {
                             <Text fontSize="11px" color="gray.600">Sales Summary</Text>
                         </Box>
 
-
                         <HStack gap={3}>
                             <Button
                                 variant="outline"

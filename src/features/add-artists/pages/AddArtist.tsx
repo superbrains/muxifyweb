@@ -1,21 +1,84 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
+    Box,
+    VStack,
+    Button,
+    Text,
+} from '@chakra-ui/react';
+import { ArtistIcon } from '@/shared/icons/CustomIcons';
 
 export const AddArtist: React.FC = () => {
-    return (
-        <div className="p-6">
-            <div className="mb-8">
-                <h1 className="text-3xl font-bold text-gray-900">Add Artist</h1>
-                <p className="text-gray-600 mt-2">Add new artists to your record label.</p>
-            </div>
+    const navigate = useNavigate();
 
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <div className="text-center py-12">
-                    <div className="text-6xl mb-4">👤</div>
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">Artist Management</h3>
-                    <p className="text-gray-500">Add and manage artists will be implemented here.</p>
-                </div>
-            </div>
-        </div>
+    const handleAddArtist = () => {
+        navigate('/add-artist/register');
+    };
+
+    return (
+        <Box
+            minH="90vh"
+            w="full"
+            bg="white"
+            borderRadius="20px"
+            display="flex"
+            flexDirection="column"
+            justifyContent="center"
+            alignItems="center"
+            px={4}
+            py={6}
+        >
+            <VStack gap={6} align="center">
+                {/* Artist Icon */}
+                <Box 
+                    position="relative"
+                    w="69px"
+                    h="69px"
+                    display="flex"
+                    justifyContent="center"
+                    alignItems="center"
+                >
+                    {/* Background circle */}
+                    <Box
+                        position="absolute"
+                        w="69px"
+                        h="69px"
+                        borderRadius="full"
+                        bg="#f7f7f7"
+                    />
+                    {/* Artist icon positioned on the background */}
+                    <Box position="relative" zIndex={1}>
+                        <ArtistIcon color="primary.500" h="32px" w="32px" />
+                    </Box>
+                </Box>
+
+                {/* Message */}
+                <Text
+                    fontSize="md"
+                    color="#969696"
+                    textAlign="center"
+                    maxW="303px"
+                >
+                    You do not have a payout account
+                </Text>
+
+                {/* Add New Artist Button */}
+                <Button
+                    onClick={handleAddArtist}
+                    bg="primary.500"
+                    color="white"
+                    size="md"
+                    fontSize="sm"
+                    fontWeight="semibold"
+                    px={8}
+                    py={3}
+                    borderRadius="10px"
+                    _hover={{ bg: 'primary.600' }}
+                >
+                    Add New Artist
+                </Button>
+            </VStack>
+        </Box>
     );
 };
 

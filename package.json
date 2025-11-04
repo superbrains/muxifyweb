@@ -3,17 +3,23 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "engines": {
+    "node": ">=20.19.0",
+    "npm": ">=10.0.0"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "push:all": "git push -u private main && git push -u origin main"
   },
   "dependencies": {
     "@chakra-ui/react": "^3.27.1",
     "@emotion/react": "^11.14.0",
     "@tailwindcss/vite": "^4.1.14",
     "@tanstack/react-query": "^5.90.2",
+    "@types/react-datepicker": "^6.2.0",
     "apexcharts": "^5.3.5",
     "axios": "^1.12.2",
     "chakra-dayzed-datepicker": "^3.0.0",
@@ -21,6 +27,7 @@
     "next-themes": "^0.4.6",
     "react": "^19.1.1",
     "react-apexcharts": "^1.7.0",
+    "react-datepicker": "^8.8.0",
     "react-dom": "^19.1.1",
     "react-icons": "^5.5.0",
     "react-international-phone": "^4.6.0",

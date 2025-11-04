@@ -32,7 +32,14 @@ const FansAndSubscribers = lazy(() => import('@fansSubscribers/pages/FansAndSubs
 const SalesReport = lazy(() => import('@salesReport/pages/SalesReport'));
 const Payments = lazy(() => import('@payments/pages/Payments'));
 const AddArtist = lazy(() => import('@addArtist/pages/AddArtist'));
+const AddArtistRegistration = lazy(() => import('@addArtist/pages/AddArtistRegistration'));
+const AddArtistDisplayPicture = lazy(() => import('@addArtist/pages/AddArtistDisplayPicture'));
+const AddArtistIdentityVerification = lazy(() => import('@addArtist/pages/AddArtistIdentityVerification'));
 const Settings = lazy(() => import('@settings/pages/Settings'));
+const MusicVideos = lazy(() => import('@musicVideo/pages/MusicVideos'));
+const AdsDashboard = lazy(() => import('@ads/pages/AdsDashboard'));
+const AdsEmptyState = lazy(() => import('@ads/pages/AdsEmptyState'));
+const CreateCampaign = lazy(() => import('@ads/pages/CreateCampaign'));
 
 export const appRoutes: RouteObject[] = [
     { path: '/login', element: <Login /> },
@@ -68,7 +75,15 @@ export const appRoutes: RouteObject[] = [
             { path: '/sales-report', element: <SalesReport /> },
             { path: '/payments', element: <Payments /> },
             { path: '/add-artist', element: <AddArtist /> },
+            { path: '/add-artist/register', element: <AddArtistRegistration /> },
+            { path: '/add-artist/display-picture', element: <AddArtistDisplayPicture /> },
+            { path: '/add-artist/identity-verification', element: <AddArtistIdentityVerification /> },
             { path: '/settings', element: <Settings /> },
+            { path: '/music-videos', element: <MusicVideos /> },
+            // Ad Manager routes
+            { path: '/ads/dashboard', element: <AdsDashboard /> },
+            { path: '/ads/create-campaign', element: <CreateCampaign /> },
+            { path: '/ads', element: <AdsEmptyState /> },
         ],
     },
 ];

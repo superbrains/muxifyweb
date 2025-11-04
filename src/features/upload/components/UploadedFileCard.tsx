@@ -95,7 +95,7 @@ export const UploadedFileCard: React.FC<UploadedFileCardProps> = ({
     };
 
     // Uploading state - simple UI
-    if (status === 'uploading' && type === 'audio') {
+    if (status === 'uploading' && (type === 'audio' || type === 'video' || type === 'image')) {
         return (
             <Box bg="white" border="1px solid" borderColor="gray.200" borderRadius="md" p={4}>
                 <HStack justify="space-between" mb={2}>

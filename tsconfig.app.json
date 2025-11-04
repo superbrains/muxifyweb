@@ -28,6 +28,7 @@
       "@upload/*": ["./src/features/upload/*"],
       "@uploadMusic/*": ["./src/features/upload-music/*"],
       "@uploadVideo/*": ["./src/features/upload-video/*"],
+      "@musicVideo/*": ["./src/features/music-video/*"],
       "@musicVideos/*": ["src/features/uploads/*"],
       "@earningRoyalty/*": ["./src/features/earnings-and-royalty/*"],
       "@leaderboard/*": ["./src/features/leaderboard/*"],
@@ -36,7 +37,8 @@
       "@payments/*": ["./src/features/payments/*"],
       "@addArtist/*": ["./src/features/add-artists/*"],
       "@settings/*": ["./src/features/settings/*"],
-      "@onboarding/*": ["./src/features/onboarding/*"]
+      "@onboarding/*": ["./src/features/onboarding/*"],
+      "@ads/*": ["./src/features/ads/*"]
     },
 
     /* Linting */
@@ -47,5 +49,6 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true
   },
-  "include": ["src"]
+  "include": ["src"],
+  "exclude": ["src/**/__tests__/**"]
 }

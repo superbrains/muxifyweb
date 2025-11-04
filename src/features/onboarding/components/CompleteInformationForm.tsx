@@ -1,37 +1,24 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
     Box,
     Button,
     Input,
-    Select,
     Stack,
     Text,
     VStack,
-    Portal,
-    createListCollection,
 } from '@chakra-ui/react';
 import { useChakraToast } from '@shared/hooks';
+import { CountryStateSelect } from '@shared/components/CountryStateSelect';
+import { useUserManagementStore } from '@/features/auth/store/useUserManagementStore';
 
-// Collection for location options
-const locations = createListCollection({
-    items: [
-        { label: "Lagos, Nigeria", value: "lagos" },
-        { label: "Abuja, Nigeria", value: "abuja" },
-        { label: "London, UK", value: "london" },
-        { label: "New York, USA", value: "new-york" },
-        { label: "Los Angeles, USA", value: "los-angeles" },
-        { label: "Toronto, Canada", value: "toronto" },
-        { label: "Paris, France", value: "paris" },
-        { label: "Berlin, Germany", value: "berlin" },
-    ],
-});
 
 interface CompleteInformationData {
     fullName: string;
     performingName: string;
     recordLabel: string;
-    location: string;
+    country: string;
+    state: string;
     residentAddress: string;
 }
 
@@ -40,7 +27,8 @@ export const CompleteInformationForm: React.FC = () => {
         fullName: '',
         performingName: '',
         recordLabel: '',
-        location: '',
+        country: '',
+        state: '',
         residentAddress: '',
     });
     const [loading, setLoading] = useState(false);
@@ -48,6 +36,11 @@ export const CompleteInformationForm: React.FC = () => {
 
     const toast = useChakraToast();
     const navigate = useNavigate();
+    const location = useLocation();
+    const { saveArtistInformation, setCurrentUser } = useUserManagementStore();
+    
+    // Get userId from location state or use current user
+    const userId = (location.state as { userId?: string })?.userId;
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
@@ -68,8 +61,12 @@ export const CompleteInformationForm: React.FC = () => {
             newErrors.performingName = 'Performing name is required';
         }
 
-        if (!formData.location) {
-            newErrors.location = 'Location is required';
+        if (!formData.country) {
+            newErrors.country = 'Country is required';
+        }
+
+        if (!formData.state) {
+            newErrors.state = 'State is required';
         }
 
         if (!formData.residentAddress.trim()) {
@@ -87,11 +84,26 @@ export const CompleteInformationForm: React.FC = () => {
 
         setLoading(true);
         try {
+            // Save information to store
+            if (userId) {
+                setCurrentUser(userId);
+                saveArtistInformation(userId, {
+                    fullName: formData.fullName,
+                    performingName: formData.performingName,
+                    recordLabel: formData.recordLabel || undefined,
+                    country: formData.country,
+                    state: formData.state,
+                    residentAddress: formData.residentAddress,
+                });
+            }
+
             // Here you would typically save the information
             await new Promise(resolve => setTimeout(resolve, 1000));
 
             toast.success('Information saved!', 'Your profile information has been updated.');
-            navigate('/onboarding/artist/display-picture');
+            navigate('/onboarding/artist/display-picture', {
+                state: { userId }
+            });
         } catch (error: unknown) {
             const errorMessage = error && typeof error === 'object' && 'response' in error
                 ? (error as { response?: { data?: { message?: string } } }).response?.data?.message || 'Please try again.'
@@ -197,51 +209,29 @@ export const CompleteInformationForm: React.FC = () => {
                         />
                     </Box>
 
-                    {/* Location */}
-                    <Box>
-                        <Text fontSize="xs" fontWeight="medium" color="grey.500" mb={1}>
-                            Location
-                        </Text>
-                        <Select.Root
-                            size="sm"
-                            fontSize="xs"
-                            collection={locations}
-                            value={formData.location ? [formData.location] : []}
-                            onValueChange={(details) => {
-                                setFormData(prev => ({ ...prev, location: details.value[0] || '' }));
-                                if (errors.location) {
-                                    setErrors(prev => ({ ...prev, location: undefined }));
-                                }
-                            }}
-                        >
-                            <Select.HiddenSelect name="location" />
-                            <Select.Control>
-                                <Select.Trigger>
-                                    <Select.ValueText placeholder="Select Location" />
-                                </Select.Trigger>
-                                <Select.IndicatorGroup>
-                                    <Select.Indicator />
-                                </Select.IndicatorGroup>
-                            </Select.Control>
-                            <Portal>
-                                <Select.Positioner>
-                                    <Select.Content>
-                                        {locations.items.map((location) => (
-                                            <Select.Item fontSize="xs" item={location} key={location.value}>
-                                                {location.label}
-                                                <Select.ItemIndicator />
-                                            </Select.Item>
-                                        ))}
-                                    </Select.Content>
-                                </Select.Positioner>
-                            </Portal>
-                        </Select.Root>
-                        {errors.location && (
-                            <Text color="red.500" fontSize="xs" mt={0.5}>
-                                {errors.location}
-                            </Text>
-                        )}
-                    </Box>
+                    {/* Country and State */}
+                    <CountryStateSelect
+                        countryValue={formData.country}
+                        stateValue={formData.state}
+                        onCountryChange={(country) => {
+                            setFormData(prev => ({
+                                ...prev,
+                                country,
+                                state: '' // Reset state when country changes
+                            }));
+                            if (errors.country) {
+                                setErrors(prev => ({ ...prev, country: undefined }));
+                            }
+                        }}
+                        onStateChange={(state) => {
+                            setFormData(prev => ({ ...prev, state }));
+                            if (errors.state) {
+                                setErrors(prev => ({ ...prev, state: undefined }));
+                            }
+                        }}
+                        countryError={errors.country}
+                        stateError={errors.state}
+                    />
 
                     {/* Resident Address */}
                     <Box>

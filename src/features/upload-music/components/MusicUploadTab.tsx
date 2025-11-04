@@ -1,11 +1,13 @@
 import React from 'react';
-import { Button, Flex, HStack, Icon } from '@chakra-ui/react';
+import { Button, Flex, Icon } from '@chakra-ui/react';
 import { FiArrowRight } from 'react-icons/fi';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { AnimatedTabs } from '@shared/components';
 import { MixTab } from './MixTab';
 import { AlbumTab } from './AlbumTab';
 import { useUploadStore } from '@upload/store/useUploadStore';
 import { useUploadMusicStore } from '../store/useUploadMusicStore';
+import { useUserType } from '@/features/auth/hooks/useUserType';
 
 interface UploadFile {
     id: string;
@@ -52,12 +54,64 @@ const sponsorshipOptions = [
 
 export const MusicUploadTab: React.FC<MusicUploadTabProps> = ({ albumTab, setAlbumTab }) => {
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+    const { isPodcaster, isDJ, isMusician } = useUserType();
+    
+    // Get sub tabs based on user type
+    const getSubTabs = () => {
+        if (isPodcaster) {
+            return [
+                { id: 'episode', label: 'Episode' },
+                { id: 'topic', label: 'Topic' },
+            ];
+        }
+        if (isDJ) {
+            return [
+                { id: 'mix', label: 'Mix' },
+                { id: 'album', label: 'Album' },
+            ];
+        }
+        if (isMusician) {
+            return [
+                { id: 'single', label: 'Single' },
+                { id: 'album', label: 'Album' },
+            ];
+        }
+        // Default
+        return [
+            { id: 'mix', label: 'Mix' },
+            { id: 'album', label: 'Album' },
+        ];
+    };
+    
+    const subTabs = getSubTabs();
+    
+    // Map podcast/musician tabs to internal tabs
+    const mapTabId = (tabId: string) => {
+        if (isPodcaster) {
+            return tabId === 'episode' ? 'mix' : 'album';
+        }
+        if (isMusician) {
+            return tabId === 'single' ? 'mix' : 'album';
+        }
+        return tabId;
+    };
+    
+    const mapInternalToDisplay = (internalTab: string) => {
+        if (isPodcaster) {
+            return internalTab === 'mix' ? 'episode' : 'topic';
+        }
+        if (isMusician) {
+            return internalTab === 'mix' ? 'single' : 'album';
+        }
+        return internalTab;
+    };
+    
     // Upload session store (separate slices for mix and album)
     const {
         mix,
         album,
         mixAddTrack,
-        mixUpdateTrack,
         mixRemoveTrack,
         mixSetCoverArt,
         mixSetTrackTitle,
@@ -70,7 +124,6 @@ export const MusicUploadTab: React.FC<MusicUploadTabProps> = ({ albumTab, setAlb
         mixSetAllowSponsorship,
         mixSetReleaseYear,
         albumAddTrack,
-        albumUpdateTrack,
         albumRemoveTrack,
         albumSetCoverArt,
         albumSetTrackArtists,
@@ -94,6 +147,9 @@ export const MusicUploadTab: React.FC<MusicUploadTabProps> = ({ albumTab, setAlb
         setUnlockCost: setReviewUnlockCost,
         setAllowSponsorship: setReviewAllowSponsorship,
         setReleaseYear: setReviewReleaseYear,
+        setActiveTab,
+        isEditing,
+        editingId,
     } = useUploadStore();
 
     // Computed slice-specific state
@@ -108,14 +164,13 @@ export const MusicUploadTab: React.FC<MusicUploadTabProps> = ({ albumTab, setAlb
     const allowSponsorship = albumTab === 'mix' ? mix.allowSponsorship : album.allowSponsorship;
     const releaseYear = albumTab === 'mix' ? mix.releaseYear : album.releaseYear;
 
-    const handleAudioFileSelect = (file: File) => {
+    const handleAudioFileSelect = () => {
+        // FileUploadArea will handle the upload progress internally
+    };
+
+    const handleAudioFileReady = (file: UploadFile) => {
         const newTrack: Track = {
-            id: Date.now().toString(),
-            name: file.name,
-            size: `${(file.size / (1024 * 1024)).toFixed(2)} MB`,
-            progress: 0,
-            status: 'uploading',
-            file,
+            ...file,
             title: '',
         };
 
@@ -124,47 +179,18 @@ export const MusicUploadTab: React.FC<MusicUploadTabProps> = ({ albumTab, setAlb
         } else {
             albumAddTrack(newTrack);
         }
-
-        // Simulate upload
-        simulateUpload(newTrack.id);
     };
 
-    const handleCoverArtSelect = (file: File) => {
-        const newCoverArt: UploadFile = {
-            id: Date.now().toString(),
-            name: file.name,
-            size: `${(file.size / (1024 * 1024)).toFixed(2)} MB`,
-            progress: 100,
-            status: 'ready',
-            file,
-        };
+    const handleCoverArtSelect = () => {
+        // FileUploadArea will handle the upload progress internally
+    };
 
+    const handleCoverArtReady = (file: UploadFile) => {
         if (albumTab === 'mix') {
-            mixSetCoverArt(newCoverArt);
+            mixSetCoverArt(file);
         } else {
-            albumSetCoverArt(newCoverArt);
+            albumSetCoverArt(file);
         }
-    };
-
-    const simulateUpload = (trackId: string) => {
-        let progress = 0;
-        const interval = setInterval(() => {
-            progress += 10;
-            if (albumTab === 'mix') {
-                mixUpdateTrack(trackId, {
-                    progress,
-                    status: progress >= 100 ? 'ready' : 'uploading',
-                });
-            } else {
-                albumUpdateTrack(trackId, {
-                    progress,
-                    status: progress >= 100 ? 'ready' : 'uploading',
-                });
-            }
-            if (progress >= 100) {
-                clearInterval(interval);
-            }
-        }, 300);
     };
 
     const handleRemoveTrack = (trackId: string) => {
@@ -222,6 +248,9 @@ export const MusicUploadTab: React.FC<MusicUploadTabProps> = ({ albumTab, setAlb
     };
 
     const handleContinue = () => {
+        // Set active tab to music before navigating
+        setActiveTab('music');
+
         // Sync active slice into review store, then navigate
         if (albumTab === 'mix') {
             setReviewTracks(mix.tracks);
@@ -244,49 +273,42 @@ export const MusicUploadTab: React.FC<MusicUploadTabProps> = ({ albumTab, setAlb
             setReviewAllowSponsorship(album.allowSponsorship);
             setReviewReleaseYear(album.releaseYear);
         }
-        navigate('/upload/review');
+
+        // Build review URL with editing params if present
+        const mixId = searchParams.get('mixId');
+        const albumId = searchParams.get('albumId');
+
+        let reviewUrl = '/upload/review';
+
+        if (isEditing && editingId) {
+            // Add editing params to review URL
+            if (albumTab === 'mix' && mixId) {
+                reviewUrl += `?mixId=${mixId}`;
+            } else if (albumTab === 'album' && albumId) {
+                reviewUrl += `?albumId=${albumId}`;
+            }
+        }
+
+        navigate(reviewUrl);
+    };
+
+    const handleSaveChanges = () => {
+        // Navigate to review page just like Continue
+        handleContinue();
     };
 
     return (
         <>
             {/* Sub Tabs and Continue Button */}
             <Flex justify="space-between" align="center" mb={{ base: 5, md: 7 }}>
-                <HStack gap={0}>
-                    <Button
-                        size="xs"
-                        variant="ghost"
-                        bg={albumTab === 'mix' ? 'primary.500' : 'transparent'}
-                        color={albumTab === 'mix' ? 'white' : 'gray.500'}
-                        fontSize="11px"
-                        fontWeight={albumTab === 'mix' ? 'semibold' : 'medium'}
-                        px={4}
-                        h="auto"
-                        w="90px"
-                        py={2}
-                        borderRadius="md"
-                        onClick={() => setAlbumTab('mix')}
-                        _hover={{ bg: albumTab === 'mix' ? 'primary.600' : 'transparent' }}
-                    >
-                        Mix
-                    </Button>
-                    <Button
-                        size="xs"
-                        variant="solid"
-                        bg={albumTab === 'album' ? 'primary.500' : 'transparent'}
-                        color={albumTab === 'album' ? 'white' : 'gray.500'}
-                        fontSize="11px"
-                        fontWeight={albumTab === 'album' ? 'semibold' : 'medium'}
-                        px={4}
-                        h="auto"
-                        w="90px"
-                        py={2}
-                        borderRadius="md"
-                        onClick={() => setAlbumTab('album')}
-                        _hover={{ bg: albumTab === 'album' ? 'primary.600' : 'transparent' }}
-                    >
-                        Album
-                    </Button>
-                </HStack>
+                <AnimatedTabs
+                    tabs={subTabs}
+                    activeTab={mapInternalToDisplay(albumTab)}
+                    onTabChange={(tab) => setAlbumTab(mapTabId(tab) as 'mix' | 'album')}
+                    size="sm"
+                    tabWidth={isPodcaster ? "100px" : "80px"}
+                    isDisabled={isEditing}
+                />
 
                 <Button
                     bg="primary.500"
@@ -298,9 +320,9 @@ export const MusicUploadTab: React.FC<MusicUploadTabProps> = ({ albumTab, setAlb
                     h="38px"
                     borderRadius="md"
                     _hover={{ bg: 'primary.600' }}
-                    onClick={handleContinue}
+                    onClick={isEditing ? handleSaveChanges : handleContinue}
                 >
-                    Continue
+                    {isEditing ? 'Save Changes' : 'Continue'}
                     <Icon as={FiArrowRight} boxSize={4} ml={2} />
                 </Button>
             </Flex>
@@ -318,7 +340,9 @@ export const MusicUploadTab: React.FC<MusicUploadTabProps> = ({ albumTab, setAlb
                     allowSponsorship={allowSponsorship}
                     releaseYear={releaseYear}
                     onAudioFileSelect={handleAudioFileSelect}
+                    onAudioFileReady={handleAudioFileReady}
                     onCoverArtSelect={handleCoverArtSelect}
+                    onCoverArtReady={handleCoverArtReady}
                     onRemoveTrack={handleRemoveTrack}
                     onRemoveCoverArt={handleRemoveCoverArt}
                     onTrackTitleChange={mixSetTrackTitle}
@@ -347,7 +371,9 @@ export const MusicUploadTab: React.FC<MusicUploadTabProps> = ({ albumTab, setAlb
                     allowSponsorship={allowSponsorship}
                     releaseYear={releaseYear}
                     onAudioFileSelect={handleAudioFileSelect}
+                    onAudioFileReady={handleAudioFileReady}
                     onCoverArtSelect={handleCoverArtSelect}
+                    onCoverArtReady={handleCoverArtReady}
                     onRemoveTrack={handleRemoveTrack}
                     onRemoveCoverArt={handleRemoveCoverArt}
                     onTrackTitleChange={handleTrackTitleChange}

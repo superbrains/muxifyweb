@@ -1,22 +1,13 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
     Box,
     Flex,
-    HStack,
-    Icon,
     Image,
     Text,
     VStack,
-    SelectRoot,
-    SelectTrigger,
-    SelectValueText,
-    SelectContent,
-    SelectItem,
-    createListCollection,
 } from '@chakra-ui/react';
-import { FiArrowRight } from 'react-icons/fi';
 import { useUploadMusicStore } from '@uploadMusic/store/useUploadMusicStore';
-import { ReviewTrackItem } from './ReviewTrackItem';
+import { ReviewTrackItem, ReleaseScheduler } from './';
 
 export const MixReview: React.FC = () => {
     const { mix } = useUploadMusicStore();
@@ -32,22 +23,13 @@ export const MixReview: React.FC = () => {
         releaseYear,
     } = mix;
 
-    console.log('[MixReview] Rendering with:', {
-        tracksCount: tracks.length,
-        tracks,
-        coverArt: coverArt?.name,
-        trackTitle,
-        selectedArtists,
-    });
-
-    const [releaseOption, setReleaseOption] = useState<string[]>(['now']);
-
-    const releaseOptions = createListCollection({
-        items: [
-            { label: 'Now', value: 'now' },
-            { label: 'Schedule Release', value: 'schedule' },
-        ],
-    });
+    // Get artist name - Mix tab always uses selected artists (as it was before)
+    const getArtistName = () => {
+        if (selectedArtists.length > 0) {
+            return selectedArtists.join(', ');
+        }
+        return 'Select Artist';
+    };
 
     const firstTrack = tracks[0];
     const coverArtUrl = coverArt ? URL.createObjectURL(coverArt.file) : '';
@@ -217,7 +199,7 @@ export const MixReview: React.FC = () => {
                             color="gray.900"
                             textAlign="center"
                         >
-                            {selectedArtists.length > 0 ? selectedArtists.join(', ') : 'Davido'}
+                            {getArtistName()}
                         </Text>
                         <Text
                             fontSize="16px"
@@ -229,54 +211,7 @@ export const MixReview: React.FC = () => {
                         </Text>
 
                         {/* Release */}
-                        <Box>
-                            <Text fontSize="12px" fontWeight="semibold" color="gray.900" mb={2}>
-                                Release
-                            </Text>
-                            <SelectRoot
-                                collection={releaseOptions}
-                                size="sm"
-                                value={releaseOption}
-                                onValueChange={(details) => setReleaseOption(details.value)}
-                            >
-                                <SelectTrigger h="40px" fontSize="11px">
-                                    <SelectValueText placeholder="Select release option" />
-                                </SelectTrigger>
-                                <SelectContent fontSize="11px">
-                                    {releaseOptions.items.map((item) => (
-                                        <SelectItem item={item} key={item.value}>
-                                            {item.label}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </SelectRoot>
-                        </Box>
-
-                        {/* Schedule Release */}
-                        {releaseOption[0] === 'schedule' && (
-                            <Box
-                                bg="gray.50"
-                                border="1px solid"
-                                borderColor="gray.200"
-                                borderRadius="md"
-                                p={4}
-                            >
-                                <VStack align="stretch" gap={2}>
-                                    <Text fontSize="11px" color="gray.700">
-                                        Now
-                                    </Text>
-                                    <HStack
-                                        cursor="pointer"
-                                        color="primary.500"
-                                        _hover={{ color: 'primary.600' }}
-                                    >
-                                        <Text fontSize="11px">Schedule Release</Text>
-                                        <Icon as={FiArrowRight} boxSize={3} />
-                                        <Text fontSize="11px">Calendar</Text>
-                                    </HStack>
-                                </VStack>
-                            </Box>
-                        )}
+                        <ReleaseScheduler />
                     </VStack>
                 </Box>
             </Flex>
