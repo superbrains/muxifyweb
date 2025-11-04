@@ -100,7 +100,7 @@ export const PhotoAdsFlow1: React.FC<{
         if (!selectedArtists.includes(suggestion)) {
             setSelectedArtists([...selectedArtists, suggestion]);
         }
-        setArtistInput('');
+            setArtistInput('');
         setShowSuggestions(false);
     };
 
@@ -314,16 +314,16 @@ export const PhotoAdsFlow1: React.FC<{
                                     </Text>
                                     <Box position="relative" w="full">
                                         <Box position="relative">
-                                            <Input
+                                    <Input
                                                 ref={artistInputRef}
-                                                placeholder="Search"
-                                                value={artistInput}
+                                        placeholder="Search"
+                                        value={artistInput}
                                                 onChange={handleArtistInputChange}
                                                 onFocus={handleArtistInputFocus}
                                                 onBlur={handleArtistInputBlur}
-                                                size="xs"
-                                                h="40px"
-                                                borderRadius="10px"
+                                        size="xs"
+                                        h="40px"
+                                        borderRadius="10px"
                                                 pl="40px"
                                             />
                                             <Icon
@@ -335,8 +335,8 @@ export const PhotoAdsFlow1: React.FC<{
                                                 color="gray.400"
                                                 boxSize={4}
                                                 pointerEvents="none"
-                                            />
-                                        </Box>
+                                    />
+                                </Box>
 
                                         {/* Suggestions Dropdown */}
                                         {showSuggestions && filteredSuggestions.length > 0 && (
@@ -393,35 +393,35 @@ export const PhotoAdsFlow1: React.FC<{
                                     {/* Selected Artists Chips */}
                                     {selectedArtists.length > 0 && (
                                         <HStack flexWrap="wrap" gap={2} mt={3}>
-                                            {selectedArtists.map((artist) => (
-                                                <Box
-                                                    key={artist}
-                                                    bg="gray.100"
+                                        {selectedArtists.map((artist) => (
+                                            <Box
+                                                key={artist}
+                                                bg="gray.100"
                                                     px={3}
                                                     py={2}
-                                                    borderRadius="full"
-                                                    display="flex"
-                                                    alignItems="center"
+                                                borderRadius="full"
+                                                display="flex"
+                                                alignItems="center"
                                                     gap={2}
-                                                >
+                                            >
                                                     <Avatar.Root size="xs" flexShrink={0}>
                                                         <Avatar.Fallback fontSize="10px" bg="primary.100" color="primary.500">
                                                             {artist.charAt(0)}
                                                         </Avatar.Fallback>
                                                     </Avatar.Root>
                                                     <Text fontSize="xs" color="gray.900">{artist}</Text>
-                                                    <Icon
-                                                        as={FiX}
-                                                        cursor="pointer"
-                                                        onClick={() => handleRemoveArtist(artist)}
+                                                <Icon
+                                                    as={FiX}
+                                                    cursor="pointer"
+                                                    onClick={() => handleRemoveArtist(artist)}
                                                         color="rgba(249,68,68,1)"
                                                         boxSize={3.5}
                                                         _hover={{ color: 'rgba(249,68,68,0.8)' }}
-                                                    />
-                                                </Box>
-                                            ))}
-                                        </HStack>
-                                    )}
+                                                />
+                                            </Box>
+                                        ))}
+                                    </HStack>
+                                )}
                                 </Box>
                             </VStack>
                         </Box>
