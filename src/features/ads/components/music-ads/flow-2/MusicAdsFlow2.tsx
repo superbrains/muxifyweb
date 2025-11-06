@@ -2,12 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { Box, VStack, HStack, Text, Button, Input, Flex, Icon } from '@chakra-ui/react';
 import { FiArrowRight, FiArrowLeft, FiPlus } from 'react-icons/fi';
 import { useAdsUploadStore } from '../../../store/useAdsUploadStore';
-import { PhotoAdsPhonePreview } from '../../PhotoAdsPhonePreview';
+import { MusicViewPhonePreview } from '../MusicViewPhonePreview';
 import { Select, URLInput } from '@shared/components';
 import { TopUpModal } from '../../TopUpModal';
 import { useToast } from '@/shared/hooks/useToast';
 
-export const PhotoAdsFlow2: React.FC<{
+export const MusicAdsFlow2: React.FC<{
     onNext: () => void;
     onBack: () => void;
 }> = ({ onNext, onBack }) => {
@@ -18,39 +18,39 @@ export const PhotoAdsFlow2: React.FC<{
     const [isTopUpOpen, setIsTopUpOpen] = useState(false);
 
     // Use selectors to only subscribe to specific actions, not the entire store
-    const photoCallToAction = useAdsUploadStore((state) => state.photoCallToAction);
-    const photoBudgetReach = useAdsUploadStore((state) => state.photoBudgetReach);
-    const photoSetCallToAction = useAdsUploadStore((state) => state.photoSetCallToAction);
-    const photoSetBudgetReach = useAdsUploadStore((state) => state.photoSetBudgetReach);
+    const musicCallToAction = useAdsUploadStore((state) => state.musicCallToAction);
+    const musicBudgetReach = useAdsUploadStore((state) => state.musicBudgetReach);
+    const musicSetCallToAction = useAdsUploadStore((state) => state.musicSetCallToAction);
+    const musicSetBudgetReach = useAdsUploadStore((state) => state.musicSetBudgetReach);
     const { toast } = useToast();
 
     // Populate form fields from store when editing
     // Only populate if data exists (edit mode), not for new campaigns
     useEffect(() => {
-        if (photoCallToAction) {
-            setCtaAction(photoCallToAction.action || 'signup');
+        if (musicCallToAction) {
+            setCtaAction(musicCallToAction.action || 'signup');
             // Always set link, even if empty (user might have entered it)
-            if (photoCallToAction.link !== undefined) {
-                setLink(photoCallToAction.link);
+            if (musicCallToAction.link !== undefined) {
+                setLink(musicCallToAction.link);
             }
         } else {
             // Reset when creating new campaign
             setCtaAction('signup');
             setLink('');
         }
-        if (photoBudgetReach) {
+        if (musicBudgetReach) {
             // Always set budget from store (formatted to 2 decimal places)
-            setBudget(photoBudgetReach.amount.toFixed(2));
+            setBudget(musicBudgetReach.amount.toFixed(2));
             // Always set reach from store
-            if (photoBudgetReach.impressions !== undefined) {
-                setReach(photoBudgetReach.impressions.toString());
+            if (musicBudgetReach.impressions !== undefined) {
+                setReach(musicBudgetReach.impressions.toString());
             }
         } else {
             // Reset when creating new campaign
             setBudget('0.00');
             setReach('0');
         }
-    }, [photoCallToAction, photoBudgetReach]);
+    }, [musicCallToAction, musicBudgetReach]);
 
     const handleTopUpComplete = () => {
         // Handle top up completion - could show success message
@@ -64,11 +64,11 @@ export const PhotoAdsFlow2: React.FC<{
         }
 
         // Save Flow 2 data
-        photoSetCallToAction({
-            action: ctaAction as 'signup' | 'download' | 'view' | 'click',
+        musicSetCallToAction({
+            action: (ctaAction === 'learnmore' ? 'click' : ctaAction) as 'signup' | 'download' | 'view' | 'click',
             link,
         });
-        photoSetBudgetReach({
+        musicSetBudgetReach({
             amount: parseFloat(budget),
             impressions: parseInt(reach),
         });
@@ -88,7 +88,7 @@ export const PhotoAdsFlow2: React.FC<{
             >
                 <Flex justify="space-between" align="center" px={4}>
                     <Text fontSize="md" fontWeight="bold" color="gray.900">
-                        Photo Ads
+                        Music Ads
                     </Text>
                 </Flex>
             </Box>
@@ -114,6 +114,7 @@ export const PhotoAdsFlow2: React.FC<{
                                     { value: 'download', label: 'Download' },
                                     { value: 'view', label: 'View' },
                                     { value: 'click', label: 'Click' },
+                                    { value: 'learnmore', label: 'Learn More' },
                                 ]}
                                 width="100%"
                                 fontSize="14px"
@@ -137,7 +138,7 @@ export const PhotoAdsFlow2: React.FC<{
                                 borderRadius="10px"
                             />
                             <Text fontSize="xs" color="rgba(249,68,68,1)" mt={1}>
-                                1 click = 50kobo
+                                1 click = 2 Naira
                             </Text>
                         </Box>
 
@@ -176,7 +177,7 @@ export const PhotoAdsFlow2: React.FC<{
                                 borderRadius="10px"
                             />
                             <Text fontSize="xs" color="rgba(249,68,68,1)" mt={1}>
-                                1 reach = 50kobo
+                                1 reach = 2 Naira
                             </Text>
                         </Box>
 
@@ -221,7 +222,7 @@ export const PhotoAdsFlow2: React.FC<{
 
                 {/* Right Preview Section */}
                 <Box flex="1" display="flex" justifyContent="center">
-                    <PhotoAdsPhonePreview />
+                    <MusicViewPhonePreview />
                 </Box>
             </Flex>
 
@@ -272,4 +273,6 @@ export const PhotoAdsFlow2: React.FC<{
         </VStack>
     );
 };
+
+
 

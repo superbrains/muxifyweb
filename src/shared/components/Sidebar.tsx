@@ -21,8 +21,8 @@ import {
     PaymentsIcon,
     MuxifyLogoIcon,
     StatusUpIcon,
-    GraphIcon,
     WalletMoneyIcon,
+    AdLibraryIcon,
 } from '@/shared/icons/CustomIcons';
 import { useWindowWidth } from '../hooks/useWindowsWidth';
 import { useUserType } from '@/features/auth/hooks/useUserType';
@@ -74,10 +74,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed }) => {
     // Ad Manager specific nav items
     const adManagerNavItems: NavItem[] = [
         { icon: DashboardIcon, label: 'Dashboard', path: '/' },
-        { icon: LeaderboardIcon, label: 'Leaderboard', path: '/ads/leaderboard' },
-        { icon: StatusUpIcon, label: 'Spending', path: '/ads/spending' },
-        { icon: GraphIcon, label: 'Ad Report', path: '/ads/report' },
-        { icon: WalletMoneyIcon, label: 'Payments', path: '/ads/payments' },
+        { icon: AdLibraryIcon, label: 'Ad Library', path: '/ads/library' },
+        { icon: StatusUpIcon, label: 'Ad Spending', path: '/ads/spending' },
+        { icon: WalletMoneyIcon, label: 'Ad Wallet', path: '/ads/wallet' },
     ];
 
     // Get the appropriate nav items based on user type

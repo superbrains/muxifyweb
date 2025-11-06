@@ -4,11 +4,11 @@ import { FiArrowLeft } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
 import { useAdsUploadStore } from '../../../store/useAdsUploadStore';
 import { useAdsStore } from '../../../store/useAdsStore';
-import { PhotoAdsPhonePreview } from '../../PhotoAdsPhonePreview';
+import { MusicViewPhonePreview } from '../MusicViewPhonePreview';
 import { UploadSuccessPage } from '@upload/components';
 import { fileToBase64 } from '@shared/lib/fileUtils';
 
-export const PhotoAdsFlow3: React.FC<{
+export const MusicAdsFlow3: React.FC<{
     onNext: () => void;
     onBack: () => void;
     onResetFlow?: () => void;
@@ -29,7 +29,7 @@ export const PhotoAdsFlow3: React.FC<{
             window.scrollTo({ top: 0, behavior: 'instant' });
             // Also scroll the main container if it exists
             const mainContainer = document.querySelector('main') || document.documentElement;
-            mainContainer.scrollTo({ top: 0, behavior: 'instant' });
+            mainContainer.scrollTo({ top: 0, behavior: 'smooth' });
         } else {
             document.body.style.overflow = '';
         }
@@ -40,11 +40,11 @@ export const PhotoAdsFlow3: React.FC<{
     }, [isPublished]);
 
     const {
-        photoFile,
-        photoAdInfo,
-        photoCallToAction,
-        photoBudgetReach,
-        resetPhotoAds,
+        musicFile,
+        musicAdInfo,
+        musicCallToAction,
+        musicBudgetReach,
+        resetMusicAds,
     } = useAdsUploadStore();
     const { addCampaign, updateCampaign } = useAdsStore();
     const isEditMode = !!editCampaignId;
@@ -62,7 +62,7 @@ export const PhotoAdsFlow3: React.FC<{
     };
 
     const handlePublish = async () => {
-        if (!photoAdInfo || !photoBudgetReach) {
+        if (!musicAdInfo || !musicBudgetReach) {
             console.error('Missing required ad information');
             return;
         }
@@ -70,56 +70,52 @@ export const PhotoAdsFlow3: React.FC<{
         setIsPublishing(true);
 
         try {
-            // Convert photo file to base64 if it exists
+            // Convert music file to base64 if it exists
             let mediaData: string | undefined;
             let mediaName: string | undefined;
             let mediaSize: string | undefined;
 
-            if (photoFile) {
-                mediaName = photoFile.name;
+            if (musicFile) {
+                mediaName = musicFile.name;
 
-                if (photoFile.file) {
+                if (musicFile.file) {
                     // File exists, convert to base64
-                    mediaData = await fileToBase64(photoFile.file);
-                    mediaSize = photoFile.size || `${(photoFile.file.size / (1024 * 1024)).toFixed(2)} MB`;
-                } else if (photoFile.url) {
-                    // URL exists (from compressImage - already a data URL)
-                    // Extract base64 part from data URL
-                    if (photoFile.url.startsWith('data:')) {
-                        // Extract base64 string (everything after the comma)
-                        mediaData = photoFile.url.split(',')[1];
-                    } else {
-                        // Fallback: use URL as-is (shouldn't happen for photos)
-                        mediaData = photoFile.url;
-                    }
-                    mediaSize = photoFile.size || '0 MB';
+                    mediaData = await fileToBase64(musicFile.file);
+                    mediaSize = musicFile.size || `${(musicFile.file.size / (1024 * 1024)).toFixed(2)} MB`;
+                } else if (musicFile.url && musicFile.url.startsWith('data:')) {
+                    // URL is a data URL (base64), extract base64 part
+                    mediaData = musicFile.url.split(',')[1];
+                    mediaSize = musicFile.size || '0 MB';
+                } else {
+                    // Blob URL or no file - cannot convert to base64
+                    console.warn('Music file not available for base64 conversion');
                 }
             }
 
             // Format schedule date to ISO string
-            const scheduleDate = photoAdInfo.schedule.date
-                ? photoAdInfo.schedule.date.toISOString()
+            const scheduleDate = musicAdInfo.schedule.date
+                ? musicAdInfo.schedule.date.toISOString()
                 : new Date().toISOString();
 
             // Create campaign object
             const campaign = {
-                title: photoAdInfo.title,
-                type: 'photo' as const,
+                title: musicAdInfo.title,
+                type: 'audio' as const,
                 location: {
-                    country: photoAdInfo.location.country,
-                    state: photoAdInfo.location.state,
+                    country: musicAdInfo.location.country,
+                    state: musicAdInfo.location.state,
                 },
                 target: {
-                    type: photoAdInfo.target.type === 'photo' ? 'music' : photoAdInfo.target.type,
-                    genre: photoAdInfo.target.genre,
-                    artists: photoAdInfo.target.artists || [],
+                    type: musicAdInfo.target.type === 'photo' ? 'music' : musicAdInfo.target.type,
+                    genre: musicAdInfo.target.genre,
+                    artists: musicAdInfo.target.artists || [],
                 },
                 schedule: {
                     date: scheduleDate,
-                    startTime: photoAdInfo.schedule.startTime,
-                    endTime: photoAdInfo.schedule.endTime,
+                    startTime: musicAdInfo.schedule.startTime,
+                    endTime: musicAdInfo.schedule.endTime,
                 },
-                budget: photoBudgetReach.amount,
+                budget: musicBudgetReach.amount,
                 status: 'active' as const,
                 mediaData,
                 mediaName,
@@ -144,7 +140,7 @@ export const PhotoAdsFlow3: React.FC<{
             setIsPublished(true);
 
             // Clear the upload store state after showing success
-            resetPhotoAds();
+            resetMusicAds();
         } catch (error) {
             console.error('Publish failed:', error);
             // Handle error if needed
@@ -165,7 +161,7 @@ export const PhotoAdsFlow3: React.FC<{
             onResetFlow();
         } else {
             // Fallback: navigate with tab param
-            navigate('/ads/create-campaign?tab=photo');
+            navigate('/ads/create-campaign?tab=audio');
         }
     };
 
@@ -181,7 +177,7 @@ export const PhotoAdsFlow3: React.FC<{
             >
                 <Flex justify="space-between" align="center" px={4}>
                     <Text fontSize="md" fontWeight="bold" color="gray.900">
-                        Photo Ads
+                        Music Ads
                     </Text>
                 </Flex>
             </Box>
@@ -198,9 +194,9 @@ export const PhotoAdsFlow3: React.FC<{
                                 Review
                             </Text>
                         </HStack>
-                        {photoAdInfo && (
+                        {musicAdInfo && (
                             <Text fontSize="lg" fontWeight="bold" color="gray.900">
-                                {photoAdInfo.title}
+                                {musicAdInfo.title}
                             </Text>
                         )}
 
@@ -210,7 +206,7 @@ export const PhotoAdsFlow3: React.FC<{
                                 Ad Title
                             </Text>
                             <Input
-                                value={photoAdInfo?.title || ''}
+                                value={musicAdInfo?.title || ''}
                                 size="xs"
                                 h="40px"
                                 borderRadius="10px"
@@ -228,7 +224,7 @@ export const PhotoAdsFlow3: React.FC<{
                                 <Box>
                                     <Input
                                         placeholder="Country"
-                                        value={photoAdInfo?.location.country || ''}
+                                        value={musicAdInfo?.location.country || ''}
                                         size="xs"
                                         h="40px"
                                         borderRadius="10px"
@@ -239,7 +235,7 @@ export const PhotoAdsFlow3: React.FC<{
                                 <Box>
                                     <Input
                                         placeholder="State"
-                                        value={photoAdInfo?.location.state || ''}
+                                        value={musicAdInfo?.location.state || ''}
                                         size="xs"
                                         h="40px"
                                         borderRadius="10px"
@@ -259,7 +255,7 @@ export const PhotoAdsFlow3: React.FC<{
                                 <Box>
                                     <Input
                                         placeholder="Target Type"
-                                        value={photoAdInfo?.target.type.toUpperCase() || ''}
+                                        value={musicAdInfo?.target.type.toUpperCase() || ''}
                                         size="xs"
                                         h="40px"
                                         borderRadius="10px"
@@ -270,7 +266,7 @@ export const PhotoAdsFlow3: React.FC<{
                                 <Box>
                                     <Input
                                         placeholder="Genre"
-                                        value={photoAdInfo?.target.genre || ''}
+                                        value={musicAdInfo?.target.genre || ''}
                                         size="xs"
                                         h="40px"
                                         borderRadius="10px"
@@ -278,9 +274,9 @@ export const PhotoAdsFlow3: React.FC<{
                                         bg="gray.50"
                                     />
                                 </Box>
-                                {photoAdInfo?.target.artists && photoAdInfo.target.artists.length > 0 && (
+                                {musicAdInfo?.target.artists && musicAdInfo.target.artists.length > 0 && (
                                     <HStack flexWrap="wrap" gap={2}>
-                                        {photoAdInfo.target.artists.map((artist, index) => (
+                                        {musicAdInfo.target.artists.map((artist, index) => (
                                             <Box
                                                 key={index}
                                                 display="flex"
@@ -315,7 +311,7 @@ export const PhotoAdsFlow3: React.FC<{
                                 <Box>
                                     <Input
                                         placeholder="Schedule Date"
-                                        value={formatDate(photoAdInfo?.schedule.date || null)}
+                                        value={formatDate(musicAdInfo?.schedule.date || null)}
                                         size="xs"
                                         h="40px"
                                         borderRadius="10px"
@@ -327,7 +323,7 @@ export const PhotoAdsFlow3: React.FC<{
                                     <Box flex="1">
                                         <Input
                                             placeholder="Start Time"
-                                            value={photoAdInfo?.schedule.startTime || ''}
+                                            value={musicAdInfo?.schedule.startTime || ''}
                                             size="xs"
                                             h="40px"
                                             borderRadius="10px"
@@ -338,7 +334,7 @@ export const PhotoAdsFlow3: React.FC<{
                                     <Box flex="1">
                                         <Input
                                             placeholder="End Time"
-                                            value={photoAdInfo?.schedule.endTime || ''}
+                                            value={musicAdInfo?.schedule.endTime || ''}
                                             size="xs"
                                             h="40px"
                                             borderRadius="10px"
@@ -359,7 +355,7 @@ export const PhotoAdsFlow3: React.FC<{
                                 What should your add do?
                             </Text>
                             <Input
-                                value={photoCallToAction?.action.toUpperCase() || ''}
+                                value={musicCallToAction?.action.toUpperCase() || ''}
                                 size="xs"
                                 h="40px"
                                 borderRadius="10px"
@@ -374,7 +370,7 @@ export const PhotoAdsFlow3: React.FC<{
                                 Link
                             </Text>
                             <Input
-                                value={photoCallToAction?.link || ''}
+                                value={musicCallToAction?.link || ''}
                                 size="xs"
                                 h="40px"
                                 borderRadius="10px"
@@ -382,7 +378,7 @@ export const PhotoAdsFlow3: React.FC<{
                                 bg="gray.50"
                             />
                             <Text fontSize="xs" color="rgba(249,68,68,1)" mt={1}>
-                                1 click = 50 NGN
+                                1 click = 2 Naira
                             </Text>
                         </Box>
 
@@ -395,7 +391,7 @@ export const PhotoAdsFlow3: React.FC<{
                                 Amount
                             </Text>
                             <Input
-                                value={photoBudgetReach ? formatCurrency(photoBudgetReach.amount) : ''}
+                                value={musicBudgetReach ? formatCurrency(musicBudgetReach.amount) : ''}
                                 size="xs"
                                 h="40px"
                                 borderRadius="10px"
@@ -413,7 +409,7 @@ export const PhotoAdsFlow3: React.FC<{
                                 How many impression do you want to reach?
                             </Text>
                             <Input
-                                value={photoBudgetReach?.impressions.toLocaleString() || ''}
+                                value={musicBudgetReach?.impressions.toLocaleString() || ''}
                                 size="xs"
                                 h="40px"
                                 borderRadius="10px"
@@ -421,7 +417,7 @@ export const PhotoAdsFlow3: React.FC<{
                                 bg="gray.50"
                             />
                             <Text fontSize="xs" color="rgba(249,68,68,1)" mt={1}>
-                                {photoBudgetReach?.impressions ? `${photoBudgetReach.impressions.toLocaleString()} reach = ${(photoBudgetReach.impressions * 0.5).toLocaleString()} NGN` : ''}
+                                {musicBudgetReach?.impressions ? `${musicBudgetReach.impressions.toLocaleString()} reach = ${(musicBudgetReach.impressions * 2).toLocaleString()} NGN` : ''}
                             </Text>
                         </Box>
                     </VStack>
@@ -429,7 +425,7 @@ export const PhotoAdsFlow3: React.FC<{
 
                 {/* Right Preview Section */}
                 <Box flex="1" display="flex" justifyContent="center">
-                    <PhotoAdsPhonePreview />
+                    <MusicViewPhonePreview />
                 </Box>
             </Flex>
 
@@ -488,4 +484,6 @@ export const PhotoAdsFlow3: React.FC<{
         </VStack>
     );
 };
+
+
 

@@ -62,12 +62,16 @@ interface AdsUploadState {
   videoAdInfo: AdBaseInfo | null;
   videoCallToAction: CallToAction | null;
   videoBudgetReach: BudgetReach | null;
+  videoTrimStart: number; // Trim start time in seconds
+  videoTrimEnd: number; // Trim end time in seconds
 
   // Music Ads
   musicFile: UploadFile | null;
   musicAdInfo: AdBaseInfo | null;
   musicCallToAction: CallToAction | null;
   musicBudgetReach: BudgetReach | null;
+  musicTrimStart: number; // Trim start time in seconds
+  musicTrimEnd: number; // Trim end time in seconds
 
   // Actions
   setActiveTab: (tab: "photo" | "video" | "audio") => void;
@@ -85,6 +89,8 @@ interface AdsUploadState {
   videoSetAdInfo: (info: AdBaseInfo | null) => void;
   videoSetCallToAction: (cta: CallToAction | null) => void;
   videoSetBudgetReach: (budget: BudgetReach | null) => void;
+  videoSetTrimStart: (start: number) => void;
+  videoSetTrimEnd: (end: number) => void;
   resetVideoAds: () => void;
 
   // Music Ads actions
@@ -92,6 +98,8 @@ interface AdsUploadState {
   musicSetAdInfo: (info: AdBaseInfo | null) => void;
   musicSetCallToAction: (cta: CallToAction | null) => void;
   musicSetBudgetReach: (budget: BudgetReach | null) => void;
+  musicSetTrimStart: (start: number) => void;
+  musicSetTrimEnd: (end: number) => void;
   resetMusicAds: () => void;
 
   // Reset all
@@ -113,12 +121,16 @@ const initialState = {
   videoAdInfo: null,
   videoCallToAction: null,
   videoBudgetReach: null,
+  videoTrimStart: 0,
+  videoTrimEnd: 5,
 
   // Music Ads
   musicFile: null,
   musicAdInfo: null,
   musicCallToAction: null,
   musicBudgetReach: null,
+  musicTrimStart: 0,
+  musicTrimEnd: 5,
 };
 
 export const useAdsUploadStore = create<AdsUploadState>()(
@@ -148,12 +160,16 @@ export const useAdsUploadStore = create<AdsUploadState>()(
       videoSetAdInfo: (info) => set({ videoAdInfo: info }),
       videoSetCallToAction: (cta) => set({ videoCallToAction: cta }),
       videoSetBudgetReach: (budget) => set({ videoBudgetReach: budget }),
+      videoSetTrimStart: (start) => set({ videoTrimStart: start }),
+      videoSetTrimEnd: (end) => set({ videoTrimEnd: end }),
       resetVideoAds: () =>
         set({
           videoFile: null,
           videoAdInfo: null,
           videoCallToAction: null,
           videoBudgetReach: null,
+          videoTrimStart: 0,
+          videoTrimEnd: 5,
         }),
 
       // Music Ads
@@ -161,12 +177,16 @@ export const useAdsUploadStore = create<AdsUploadState>()(
       musicSetAdInfo: (info) => set({ musicAdInfo: info }),
       musicSetCallToAction: (cta) => set({ musicCallToAction: cta }),
       musicSetBudgetReach: (budget) => set({ musicBudgetReach: budget }),
+      musicSetTrimStart: (start) => set({ musicTrimStart: start }),
+      musicSetTrimEnd: (end) => set({ musicTrimEnd: end }),
       resetMusicAds: () =>
         set({
           musicFile: null,
           musicAdInfo: null,
           musicCallToAction: null,
           musicBudgetReach: null,
+          musicTrimStart: 0,
+          musicTrimEnd: 5,
         }),
 
       // Reset all
@@ -201,7 +221,11 @@ export const useAdsUploadStore = create<AdsUploadState>()(
           musicCallToAction: state.musicCallToAction,
           photoBudgetReach: state.photoBudgetReach,
           videoBudgetReach: state.videoBudgetReach,
+          videoTrimStart: state.videoTrimStart,
+          videoTrimEnd: state.videoTrimEnd,
           musicBudgetReach: state.musicBudgetReach,
+          musicTrimStart: state.musicTrimStart,
+          musicTrimEnd: state.musicTrimEnd,
           activeTab: state.activeTab,
           currentFlow: state.currentFlow,
         };

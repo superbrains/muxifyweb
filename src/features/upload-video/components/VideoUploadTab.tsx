@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Box, Button, Flex, VStack, Input, Text, Icon, HStack, Grid, Image } from '@chakra-ui/react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Box, Button, Flex, VStack, Text, Icon, HStack, Grid, Image } from '@chakra-ui/react';
 import { FiArrowRight, FiPlus } from 'react-icons/fi';
 import { MdClose } from 'react-icons/md';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -8,6 +8,7 @@ import { UploadFileIcon, UploadImageIcon, GalleryIcon } from '@/shared/icons/Cus
 import { useUploadVideoStore } from '../store/useUploadVideoStore';
 import { useUploadStore } from '@upload/store/useUploadStore';
 import { VideoPlayer } from './VideoPlayer';
+import { URLInput } from '@shared/components';
 
 interface UploadFile {
     id: string;
@@ -149,10 +150,6 @@ export const VideoUploadTab: React.FC = () => {
     // State for selected thumbnail
     const [selectedThumbnailIndex, setSelectedThumbnailIndex] = useState<number | null>(null);
 
-    // State for track link validation
-    const [linkValidation, setLinkValidation] = useState<Record<number, boolean | null>>({});
-    const validationTimeouts = useRef<Record<number, ReturnType<typeof setTimeout>>>({});
-
     // Effect to manage selected thumbnail index
     useEffect(() => {
         if (thumbnails.length > 0 && selectedThumbnailIndex === null) {
@@ -214,95 +211,10 @@ export const VideoUploadTab: React.FC = () => {
         setSelectedThumbnailIndex(index);
     }, []);
 
-    // URL validation function
-    const validateURL = (url: string): boolean => {
-        if (!url || url.trim() === '') return true; // Empty is valid (no error shown)
-
-        // Trim the URL to remove trailing spaces
-        const trimmedUrl = url.trim();
-
-        try {
-            const urlObj = new URL(trimmedUrl);
-
-            // Check if it's a valid HTTP/HTTPS URL
-            const isValidProtocol = urlObj.protocol === 'http:' || urlObj.protocol === 'https:';
-
-            // Get hostname and ensure it's not empty
-            const hostname = urlObj.hostname.trim();
-            if (!hostname) return false;
-
-            // Split hostname into parts
-            let parts = hostname.split('.').filter(part => part.length > 0);
-
-            // Remove "www" from the beginning if it exists
-            if (parts[0]?.toLowerCase() === 'www') {
-                parts = parts.slice(1);
-            }
-
-            console.log('Validating URL:', trimmedUrl);
-            console.log('Hostname:', hostname);
-            console.log('Parts (after removing www):', parts);
-
-            // After removing www, must have at least 2 parts (domain + TLD)
-            // e.g., "example.com" or "glimere.com"
-            if (parts.length < 2) return false;
-
-            // Get the last part (should be the TLD like "com", "net", "app")
-            const tld = parts[parts.length - 1];
-
-            // TLD must be 2+ letters and contain only letters
-            const isValidTLD = tld.length >= 2 && /^[a-zA-Z]+$/.test(tld);
-
-            // The part before TLD (domain) must exist and not be empty
-            const domain = parts[parts.length - 2];
-            const hasValidDomain = !!(domain && domain.length > 0);
-
-            console.log('TLD:', tld, 'Valid TLD:', isValidTLD);
-            console.log('Domain:', domain, 'Valid Domain:', hasValidDomain);
-            console.log('Result:', isValidProtocol && isValidTLD && hasValidDomain);
-
-            return isValidProtocol && isValidTLD && hasValidDomain;
-        } catch (error) {
-            console.log('URL parsing error:', error);
-            return false;
-        }
-    };
-
-    // Handle track link change with debounced validation
+    // Handle track link change
     const handleTrackLinkChange = (index: number, value: string) => {
-        // Update the store immediately
         updateTrackLink(index, value);
-
-        // Clear existing timeout for this index
-        if (validationTimeouts.current[index]) {
-            clearTimeout(validationTimeouts.current[index]);
-        }
-
-        // Only validate if user has typed something
-        if (value.trim() !== '') {
-            // Set validation to null (validating state)
-            setLinkValidation(prev => ({ ...prev, [index]: null }));
-
-            // Set new timeout for validation
-            validationTimeouts.current[index] = setTimeout(() => {
-                const isValid = validateURL(value);
-                setLinkValidation(prev => ({ ...prev, [index]: isValid }));
-            }, 1000);
-        } else {
-            // Clear validation if input is empty
-            setLinkValidation(prev => ({ ...prev, [index]: null }));
-        }
     };
-
-    // Cleanup timeouts on unmount
-    useEffect(() => {
-        const timeouts = validationTimeouts.current;
-        return () => {
-            Object.values(timeouts).forEach(timeout => {
-                if (timeout) clearTimeout(timeout);
-            });
-        };
-    }, []);
 
     const handleContinue = () => {
         console.log({
@@ -408,36 +320,17 @@ export const VideoUploadTab: React.FC = () => {
                                 {trackLinks.map((link, index) => (
                                     <Box key={index}>
                                         <HStack gap={2}>
-                                            <Input
-                                                placeholder="https:muxify.app/...."
+                                            <Box flex="1">
+                                                <URLInput
+                                                    placeholder="https://muxify.app/...."
                                                 value={link}
-                                                onChange={(e) => handleTrackLinkChange(index, e.target.value)}
+                                                    onChange={(value) => handleTrackLinkChange(index, value)}
                                                 size="sm"
                                                 fontSize="11px"
                                                 h="40px"
-                                                borderColor={
-                                                    linkValidation[index] === false
-                                                        ? 'red.500'
-                                                        : linkValidation[index] === true
-                                                            ? 'green.500'
-                                                            : 'gray.200'
-                                                }
                                                 borderRadius="md"
-                                                _placeholder={{ fontSize: '11px', color: 'gray.400' }}
-                                                _focus={{
-                                                    borderColor: linkValidation[index] === false
-                                                        ? 'red.500'
-                                                        : linkValidation[index] === true
-                                                            ? 'green.500'
-                                                            : 'primary.500',
-                                                    boxShadow: linkValidation[index] === false
-                                                        ? '0 0 0 1px var(--chakra-colors-red-500)'
-                                                        : linkValidation[index] === true
-                                                            ? '0 0 0 1px var(--chakra-colors-green-500)'
-                                                            : '0 0 0 1px var(--chakra-colors-primary-500)'
-                                                }}
-                                                flex="1"
-                                            />
+                                                />
+                                            </Box>
                                             {trackLinks.length > 1 && (
                                                 <Icon
                                                     as={MdClose}
@@ -449,11 +342,6 @@ export const VideoUploadTab: React.FC = () => {
                                                 />
                                             )}
                                         </HStack>
-                                        {linkValidation[index] === false && link.trim() !== '' && (
-                                            <Text fontSize="10px" color="red.500" mt={1}>
-                                                Please enter a valid URL (e.g., https://muxify.app/...)
-                                            </Text>
-                                        )}
                                     </Box>
                                 ))}
                             </VStack>

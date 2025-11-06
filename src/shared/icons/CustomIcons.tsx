@@ -54,6 +54,7 @@ import { ReactComponent as Click } from "@assets/icons/click-ads.svg";
 import { ReactComponent as Eye } from "@assets/icons/eye-ads.svg";
 import { ReactComponent as EyeOpen } from "@assets/icons/eye-open-ads.svg";
 import { ReactComponent as PodCastAds } from "@assets/icons/podcast-ads.svg";
+import { ReactComponent as AdLibrary } from "@assets/icons/ad-library.svg";
 
 const MuxifyLogoIcon: React.FC<IconProps> = (props) => (
     <Icon as={MuxifyIcon} {...props} />
@@ -242,6 +243,10 @@ const PodCastAdsIcon: React.FC<IconProps> = (props) => (
     <Icon as={PodCastAds} {...props} />
 );
 
+const AdLibraryIcon: React.FC<IconProps> = (props) => (
+    <Icon as={AdLibrary} {...props} />
+);
+
 export default MuxifyLogoIcon;
 export {
     MuxifyLogoIcon,
@@ -296,4 +301,5 @@ export {
     EyeIcon,
     EyeOpenIcon,
     PodCastAdsIcon,
+    AdLibraryIcon,
 };
