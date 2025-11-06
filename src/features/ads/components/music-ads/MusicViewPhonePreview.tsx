@@ -1,15 +1,116 @@
-
-import React, { memo } from 'react';
+import React, { useRef, useEffect, useState, memo } from 'react';
 import { Box, VStack, HStack, Text, Button } from '@chakra-ui/react';
-import { useAdsUploadStore } from '../store/useAdsUploadStore';
-import { FiHeart, FiPlus, FiShare2, FiShuffle, FiRepeat, FiSkipBack, FiSkipForward, FiPlay } from 'react-icons/fi';
+import { useAdsUploadStore } from '../../store/useAdsUploadStore';
+import { FiHeart, FiPlus, FiShare2, FiShuffle, FiRepeat, FiSkipBack, FiSkipForward, FiPlay, FiPause } from 'react-icons/fi';
 import { MdMusicNote, MdMoreVert } from 'react-icons/md';
 import { IoGift } from 'react-icons/io5';
 import { UploadImageIcon } from '@/shared/icons/CustomIcons';
 
-export const PhotoAdsPhonePreview: React.FC = memo(() => {
-    // Only subscribe to photoFile changes, not the entire store
+export const MusicViewPhonePreview: React.FC = memo(() => {
+    // Only subscribe to specific state slices to prevent unnecessary re-renders
+    const musicFile = useAdsUploadStore((state) => state.musicFile);
+    const musicTrimStart = useAdsUploadStore((state) => state.musicTrimStart);
+    const musicTrimEnd = useAdsUploadStore((state) => state.musicTrimEnd);
     const photoFile = useAdsUploadStore((state) => state.photoFile);
+    const audioRef = useRef<HTMLAudioElement>(null);
+    const progressBarRef = useRef<HTMLDivElement>(null);
+    const [isPlaying, setIsPlaying] = useState(false);
+    const [currentTime, setCurrentTime] = useState(0);
+
+    const audioUrl = musicFile?.url || '';
+    const trimStart = musicTrimStart || 0;
+    const trimEnd = musicTrimEnd || 5;
+    const duration = Math.round(trimEnd - trimStart);
+
+    // Format time as MM:SS
+    const formatTime = (seconds: number): string => {
+        const mins = Math.floor(seconds / 60);
+        const secs = Math.floor(seconds % 60);
+        return `${mins}:${String(secs).padStart(2, '0')}`;
+    };
+
+    // Calculate progress percentage (0-100) based on current time within trim range
+    const getProgress = (): number => {
+        if (duration === 0) return 0;
+        const progressTime = Math.max(0, Math.min(duration, currentTime - trimStart));
+        return (progressTime / duration) * 100;
+    };
+
+    // Set audio to start at trimStart when loaded
+    useEffect(() => {
+        if (audioRef.current && audioUrl) {
+            audioRef.current.currentTime = trimStart;
+            setCurrentTime(trimStart);
+        }
+    }, [audioUrl, trimStart]);
+
+    // Handle time updates to loop within trim range
+    useEffect(() => {
+        const audio = audioRef.current;
+        if (!audio) return;
+
+        const handleTimeUpdate = () => {
+            const time = audio.currentTime;
+            setCurrentTime(time);
+
+            // Loop within trim range
+            if (time >= trimEnd) {
+                audio.currentTime = trimStart;
+            } else if (time < trimStart) {
+                audio.currentTime = trimStart;
+            }
+        };
+
+        audio.addEventListener('timeupdate', handleTimeUpdate);
+        return () => {
+            audio.removeEventListener('timeupdate', handleTimeUpdate);
+        };
+    }, [trimStart, trimEnd]);
+
+    // Update audio position when trim values change in real-time
+    useEffect(() => {
+        const audio = audioRef.current;
+        if (!audio || !audioUrl) return;
+
+        // If audio is playing and current time is outside trim range, adjust it
+        if (audio.currentTime < trimStart || audio.currentTime > trimEnd) {
+            audio.currentTime = trimStart;
+            setCurrentTime(trimStart);
+        }
+    }, [trimStart, trimEnd, audioUrl]);
+
+    const handlePlayPause = () => {
+        if (audioRef.current) {
+            if (isPlaying) {
+                audioRef.current.pause();
+            } else {
+                // Ensure audio starts from trimStart if it's before or after trim range
+                if (currentTime < trimStart || currentTime > trimEnd) {
+                    audioRef.current.currentTime = trimStart;
+                    setCurrentTime(trimStart);
+                }
+                audioRef.current.play().catch((error) => {
+                    console.error('Error playing audio:', error);
+                });
+            }
+            setIsPlaying(!isPlaying);
+        }
+    };
+
+    // Handle progress bar click
+    const handleProgressBarClick = (e: React.MouseEvent<HTMLDivElement>) => {
+        if (!progressBarRef.current || !audioRef.current) return;
+
+        const rect = progressBarRef.current.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const percent = Math.max(0, Math.min(100, (x / rect.width) * 100));
+        const newTime = trimStart + (percent / 100) * duration;
+
+        audioRef.current.currentTime = newTime;
+        setCurrentTime(newTime);
+    };
+
+    const photoUrl = photoFile?.url || '';
 
     return (
         <VStack align="stretch" gap={3} w="full" maxW="300px">
@@ -44,7 +145,9 @@ export const PhotoAdsPhonePreview: React.FC = memo(() => {
                 <Box
                     position="absolute"
                     inset={0}
-                    bgGradient="linear(to bottom, transparent 0%, black 102.89%)"
+                    style={{
+                        background: 'linear-gradient(to bottom, transparent 0%, black 102.89%)',
+                    }}
                     opacity={0.8}
                 />
 
@@ -124,10 +227,10 @@ export const PhotoAdsPhonePreview: React.FC = memo(() => {
                     overflow="hidden"
                     boxShadow="0px 5.39px 16.17px 6.29px rgba(0,0,0,0.1)"
                 >
-                    {photoFile && photoFile.url ? (
+                    {photoUrl ? (
                         <>
                             <img
-                                src={photoFile.url}
+                                src={photoUrl}
                                 alt="Ad Preview"
                                 style={{
                                     width: '100%',
@@ -298,22 +401,27 @@ export const PhotoAdsPhonePreview: React.FC = memo(() => {
                         {/* Progress Bar */}
                         <VStack align="stretch" gap={1}>
                             <Box
+                                ref={progressBarRef}
                                 bg="rgba(255,255,255,0.16)"
                                 backdropFilter="blur(29px)"
                                 h="6px"
                                 borderRadius="12px"
                                 overflow="hidden"
+                                cursor="pointer"
+                                position="relative"
+                                onClick={handleProgressBarClick}
                             >
                                 <Box
                                     bg="rgba(255,255,255,0.48)"
                                     h="100%"
-                                    w="30px"
+                                    w={`${getProgress()}%`}
                                     borderRadius="3px"
+                                    transition="width 0.1s linear"
                                 />
                             </Box>
                             <HStack justify="space-between" fontSize="10px" fontWeight="medium" color="rgba(255,255,255,0.64)">
-                                <Text>0:30</Text>
-                                <Text>5:01</Text>
+                                <Text>{formatTime(Math.max(0, currentTime - trimStart))}</Text>
+                                <Text>{formatTime(duration)}</Text>
                             </HStack>
                         </VStack>
 
@@ -346,8 +454,13 @@ export const PhotoAdsPhonePreview: React.FC = memo(() => {
                                     minW="44px"
                                     h="44px"
                                     p={0}
+                                    onClick={handlePlayPause}
                                 >
-                                    <FiPlay size={20} color="white" fill="white" />
+                                    {isPlaying ? (
+                                        <FiPause size={20} color="white" fill="white" />
+                                    ) : (
+                                        <FiPlay size={20} color="white" fill="white" />
+                                    )}
                                 </Button>
                                 <Button
                                     variant="ghost"
@@ -391,8 +504,19 @@ export const PhotoAdsPhonePreview: React.FC = memo(() => {
                         Send Gifts
                     </Text>
                 </Button>
+
+                {/* Hidden Audio Element */}
+                {audioUrl && (
+                    <audio
+                        ref={audioRef}
+                        src={audioUrl}
+                        preload="metadata"
+                        onEnded={() => setIsPlaying(false)}
+                        onPlay={() => setIsPlaying(true)}
+                        onPause={() => setIsPlaying(false)}
+                    />
+                )}
             </Box>
         </VStack>
     );
 });
-

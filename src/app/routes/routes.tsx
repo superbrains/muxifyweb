@@ -40,6 +40,10 @@ const MusicVideos = lazy(() => import('@musicVideo/pages/MusicVideos'));
 const AdsDashboard = lazy(() => import('@ads/pages/AdsDashboard'));
 const AdsEmptyState = lazy(() => import('@ads/pages/AdsEmptyState'));
 const CreateCampaign = lazy(() => import('@ads/pages/CreateCampaign'));
+const AdLibrary = lazy(() => import('@ads/pages/AdLibrary'));
+const AdCampaignView = lazy(() => import('@ads/pages/AdCampaignView'));
+const AdsSpending = lazy(() => import('@ads/pages/AdsSpending'));
+const AdsWallet = lazy(() => import('@ads/pages/AdsWallet'));
 
 export const appRoutes: RouteObject[] = [
     { path: '/login', element: <Login /> },
@@ -81,8 +85,12 @@ export const appRoutes: RouteObject[] = [
             { path: '/settings', element: <Settings /> },
             { path: '/music-videos', element: <MusicVideos /> },
             // Ad Manager routes
-            { path: '/ads/dashboard', element: <AdsDashboard /> },
+            { path: '/', element: <AdsDashboard /> },
             { path: '/ads/create-campaign', element: <CreateCampaign /> },
+            { path: '/ads/library', element: <AdLibrary /> },
+            { path: '/ads/view/:id', element: <AdCampaignView /> },
+            { path: '/ads/spending', element: <AdsSpending /> },
+            { path: '/ads/wallet', element: <AdsWallet /> },
             { path: '/ads', element: <AdsEmptyState /> },
         ],
     },

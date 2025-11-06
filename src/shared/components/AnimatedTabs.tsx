@@ -6,6 +6,7 @@ interface Tab {
     id: string;
     label: string;
     icon?: IconType;
+    disabled?: boolean;
 }
 
 interface AnimatedTabsProps {
@@ -21,7 +22,7 @@ interface AnimatedTabsProps {
     textColor?: string; // Optional custom color for inactive tab text
     selectedTextColor?: string; // Optional custom color for active tab text
     selectedIconColor?: string; // Optional custom color for active tab icons
-    tabStyle?: 1 | 2; // Tab style: 1 = rounded background, 2 = rounded top edges
+    tabStyle?: 1 | 2 | 3; // Tab style: 1 = rounded background, 2 = rounded top edges, 3 = transparent with bottom border
     borderColor?: string; // Optional custom border color for the tabs container
 }
 
@@ -68,7 +69,7 @@ export const AnimatedTabs: React.FC<AnimatedTabsProps> = ({
             containerGap: 1.5,
             buttonPx: { base: 4, md: 5 },
             buttonPy: 2.5,
-            fontSize: '12px',
+            fontSize: '14px',
             iconSize: 4,
         },
     };
@@ -76,7 +77,17 @@ export const AnimatedTabs: React.FC<AnimatedTabsProps> = ({
     const config = sizeConfig[size];
 
     // Style configurations
-    const styleConfig = {
+    const styleConfig: Record<number, {
+        containerBorderRadius: string;
+        containerPadding: number;
+        containerGap: number;
+        indicatorBorderRadius: string;
+        indicatorTop: number | 'auto';
+        indicatorHeight: string;
+        indicatorBg: boolean;
+        indicatorBorder: boolean;
+        indicatorBottom?: number;
+    }> = {
         1: {
             containerBorderRadius: 'lg',
             containerPadding: config.containerPadding,
@@ -84,6 +95,8 @@ export const AnimatedTabs: React.FC<AnimatedTabsProps> = ({
             indicatorBorderRadius: 'lg',
             indicatorTop: typeof config.containerPadding === 'number' ? config.containerPadding * 4 : 6,
             indicatorHeight: `calc(100% - ${typeof config.containerPadding === 'number' ? config.containerPadding * 2 * 4 : 12}px)`,
+            indicatorBg: true,
+            indicatorBorder: false,
         },
         2: {
             containerBorderRadius: 'none',
@@ -92,6 +105,19 @@ export const AnimatedTabs: React.FC<AnimatedTabsProps> = ({
             indicatorBorderRadius: 'none',
             indicatorTop: 0,
             indicatorHeight: '100%',
+            indicatorBg: true,
+            indicatorBorder: false,
+        },
+        3: {
+            containerBorderRadius: 'none',
+            containerPadding: 0,
+            containerGap: 0,
+            indicatorBorderRadius: 'none',
+            indicatorTop: 'auto',
+            indicatorHeight: '5px',
+            indicatorBottom: 0,
+            indicatorBg: false,
+            indicatorBorder: true,
         },
     };
 
@@ -116,7 +142,7 @@ export const AnimatedTabs: React.FC<AnimatedTabsProps> = ({
     return (
         <HStack
             ref={containerRef}
-            bg={backgroundColor}
+            bg={tabStyle === 3 ? 'transparent' : backgroundColor}
             p={currentStyle.containerPadding}
             gap={currentStyle.containerGap}
             borderRadius={currentStyle.containerBorderRadius}
@@ -129,7 +155,9 @@ export const AnimatedTabs: React.FC<AnimatedTabsProps> = ({
             {/* Animated sliding indicator */}
             <Box
                 position="absolute"
-                bg={selectedColor}
+                bg={currentStyle.indicatorBg ? selectedColor : 'transparent'}
+                borderBottom={currentStyle.indicatorBorder ? '5px solid' : 'none'}
+                borderColor={currentStyle.indicatorBorder ? selectedColor : 'transparent'}
                 borderRadius={currentStyle.indicatorBorderRadius}
                 borderTopRadius={tabStyle === 2 ? 'lg' : undefined}
                 transition="all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
@@ -137,7 +165,8 @@ export const AnimatedTabs: React.FC<AnimatedTabsProps> = ({
                     left: `${indicatorStyle.left}px`,
                     width: `${indicatorStyle.width}px`,
                     height: currentStyle.indicatorHeight,
-                    top: `${currentStyle.indicatorTop}px`,
+                    top: currentStyle.indicatorTop === 'auto' ? undefined : `${currentStyle.indicatorTop}px`,
+                    bottom: currentStyle.indicatorBottom !== undefined ? `${currentStyle.indicatorBottom}px` : undefined,
                 }}
                 pointerEvents="none"
                 zIndex={0}
@@ -146,6 +175,7 @@ export const AnimatedTabs: React.FC<AnimatedTabsProps> = ({
             {/* Tab buttons */}
             {tabs.map((tab, index) => {
                 const isActive = tab.id === activeTab;
+                const isTabDisabled = tab.disabled || isDisabled;
 
                 return (
                     <Button
@@ -155,18 +185,20 @@ export const AnimatedTabs: React.FC<AnimatedTabsProps> = ({
                         }}
                         variant="ghost"
                         bg="transparent"
-                        color={isActive ? (selectedTextColor || 'white') : (textColor || 'gray.600')}
+                        color={isActive ? (selectedTextColor || (tabStyle === 3 ? 'black' : 'white')) : isTabDisabled ? 'gray.400' : (textColor || (tabStyle === 3 ? 'black' : 'gray.600'))}
                         fontSize={config.fontSize}
-                        fontWeight="medium"
+                        fontWeight={tabStyle === 3 ? "semibold" : "medium"}
                         px={config.buttonPx}
                         py={config.buttonPy}
                         h="auto"
                         w={tabWidth}
                         borderRadius="lg"
-                        onClick={() => !isDisabled && onTabChange(tab.id)}
-                        disabled={!!isDisabled}
+                        onClick={() => !isTabDisabled && onTabChange(tab.id)}
+                        disabled={isTabDisabled}
+                        cursor={isTabDisabled ? 'not-allowed' : 'pointer'}
+                        opacity={isTabDisabled ? 0.5 : 1}
                         _hover={{
-                            bg: isActive ? 'transparent' : 'gray.200',
+                            bg: isActive ? 'transparent' : isTabDisabled ? 'transparent' : 'gray.200',
                         }}
                         transition="color 0.2s"
                         position="relative"
@@ -177,7 +209,7 @@ export const AnimatedTabs: React.FC<AnimatedTabsProps> = ({
                                 as={tab.icon}
                                 boxSize={config.iconSize}
                                 mr={2}
-                                color={isActive ? (selectedIconColor || 'white') : (iconColor || selectedColor)}
+                                color={isActive ? (selectedIconColor || 'white') : isTabDisabled ? 'gray.400' : (iconColor || selectedColor)}
                             />
                         )}
                         {tab.label}

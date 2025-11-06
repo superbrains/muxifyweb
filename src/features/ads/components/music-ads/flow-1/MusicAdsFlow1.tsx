@@ -1,15 +1,27 @@
 import React, { useState, useRef, useMemo, useCallback, useEffect } from 'react';
 import { Box, VStack, HStack, Text, Button, Input, Flex, Icon, Avatar } from '@chakra-ui/react';
 import { FiArrowRight, FiArrowLeft, FiX, FiSearch } from 'react-icons/fi';
-import { useAdsUploadStore } from '../../../store/useAdsUploadStore';
-import { PhotoAdsPhonePreview } from '../../PhotoAdsPhonePreview';
-import { DateInput, TimeInput, FileUploadArea, UploadedFileCard } from '@upload/components';
+import { FileUploadArea } from '@upload/components';
+import { UploadFileIcon, UploadImageIcon } from '@/shared/icons/CustomIcons';
 import { CountryStateSelect, Select } from '@shared/components';
-import { UploadImageIcon } from '@/shared/icons/CustomIcons';
-import { compressImage } from '@/shared/lib/fileUtils';
+import { DateInput, TimeInput } from '@upload/components';
+import { useAdsUploadStore } from '../../../store/useAdsUploadStore';
 import { useChakraToast } from '@/shared/hooks/useChakraToast';
+import { MusicPlayerAndCutPreviewPane } from '../MusicPlayerAndCutPreviewPane';
+import { MusicViewPhonePreview } from '../MusicViewPhonePreview';
+import { useArtistStore } from '@/features/artists/store/useArtistStore';
 
-export const PhotoAdsFlow1: React.FC<{
+interface UploadFile {
+    id: string;
+    name: string;
+    size: string;
+    progress: number;
+    status: 'uploading' | 'ready' | 'error';
+    file?: File;
+    url?: string;
+}
+
+export const MusicAdsFlow1: React.FC<{
     onNext: () => void;
     onBack: () => void;
 }> = ({ onNext, onBack }) => {
@@ -21,64 +33,44 @@ export const PhotoAdsFlow1: React.FC<{
     const [selectedArtists, setSelectedArtists] = useState<string[]>([]);
     const [artistInput, setArtistInput] = useState('');
     const [showSuggestions, setShowSuggestions] = useState(false);
-    const artistInputRef = useRef<HTMLInputElement>(null);
-    const suggestionsRef = useRef<HTMLDivElement>(null);
     const [scheduleDate, setScheduleDate] = useState('');
-
-    // Mock artist suggestions - in real app, this would come from API
-    const artistSuggestions = [
-        'Wizkid',
-        'Davido',
-        'Burna Boy',
-        'Tiwa Savage',
-        'Asake',
-        'Ayra Starr',
-        'Omah Lay',
-        'Rema',
-        'Fireboy DML',
-        'Joeboy',
-        'Olamide',
-        'Pheelz',
-        'Spyro'
-    ];
-
-    // Memoize filtered suggestions to avoid recalculating on every render
-    const filteredSuggestions = useMemo(() => {
-        return artistSuggestions.filter(suggestion =>
-        suggestion.toLowerCase().includes(artistInput.toLowerCase()) &&
-        !selectedArtists.includes(suggestion)
-    );
-    }, [artistInput, selectedArtists]);
     const [startTime, setStartTime] = useState('');
     const [endTime, setEndTime] = useState('');
     const [ampm, setAmpm] = useState<'AM' | 'PM'>('AM');
+    const [duration, setDuration] = useState(5); // Default duration in seconds
+
+    const artistInputRef = useRef<HTMLInputElement>(null);
+    const suggestionsRef = useRef<HTMLDivElement>(null);
 
     // Use selectors to only subscribe to specific state slices
+    const musicFile = useAdsUploadStore((state) => state.musicFile);
+    const musicAdInfo = useAdsUploadStore((state) => state.musicAdInfo);
+    const musicSetFile = useAdsUploadStore((state) => state.musicSetFile);
+    const musicSetAdInfo = useAdsUploadStore((state) => state.musicSetAdInfo);
     const photoFile = useAdsUploadStore((state) => state.photoFile);
-    const photoAdInfo = useAdsUploadStore((state) => state.photoAdInfo);
     const photoSetFile = useAdsUploadStore((state) => state.photoSetFile);
-    const photoSetAdInfo = useAdsUploadStore((state) => state.photoSetAdInfo);
     const toast = useChakraToast();
+    const artists = useArtistStore((state) => state.artists);
 
-    // Populate form fields from store when editing (photoAdInfo exists)
-    // Only populate if photoAdInfo exists (edit mode), not for new campaigns
+    // Populate form fields from store when editing (musicAdInfo exists)
+    // Only populate if musicAdInfo exists (edit mode), not for new campaigns
     useEffect(() => {
-        if (photoAdInfo) {
-            setTitle(photoAdInfo.title || '');
-            setCountry(photoAdInfo.location.country || '');
-            setState(photoAdInfo.location.state || '');
-            setTargetType(photoAdInfo.target.type || 'music');
-            setGenre(photoAdInfo.target.genre || '');
-            setSelectedArtists(photoAdInfo.target.artists || []);
-            if (photoAdInfo.schedule.date) {
-                const date = new Date(photoAdInfo.schedule.date);
+        if (musicAdInfo) {
+            setTitle(musicAdInfo.title || '');
+            setCountry(musicAdInfo.location.country || '');
+            setState(musicAdInfo.location.state || '');
+            setTargetType(musicAdInfo.target.type || 'music');
+            setGenre(musicAdInfo.target.genre || '');
+            setSelectedArtists(musicAdInfo.target.artists || []);
+            if (musicAdInfo.schedule.date) {
+                const date = new Date(musicAdInfo.schedule.date);
                 setScheduleDate(date.toISOString().split('T')[0]);
             }
-            setStartTime(photoAdInfo.schedule.startTime || '');
-            setEndTime(photoAdInfo.schedule.endTime || '');
-            setAmpm(photoAdInfo.schedule.ampm || 'AM');
+            setStartTime(musicAdInfo.schedule.startTime || '');
+            setEndTime(musicAdInfo.schedule.endTime || '');
+            setAmpm(musicAdInfo.schedule.ampm || 'AM');
         } else {
-            // Reset fields when creating new campaign (photoAdInfo is null)
+            // Reset fields when creating new campaign (musicAdInfo is null)
             setTitle('');
             setCountry('');
             setState('');
@@ -90,55 +82,29 @@ export const PhotoAdsFlow1: React.FC<{
             setEndTime('');
             setAmpm('AM');
         }
-    }, [photoAdInfo]);
+    }, [musicAdInfo]);
 
-    const handleFileSelect = (file: File) => {
-        console.log('File selected:', file);
-    };
+    // Memoize filtered suggestions to avoid recalculating on every render
+    const filteredSuggestions = useMemo(() => {
+        return artists
+        .filter((artist) => {
+            const searchTerm = artistInput.toLowerCase();
+            return (
+                artist.name.toLowerCase().includes(searchTerm)
+            ) && !selectedArtists.includes(artist.name);
+        })
+        .slice(0, 5);
+    }, [artists, artistInput, selectedArtists]);
 
-    const handleFileReady = async (file: UploadFile) => {
-        // Convert file to compressed base64 for storage
-        try {
-            const base64Url = await compressImage(file.file);
-            photoSetFile({
-                ...file,
-                url: base64Url,
-                file: undefined, // Don't store File object
-            });
-        } catch (error) {
-            console.error('Failed to compress image:', error);
-            // Fallback to original file without compression
-            photoSetFile({
-                ...file,
-                file: undefined,
-            });
-        }
-    };
-
-    interface UploadFile {
-        id: string;
-        name: string;
-        size: string;
-        progress: number;
-        status: 'uploading' | 'ready' | 'error';
-        file: File;
-        url?: string;
-    }
-
-    // Memoize handler to prevent unnecessary re-renders
+    // Handle artist input changes
     const handleArtistInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-        const newValue = e.target.value;
-        setArtistInput(newValue);
-        // We'll update showSuggestions in useEffect based on filteredSuggestions
+        setArtistInput(e.target.value);
     }, []);
 
-    const handleSuggestionSelect = useCallback((suggestion: string) => {
-        if (!selectedArtists.includes(suggestion)) {
-            setSelectedArtists((prev) => [...prev, suggestion]);
-        }
-            setArtistInput('');
-        setShowSuggestions(false);
-    }, [selectedArtists]);
+    // Update showSuggestions based on filtered suggestions
+    useEffect(() => {
+        setShowSuggestions(artistInput.length > 0 && filteredSuggestions.length > 0);
+    }, [artistInput.length, filteredSuggestions.length]);
 
     const handleArtistInputFocus = useCallback(() => {
         if (artistInput.length > 0 && filteredSuggestions.length > 0) {
@@ -147,28 +113,71 @@ export const PhotoAdsFlow1: React.FC<{
     }, [artistInput.length, filteredSuggestions.length]);
 
     const handleArtistInputBlur = () => {
-        // Use a small delay to allow clicks on suggestions to work
+        // Delay to allow suggestion click to fire
         setTimeout(() => {
-            setShowSuggestions(false);
-        }, 150);
+            if (!suggestionsRef.current?.contains(document.activeElement)) {
+                setShowSuggestions(false);
+            }
+        }, 200);
     };
 
+    const handleSuggestionSelect = useCallback((artistName: string) => {
+        if (!selectedArtists.includes(artistName)) {
+            setSelectedArtists((prev) => [...prev, artistName]);
+        }
+        setArtistInput('');
+        setShowSuggestions(false);
+    }, [selectedArtists]);
+
     const handleRemoveArtist = useCallback((artist: string) => {
-        setSelectedArtists((prev) => prev.filter(a => a !== artist));
+        setSelectedArtists((prev) => prev.filter((a) => a !== artist));
     }, []);
 
-    // Update showSuggestions based on filtered suggestions
-    useEffect(() => {
-        setShowSuggestions(artistInput.length > 0 && filteredSuggestions.length > 0);
-    }, [artistInput.length, filteredSuggestions.length]);
+    const handleFileSelect = () => {
+        // File selection handled by FileUploadArea
+    };
+
+    const handleFileReady = async (file: UploadFile) => {
+        // Store file with both object URL for preview and prepare for base64 conversion
+        // We'll convert to base64 in Flow3 when publishing to avoid performance issues
+        let previewUrl: string | undefined;
+        if (file.file) {
+            // Create object URL for immediate preview (fast)
+            previewUrl = URL.createObjectURL(file.file);
+        }
+        
+        const audioWithUrl = {
+            ...file,
+            url: previewUrl || file.url,
+            // Keep file object for base64 conversion in Flow3
+        };
+        musicSetFile(audioWithUrl);
+    };
+
+    const handleRemoveAudio = () => {
+        musicSetFile(null);
+    };
+
+    const handlePhotoSelect = () => {
+        // Photo selection handled by FileUploadArea
+    };
+
+    const handlePhotoReady = (file: UploadFile) => {
+        // Create object URL for photo preview
+        const photoWithUrl = {
+            ...file,
+            url: file.file ? URL.createObjectURL(file.file) : file.url,
+        };
+        photoSetFile(photoWithUrl);
+    };
 
     const handleRemovePhoto = () => {
         photoSetFile(null);
     };
 
     const handleNext = () => {
-        if (!photoFile) {
-            toast.error('Photo required', 'Please upload a photo ad');
+        if (!musicFile) {
+            toast.error('Music required', 'Please upload a music ad');
             return;
         }
         if (!title || !country || !state || !targetType || !genre) {
@@ -177,7 +186,7 @@ export const PhotoAdsFlow1: React.FC<{
         }
 
         // Save Flow 1 data
-        photoSetAdInfo({
+        musicSetAdInfo({
             title,
             location: { country, state },
             target: { type: targetType as 'music' | 'video', genre, artists: selectedArtists },
@@ -204,7 +213,7 @@ export const PhotoAdsFlow1: React.FC<{
             >
                 <Flex justify="space-between" align="center" px={4}>
                     <Text fontSize="md" fontWeight="bold" color="gray.900">
-                        Photo Ads
+                        Music Ads
                     </Text>
                 </Flex>
             </Box>
@@ -214,31 +223,67 @@ export const PhotoAdsFlow1: React.FC<{
                 {/* Left Form Section */}
                 <Box flex="1">
                     <VStack align="stretch" gap={3}>
-                        {/* Upload Photo Ad */}
+                        {/* Upload Audio Ad */}
+                        <Box>
+                            <FileUploadArea
+                                accept=".mp3,.wav,.aac,.mp4"
+                                maxSize={50}
+                                onFileSelect={handleFileSelect}
+                                onFileReady={handleFileReady}
+                                title="Upload Audio Ad"
+                                supportedFormats="Support MP4, Mov"
+                                Icon={UploadFileIcon}
+                                fileType="audio"
+                            />
+                        </Box>
+
+                        {/* Music Player and Cut Preview Pane */}
+                        {musicFile && (
+                            <MusicPlayerAndCutPreviewPane
+                                audioFile={musicFile}
+                                duration={duration}
+                                onDurationChange={setDuration}
+                                onRemove={handleRemoveAudio}
+                            />
+                        )}
+
+                        {/* Upload Photo for Ad */}
                         <Box>
                             <FileUploadArea
                                 accept=".jpg,.jpeg,.png,.gif"
                                 maxSize={50}
-                                onFileSelect={handleFileSelect}
-                                onFileReady={handleFileReady}
-                                title="Upload Photo Ad"
+                                onFileSelect={handlePhotoSelect}
+                                onFileReady={handlePhotoReady}
+                                title="Upload Photo for Ad"
                                 supportedFormats="Support JPG, JPEG, PNG, GIF"
                                 Icon={UploadImageIcon}
                                 fileType="image"
                             />
-                            {photoFile && (
-                                <Box mt={3}>
-                                    <UploadedFileCard
-                                        fileName={photoFile.name}
-                                        fileSize={photoFile.size}
-                                        progress={photoFile.progress}
-                                        status={photoFile.status}
-                                        onRemove={handleRemovePhoto}
-                                        type="image"
-                                    />
-                                </Box>
-                            )}
                         </Box>
+
+                        {/* Photo Preview */}
+                        {photoFile && (
+                            <Box bg="white" border="1px solid" borderColor="gray.200" borderRadius="md" p={3}>
+                                <HStack justify="space-between" align="center">
+                                    <VStack align="start" gap={0} flex="1" minW={0}>
+                                        <Text fontSize="14px" color="gray.900" fontWeight="normal" lineClamp={1}>
+                                            {photoFile.name}
+                                        </Text>
+                                        <Text fontSize="12px" color="gray.500" mt={1}>
+                                            {photoFile.size}
+                                        </Text>
+                                    </VStack>
+                                    <Icon
+                                        as={FiX}
+                                        boxSize={4}
+                                        color="gray.600"
+                                        cursor="pointer"
+                                        onClick={handleRemovePhoto}
+                                        _hover={{ color: 'gray.800' }}
+                                    />
+                                </HStack>
+                            </Box>
+                        )}
 
                         {/* Ad Title */}
                         <Box>
@@ -252,7 +297,6 @@ export const PhotoAdsFlow1: React.FC<{
                                 size="xs"
                                 h="40px"
                                 borderRadius="10px"
-                                autoComplete="off"
                             />
                         </Box>
 
@@ -316,20 +360,20 @@ export const PhotoAdsFlow1: React.FC<{
                                 </Box>
                                 <Box>
                                     <Text fontSize="xs" fontWeight="semibold" color="gray.900" mb={1}>
-                                        Artist/Musician
+                                        Creator/Music Videos
                                     </Text>
                                     <Box position="relative" w="full">
                                         <Box position="relative">
-                                    <Input
+                                            <Input
                                                 ref={artistInputRef}
-                                        placeholder="Search"
-                                        value={artistInput}
+                                                placeholder="Search"
+                                                value={artistInput}
                                                 onChange={handleArtistInputChange}
                                                 onFocus={handleArtistInputFocus}
                                                 onBlur={handleArtistInputBlur}
-                                        size="xs"
-                                        h="40px"
-                                        borderRadius="10px"
+                                                size="xs"
+                                                h="40px"
+                                                borderRadius="10px"
                                                 pl="40px"
                                             />
                                             <Icon
@@ -341,8 +385,8 @@ export const PhotoAdsFlow1: React.FC<{
                                                 color="gray.400"
                                                 boxSize={4}
                                                 pointerEvents="none"
-                                    />
-                                </Box>
+                                            />
+                                        </Box>
 
                                         {/* Suggestions Dropdown */}
                                         {showSuggestions && filteredSuggestions.length > 0 && (
@@ -364,33 +408,36 @@ export const PhotoAdsFlow1: React.FC<{
                                                 overflowY="auto"
                                             >
                                                 <VStack align="stretch" gap={0}>
-                                                    {filteredSuggestions.map((suggestion) => (
-                                                        <Box
-                                                            key={suggestion}
-                                                            p={3}
-                                                            cursor="pointer"
-                                                            w="full"
-                                                            _hover={{ bg: 'gray.50' }}
-                                                            onMouseDown={(e) => e.preventDefault()}
-                                                            onClick={() => handleSuggestionSelect(suggestion)}
-                                                        >
-                                                            <HStack gap={3}>
-                                                                <Avatar.Root size="sm" flexShrink={0}>
-                                                                    <Avatar.Fallback fontSize="12px" bg="primary.100" color="primary.500">
-                                                                        {suggestion.charAt(0)}
-                                                                    </Avatar.Fallback>
-                                                                </Avatar.Root>
-                                                                <VStack align="start" gap={0} minW={0} flex="1">
-                                                                    <Text fontSize="12px" fontWeight="semibold" color="gray.900" lineClamp={1}>
-                                                                        {suggestion}
-                                                                    </Text>
-                                                                    <Text fontSize="11px" color="gray.500" lineClamp={1}>
-                                                                        Artist
-                                                                    </Text>
-                                                                </VStack>
-                                                            </HStack>
-                                                        </Box>
-                                                    ))}
+                                                    {filteredSuggestions.map((artist) => {
+                                                        const artistName = artist.name;
+                                                        return (
+                                                            <Box
+                                                                key={artist.id}
+                                                                p={3}
+                                                                cursor="pointer"
+                                                                w="full"
+                                                                _hover={{ bg: 'gray.50' }}
+                                                                onMouseDown={(e) => e.preventDefault()}
+                                                                onClick={() => handleSuggestionSelect(artistName)}
+                                                            >
+                                                                <HStack gap={3}>
+                                                                    <Avatar.Root size="sm" flexShrink={0}>
+                                                                        <Avatar.Fallback fontSize="12px" bg="primary.100" color="primary.500">
+                                                                            {artistName.charAt(0)}
+                                                                        </Avatar.Fallback>
+                                                                    </Avatar.Root>
+                                                                    <VStack align="start" gap={0} minW={0} flex="1">
+                                                                        <Text fontSize="12px" fontWeight="semibold" color="gray.900" lineClamp={1}>
+                                                                            {artistName}
+                                                                        </Text>
+                                                                        <Text fontSize="11px" color="gray.500" lineClamp={1}>
+                                                                            Artist
+                                                                        </Text>
+                                                                    </VStack>
+                                                                </HStack>
+                                                            </Box>
+                                                        );
+                                                    })}
                                                 </VStack>
                                             </Box>
                                         )}
@@ -399,35 +446,35 @@ export const PhotoAdsFlow1: React.FC<{
                                     {/* Selected Artists Chips */}
                                     {selectedArtists.length > 0 && (
                                         <HStack flexWrap="wrap" gap={2} mt={3}>
-                                        {selectedArtists.map((artist) => (
-                                            <Box
-                                                key={artist}
-                                                bg="gray.100"
+                                            {selectedArtists.map((artist) => (
+                                                <Box
+                                                    key={artist}
+                                                    bg="gray.100"
                                                     px={3}
                                                     py={2}
-                                                borderRadius="full"
-                                                display="flex"
-                                                alignItems="center"
+                                                    borderRadius="full"
+                                                    display="flex"
+                                                    alignItems="center"
                                                     gap={2}
-                                            >
+                                                >
                                                     <Avatar.Root size="xs" flexShrink={0}>
                                                         <Avatar.Fallback fontSize="10px" bg="primary.100" color="primary.500">
                                                             {artist.charAt(0)}
                                                         </Avatar.Fallback>
                                                     </Avatar.Root>
                                                     <Text fontSize="xs" color="gray.900">{artist}</Text>
-                                                <Icon
-                                                    as={FiX}
-                                                    cursor="pointer"
-                                                    onClick={() => handleRemoveArtist(artist)}
+                                                    <Icon
+                                                        as={FiX}
+                                                        cursor="pointer"
+                                                        onClick={() => handleRemoveArtist(artist)}
                                                         color="rgba(249,68,68,1)"
                                                         boxSize={3.5}
                                                         _hover={{ color: 'rgba(249,68,68,0.8)' }}
-                                                />
-                                            </Box>
-                                        ))}
-                                    </HStack>
-                                )}
+                                                    />
+                                                </Box>
+                                            ))}
+                                        </HStack>
+                                    )}
                                 </Box>
                             </VStack>
                         </Box>
@@ -439,7 +486,6 @@ export const PhotoAdsFlow1: React.FC<{
                             </Text>
                             <VStack align="stretch" gap={2}>
                                 <Box>
-
                                     <DateInput
                                         value={scheduleDate}
                                         onChange={setScheduleDate}
@@ -447,7 +493,6 @@ export const PhotoAdsFlow1: React.FC<{
                                 </Box>
                                 <HStack gap={3}>
                                     <Box flex="1">
-
                                         <TimeInput
                                             label="Start Time"
                                             value={startTime}
@@ -457,7 +502,6 @@ export const PhotoAdsFlow1: React.FC<{
                                         />
                                     </Box>
                                     <Box flex="1">
-
                                         <TimeInput
                                             label="End Time"
                                             value={endTime}
@@ -474,7 +518,7 @@ export const PhotoAdsFlow1: React.FC<{
 
                 {/* Right Preview Section */}
                 <Box flex="1" display="flex" justifyContent="center">
-                    <PhotoAdsPhonePreview />
+                    <MusicViewPhonePreview />
                 </Box>
             </Flex>
 
@@ -509,10 +553,8 @@ export const PhotoAdsFlow1: React.FC<{
                     px={3}
                     _hover={{ bg: 'primary.600' }}
                 >
-                    <Flex align="center" w="full" justify="space-between">
-                        <Text alignSelf="start" mr={2} fontSize="12px" >Next</Text>
-                        <Icon alignSelf="end" as={FiArrowRight} />
-                    </Flex>
+                    <Text fontSize="12px">Next</Text>
+                    <Icon as={FiArrowRight} ml={2} />
                 </Button>
             </Flex>
         </VStack>

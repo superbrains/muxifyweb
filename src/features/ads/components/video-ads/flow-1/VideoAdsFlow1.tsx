@@ -2,21 +2,31 @@ import React, { useState, useRef, useMemo, useCallback, useEffect } from 'react'
 import { Box, VStack, HStack, Text, Button, Input, Flex, Icon, Avatar } from '@chakra-ui/react';
 import { FiArrowRight, FiArrowLeft, FiX, FiSearch } from 'react-icons/fi';
 import { useAdsUploadStore } from '../../../store/useAdsUploadStore';
-import { PhotoAdsPhonePreview } from '../../PhotoAdsPhonePreview';
-import { DateInput, TimeInput, FileUploadArea, UploadedFileCard } from '@upload/components';
+import { VideoAdsPhonePreview } from '../../VideoAdsPhonePreview';
+import { DateInput, TimeInput, FileUploadArea } from '@upload/components';
 import { CountryStateSelect, Select } from '@shared/components';
-import { UploadImageIcon } from '@/shared/icons/CustomIcons';
-import { compressImage } from '@/shared/lib/fileUtils';
+import { UploadFileIcon } from '@/shared/icons/CustomIcons';
 import { useChakraToast } from '@/shared/hooks/useChakraToast';
+import { VideoPlayerAndCutPreviewPane } from '../VideoPlayerAndCutPreviewPane';
 
-export const PhotoAdsFlow1: React.FC<{
+interface UploadFile {
+    id: string;
+    name: string;
+    size: string;
+    progress: number;
+    status: 'uploading' | 'ready' | 'error';
+    file: File;
+    url?: string;
+}
+
+export const VideoAdsFlow1: React.FC<{
     onNext: () => void;
     onBack: () => void;
 }> = ({ onNext, onBack }) => {
     const [title, setTitle] = useState('');
     const [country, setCountry] = useState('');
     const [state, setState] = useState('');
-    const [targetType, setTargetType] = useState('music');
+    const [targetType, setTargetType] = useState('video');
     const [genre, setGenre] = useState('');
     const [selectedArtists, setSelectedArtists] = useState<string[]>([]);
     const [artistInput, setArtistInput] = useState('');
@@ -24,6 +34,10 @@ export const PhotoAdsFlow1: React.FC<{
     const artistInputRef = useRef<HTMLInputElement>(null);
     const suggestionsRef = useRef<HTMLDivElement>(null);
     const [scheduleDate, setScheduleDate] = useState('');
+    const [startTime, setStartTime] = useState('');
+    const [endTime, setEndTime] = useState('');
+    const [ampm, setAmpm] = useState<'AM' | 'PM'>('AM');
+    const [duration, setDuration] = useState<number>(5); // Duration in seconds
 
     // Mock artist suggestions - in real app, this would come from API
     const artistSuggestions = [
@@ -49,40 +63,37 @@ export const PhotoAdsFlow1: React.FC<{
         !selectedArtists.includes(suggestion)
     );
     }, [artistInput, selectedArtists]);
-    const [startTime, setStartTime] = useState('');
-    const [endTime, setEndTime] = useState('');
-    const [ampm, setAmpm] = useState<'AM' | 'PM'>('AM');
 
     // Use selectors to only subscribe to specific state slices
-    const photoFile = useAdsUploadStore((state) => state.photoFile);
-    const photoAdInfo = useAdsUploadStore((state) => state.photoAdInfo);
-    const photoSetFile = useAdsUploadStore((state) => state.photoSetFile);
-    const photoSetAdInfo = useAdsUploadStore((state) => state.photoSetAdInfo);
+    const videoFile = useAdsUploadStore((state) => state.videoFile);
+    const videoAdInfo = useAdsUploadStore((state) => state.videoAdInfo);
+    const videoSetFile = useAdsUploadStore((state) => state.videoSetFile);
+    const videoSetAdInfo = useAdsUploadStore((state) => state.videoSetAdInfo);
     const toast = useChakraToast();
 
-    // Populate form fields from store when editing (photoAdInfo exists)
-    // Only populate if photoAdInfo exists (edit mode), not for new campaigns
+    // Populate form fields from store when editing (videoAdInfo exists)
+    // Only populate if videoAdInfo exists (edit mode), not for new campaigns
     useEffect(() => {
-        if (photoAdInfo) {
-            setTitle(photoAdInfo.title || '');
-            setCountry(photoAdInfo.location.country || '');
-            setState(photoAdInfo.location.state || '');
-            setTargetType(photoAdInfo.target.type || 'music');
-            setGenre(photoAdInfo.target.genre || '');
-            setSelectedArtists(photoAdInfo.target.artists || []);
-            if (photoAdInfo.schedule.date) {
-                const date = new Date(photoAdInfo.schedule.date);
+        if (videoAdInfo) {
+            setTitle(videoAdInfo.title || '');
+            setCountry(videoAdInfo.location.country || '');
+            setState(videoAdInfo.location.state || '');
+            setTargetType(videoAdInfo.target.type || 'video');
+            setGenre(videoAdInfo.target.genre || '');
+            setSelectedArtists(videoAdInfo.target.artists || []);
+            if (videoAdInfo.schedule.date) {
+                const date = new Date(videoAdInfo.schedule.date);
                 setScheduleDate(date.toISOString().split('T')[0]);
             }
-            setStartTime(photoAdInfo.schedule.startTime || '');
-            setEndTime(photoAdInfo.schedule.endTime || '');
-            setAmpm(photoAdInfo.schedule.ampm || 'AM');
+            setStartTime(videoAdInfo.schedule.startTime || '');
+            setEndTime(videoAdInfo.schedule.endTime || '');
+            setAmpm(videoAdInfo.schedule.ampm || 'AM');
         } else {
-            // Reset fields when creating new campaign (photoAdInfo is null)
+            // Reset fields when creating new campaign (videoAdInfo is null)
             setTitle('');
             setCountry('');
             setState('');
-            setTargetType('music');
+            setTargetType('video');
             setGenre('');
             setSelectedArtists([]);
             setScheduleDate('');
@@ -90,53 +101,44 @@ export const PhotoAdsFlow1: React.FC<{
             setEndTime('');
             setAmpm('AM');
         }
-    }, [photoAdInfo]);
+    }, [videoAdInfo]);
 
     const handleFileSelect = (file: File) => {
         console.log('File selected:', file);
     };
 
     const handleFileReady = async (file: UploadFile) => {
-        // Convert file to compressed base64 for storage
-        try {
-            const base64Url = await compressImage(file.file);
-            photoSetFile({
-                ...file,
-                url: base64Url,
-                file: undefined, // Don't store File object
-            });
-        } catch (error) {
-            console.error('Failed to compress image:', error);
-            // Fallback to original file without compression
-            photoSetFile({
-                ...file,
-                file: undefined,
-            });
+        // Store file with both object URL for preview and prepare for base64 conversion
+        // We'll convert to base64 in Flow3 when publishing to avoid performance issues
+        let previewUrl: string | undefined;
+        if (file.file) {
+            // Create object URL for immediate preview (fast)
+            previewUrl = URL.createObjectURL(file.file);
         }
+        
+        const videoWithUrl = {
+            ...file,
+            url: previewUrl || file.url,
+            // Keep file object for base64 conversion in Flow3
+        };
+        videoSetFile(videoWithUrl);
     };
-
-    interface UploadFile {
-        id: string;
-        name: string;
-        size: string;
-        progress: number;
-        status: 'uploading' | 'ready' | 'error';
-        file: File;
-        url?: string;
-    }
 
     // Memoize handler to prevent unnecessary re-renders
     const handleArtistInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-        const newValue = e.target.value;
-        setArtistInput(newValue);
-        // We'll update showSuggestions in useEffect based on filteredSuggestions
+        setArtistInput(e.target.value);
     }, []);
+
+    // Update showSuggestions based on filtered suggestions
+    useEffect(() => {
+        setShowSuggestions(artistInput.length > 0 && filteredSuggestions.length > 0);
+    }, [artistInput.length, filteredSuggestions.length]);
 
     const handleSuggestionSelect = useCallback((suggestion: string) => {
         if (!selectedArtists.includes(suggestion)) {
             setSelectedArtists((prev) => [...prev, suggestion]);
         }
-            setArtistInput('');
+        setArtistInput('');
         setShowSuggestions(false);
     }, [selectedArtists]);
 
@@ -153,22 +155,20 @@ export const PhotoAdsFlow1: React.FC<{
         }, 150);
     };
 
-    const handleRemoveArtist = useCallback((artist: string) => {
-        setSelectedArtists((prev) => prev.filter(a => a !== artist));
-    }, []);
+    const handleRemoveArtist = (artist: string) => {
+        setSelectedArtists(selectedArtists.filter(a => a !== artist));
+    };
 
-    // Update showSuggestions based on filtered suggestions
-    useEffect(() => {
-        setShowSuggestions(artistInput.length > 0 && filteredSuggestions.length > 0);
-    }, [artistInput.length, filteredSuggestions.length]);
-
-    const handleRemovePhoto = () => {
-        photoSetFile(null);
+    const handleRemoveVideo = () => {
+        if (videoFile?.url) {
+            URL.revokeObjectURL(videoFile.url);
+        }
+        videoSetFile(null);
     };
 
     const handleNext = () => {
-        if (!photoFile) {
-            toast.error('Photo required', 'Please upload a photo ad');
+        if (!videoFile) {
+            toast.error('Video required', 'Please upload a video ad');
             return;
         }
         if (!title || !country || !state || !targetType || !genre) {
@@ -177,7 +177,7 @@ export const PhotoAdsFlow1: React.FC<{
         }
 
         // Save Flow 1 data
-        photoSetAdInfo({
+        videoSetAdInfo({
             title,
             location: { country, state },
             target: { type: targetType as 'music' | 'video', genre, artists: selectedArtists },
@@ -192,6 +192,7 @@ export const PhotoAdsFlow1: React.FC<{
         onNext();
     };
 
+
     return (
         <VStack align="stretch" gap={0}>
             {/* Top Bar with Title */}
@@ -204,7 +205,7 @@ export const PhotoAdsFlow1: React.FC<{
             >
                 <Flex justify="space-between" align="center" px={4}>
                     <Text fontSize="md" fontWeight="bold" color="gray.900">
-                        Photo Ads
+                        Video Ads
                     </Text>
                 </Flex>
             </Box>
@@ -214,31 +215,29 @@ export const PhotoAdsFlow1: React.FC<{
                 {/* Left Form Section */}
                 <Box flex="1">
                     <VStack align="stretch" gap={3}>
-                        {/* Upload Photo Ad */}
+                        {/* Upload Video Ad */}
                         <Box>
                             <FileUploadArea
-                                accept=".jpg,.jpeg,.png,.gif"
+                                accept=".mp4,.mov"
                                 maxSize={50}
                                 onFileSelect={handleFileSelect}
                                 onFileReady={handleFileReady}
-                                title="Upload Photo Ad"
-                                supportedFormats="Support JPG, JPEG, PNG, GIF"
-                                Icon={UploadImageIcon}
-                                fileType="image"
+                                title="Upload Video Ad"
+                                supportedFormats="Support MP4, Mov"
+                                Icon={UploadFileIcon}
+                                fileType="video"
                             />
-                            {photoFile && (
-                                <Box mt={3}>
-                                    <UploadedFileCard
-                                        fileName={photoFile.name}
-                                        fileSize={photoFile.size}
-                                        progress={photoFile.progress}
-                                        status={photoFile.status}
-                                        onRemove={handleRemovePhoto}
-                                        type="image"
-                                    />
-                                </Box>
-                            )}
                         </Box>
+
+                        {/* Video Player and Cut Preview Pane */}
+                        {videoFile && (
+                            <VideoPlayerAndCutPreviewPane
+                                videoFile={videoFile}
+                                duration={duration}
+                                onDurationChange={setDuration}
+                                onRemove={handleRemoveVideo}
+                            />
+                        )}
 
                         {/* Ad Title */}
                         <Box>
@@ -252,7 +251,6 @@ export const PhotoAdsFlow1: React.FC<{
                                 size="xs"
                                 h="40px"
                                 borderRadius="10px"
-                                autoComplete="off"
                             />
                         </Box>
 
@@ -316,20 +314,20 @@ export const PhotoAdsFlow1: React.FC<{
                                 </Box>
                                 <Box>
                                     <Text fontSize="xs" fontWeight="semibold" color="gray.900" mb={1}>
-                                        Artist/Musician
+                                        Creator/Music Videos
                                     </Text>
                                     <Box position="relative" w="full">
                                         <Box position="relative">
-                                    <Input
+                                            <Input
                                                 ref={artistInputRef}
-                                        placeholder="Search"
-                                        value={artistInput}
+                                                placeholder="Search"
+                                                value={artistInput}
                                                 onChange={handleArtistInputChange}
                                                 onFocus={handleArtistInputFocus}
                                                 onBlur={handleArtistInputBlur}
-                                        size="xs"
-                                        h="40px"
-                                        borderRadius="10px"
+                                                size="xs"
+                                                h="40px"
+                                                borderRadius="10px"
                                                 pl="40px"
                                             />
                                             <Icon
@@ -341,8 +339,8 @@ export const PhotoAdsFlow1: React.FC<{
                                                 color="gray.400"
                                                 boxSize={4}
                                                 pointerEvents="none"
-                                    />
-                                </Box>
+                                            />
+                                        </Box>
 
                                         {/* Suggestions Dropdown */}
                                         {showSuggestions && filteredSuggestions.length > 0 && (
@@ -399,35 +397,35 @@ export const PhotoAdsFlow1: React.FC<{
                                     {/* Selected Artists Chips */}
                                     {selectedArtists.length > 0 && (
                                         <HStack flexWrap="wrap" gap={2} mt={3}>
-                                        {selectedArtists.map((artist) => (
-                                            <Box
-                                                key={artist}
-                                                bg="gray.100"
+                                            {selectedArtists.map((artist) => (
+                                                <Box
+                                                    key={artist}
+                                                    bg="gray.100"
                                                     px={3}
                                                     py={2}
-                                                borderRadius="full"
-                                                display="flex"
-                                                alignItems="center"
+                                                    borderRadius="full"
+                                                    display="flex"
+                                                    alignItems="center"
                                                     gap={2}
-                                            >
+                                                >
                                                     <Avatar.Root size="xs" flexShrink={0}>
                                                         <Avatar.Fallback fontSize="10px" bg="primary.100" color="primary.500">
                                                             {artist.charAt(0)}
                                                         </Avatar.Fallback>
                                                     </Avatar.Root>
                                                     <Text fontSize="xs" color="gray.900">{artist}</Text>
-                                                <Icon
-                                                    as={FiX}
-                                                    cursor="pointer"
-                                                    onClick={() => handleRemoveArtist(artist)}
+                                                    <Icon
+                                                        as={FiX}
+                                                        cursor="pointer"
+                                                        onClick={() => handleRemoveArtist(artist)}
                                                         color="rgba(249,68,68,1)"
                                                         boxSize={3.5}
                                                         _hover={{ color: 'rgba(249,68,68,0.8)' }}
-                                                />
-                                            </Box>
-                                        ))}
-                                    </HStack>
-                                )}
+                                                    />
+                                                </Box>
+                                            ))}
+                                        </HStack>
+                                    )}
                                 </Box>
                             </VStack>
                         </Box>
@@ -439,7 +437,6 @@ export const PhotoAdsFlow1: React.FC<{
                             </Text>
                             <VStack align="stretch" gap={2}>
                                 <Box>
-
                                     <DateInput
                                         value={scheduleDate}
                                         onChange={setScheduleDate}
@@ -447,7 +444,6 @@ export const PhotoAdsFlow1: React.FC<{
                                 </Box>
                                 <HStack gap={3}>
                                     <Box flex="1">
-
                                         <TimeInput
                                             label="Start Time"
                                             value={startTime}
@@ -457,7 +453,6 @@ export const PhotoAdsFlow1: React.FC<{
                                         />
                                     </Box>
                                     <Box flex="1">
-
                                         <TimeInput
                                             label="End Time"
                                             value={endTime}
@@ -474,7 +469,7 @@ export const PhotoAdsFlow1: React.FC<{
 
                 {/* Right Preview Section */}
                 <Box flex="1" display="flex" justifyContent="center">
-                    <PhotoAdsPhonePreview />
+                    <VideoAdsPhonePreview />
                 </Box>
             </Flex>
 
@@ -510,7 +505,7 @@ export const PhotoAdsFlow1: React.FC<{
                     _hover={{ bg: 'primary.600' }}
                 >
                     <Flex align="center" w="full" justify="space-between">
-                        <Text alignSelf="start" mr={2} fontSize="12px" >Next</Text>
+                        <Text alignSelf="start" mr={2} fontSize="12px">Next</Text>
                         <Icon alignSelf="end" as={FiArrowRight} />
                     </Flex>
                 </Button>
