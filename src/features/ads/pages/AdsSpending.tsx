@@ -9,10 +9,12 @@ import {
     Grid,
     Icon,
 } from '@chakra-ui/react';
-import { FiFilter, FiImage, FiVideo, FiMusic, FiMousePointer, FiEye } from 'react-icons/fi';
+import { FiFilter } from 'react-icons/fi';
 import { AnimatedTabs } from '@shared/components';
 import Chart from 'react-apexcharts';
 import { useAdsStore } from '../store/useAdsStore';
+import { formatCurrency } from '@/shared/lib';
+import { ClickFilledIcon, EyeFilledIcon, GalleryIcon, MusicFilledIcon, VideoPlayIcon } from '@/shared/icons/CustomIcons';
 
 export const AdsSpending: React.FC = () => {
     const [timeFilter, setTimeFilter] = useState<'daily' | 'weekly' | 'monthly' | 'yearly'>('daily');
@@ -52,7 +54,7 @@ export const AdsSpending: React.FC = () => {
                 horizontal: false,
                 columnWidth: '60%',
                 endingShape: 'rounded',
-                borderRadius: 4,
+                borderRadius: 1,
             },
         },
         xaxis: {
@@ -156,39 +158,60 @@ export const AdsSpending: React.FC = () => {
                 {/* Top Section - Tabs and Metrics */}
                 <Box bg="white" p={6} borderRadius="xl">
                     <Flex justify="space-between" align="center" mb={4} flexWrap="wrap" gap={4}>
-                        <AnimatedTabs
-                            tabs={timeTabs}
-                            activeTab={timeFilter}
-                            onTabChange={(tab) => setTimeFilter(tab as typeof timeFilter)}
-                            size="sm"
-                            backgroundColor="gray.200"
-                            selectedColor="primary.500"
-                            textColor="black"
-                            selectedTextColor="white"
-                            tabStyle={1}
-                        />
+
                         <HStack gap={4}>
+                            <AnimatedTabs
+                                tabs={timeTabs}
+                                activeTab={timeFilter}
+                                onTabChange={(tab) => setTimeFilter(tab as typeof timeFilter)}
+                                size="sm"
+                                backgroundColor="gray.100"
+                                selectedColor="primary.500"
+                                textColor="black"
+                                selectedTextColor="white"
+                                tabStyle={1}
+                            />
+
                             <Button
                                 variant="outline"
-                                size="sm"
-                                fontSize="xs"
-                                borderColor="gray.300"
-                                _hover={{ bg: 'gray.50' }}
+                                borderWidth="1px"
+                                borderColor="gray.blue.200"
+                                bg="white"
+                                size="xs"
+                                fontSize="10px"
+                                h="28px"
+                                _hover={{
+                                    bg: "gray.50",
+                                    borderColor: "gray.blue.300"
+                                }}
+                                rounded="5px"
+                                className='text-[#9cb1c5]'
+                                color="gray.blue.800"
+                                gap={2}
                             >
                                 <Icon as={FiFilter} mr={1.5} /> Filter Duration
                             </Button>
-                            <VStack align="end" gap={0}>
-                                <Text fontSize="xs" color="gray.600">Daily Spend</Text>
-                                <Text fontSize="lg" fontWeight="bold" color="black">
-                                    N{dailySpend.toLocaleString()}.00
+
+                        </HStack>
+
+                        <HStack gap={6}>
+                            <VStack align="end" gap={1}>
+                                <Text fontSize="lg" color="red.500" fontWeight="bold">
+                                    {formatCurrency(dailySpend)}
+                                </Text>
+                                <Text fontSize="11px" color="gray.900">
+                                    Daily Spend
                                 </Text>
                             </VStack>
-                            <VStack align="end" gap={0}>
-                                <Text fontSize="xs" color="gray.600">Total Expenditure</Text>
-                                <Text fontSize="lg" fontWeight="bold" color="black">
-                                    N{totalSpending.toLocaleString()}.00
+                            <VStack align="end" gap={1}>
+                                <Text fontSize="lg" color="red.500" fontWeight="bold">
+                                    {formatCurrency(totalSpending)}
+                                </Text>
+                                <Text fontSize="11px" color="gray.900">
+                                    Total Expenditure
                                 </Text>
                             </VStack>
+
                         </HStack>
                     </Flex>
                 </Box>
@@ -205,7 +228,7 @@ export const AdsSpending: React.FC = () => {
                             series={spendingChartSeries}
                             type="bar"
                             width="100%"
-                            height={350}
+                            height={300}
                         />
                     </Box>
 
@@ -219,69 +242,72 @@ export const AdsSpending: React.FC = () => {
                             series={distributionChartSeries}
                             type="pie"
                             width="100%"
-                            height={350}
+                            height={300}
                         />
                     </Box>
                 </Grid>
 
                 {/* Bottom Section - Spending Allocation and Actions */}
-                <Grid templateColumns={{ base: '1fr', lg: '1fr 1fr' }} gap={6}>
+                <Grid templateColumns={{ base: '1fr', lg: '1fr 1fr' }} gap={5}>
                     {/* Spending Allocation */}
-                    <Box bg="white" p={6} borderRadius="xl">
-                        <Text fontSize="sm" fontWeight="semibold" color="gray.900" mb={4}>
+                    <Box bg="white" borderRadius="xl" border="1px solid" borderColor="gray.200" p={5}>
+                        <Text fontSize="xs" fontWeight="semibold" color="gray.900" mb={3}>
                             Spending Allocation
                         </Text>
-                        <HStack gap={4} justify="space-between">
+                        <HStack gap={3} justify="space-between" align="stretch">
                             <VStack align="center" gap={2} flex="1">
                                 <Box
-                                    w={12}
-                                    h={12}
+                                    w={10}
+                                    h={10}
                                     borderRadius="md"
-                                    bg="gray.100"
+                                    border="1px solid"
+                                    borderColor="#f94444"
                                     display="flex"
                                     alignItems="center"
                                     justifyContent="center"
                                 >
-                                    <Icon as={FiImage} boxSize={6} color="gray.600" />
+                                    <Icon as={GalleryIcon} boxSize={5} color="#f94444" />
                                 </Box>
-                                <Text fontSize="xs" color="gray.600">Photo Ad</Text>
-                                <Text fontSize="sm" fontWeight="bold" color="black">
+                                <Text fontSize="10px" color="gray.600">Photo Ad</Text>
+                                <Text fontSize="xs" fontWeight="bold" color="#f94444">
                                     N{photoSpending.toLocaleString()}.00
                                 </Text>
                             </VStack>
-                            <Box h="16" w="1px" bg="gray.200" />
+                            <Box h="18" w="1px" bg="gray.200" alignSelf="center" />
                             <VStack align="center" gap={2} flex="1">
                                 <Box
-                                    w={12}
-                                    h={12}
+                                    w={10}
+                                    h={10}
                                     borderRadius="md"
-                                    bg="gray.100"
+                                    border="1px solid"
+                                    borderColor="#f94444"
                                     display="flex"
                                     alignItems="center"
                                     justifyContent="center"
                                 >
-                                    <Icon as={FiVideo} boxSize={6} color="gray.600" />
+                                    <Icon as={VideoPlayIcon} boxSize={5} color="#f94444" />
                                 </Box>
-                                <Text fontSize="xs" color="gray.600">Video Ad</Text>
-                                <Text fontSize="sm" fontWeight="bold" color="black">
+                                <Text fontSize="10px" color="gray.600">Video Ad</Text>
+                                <Text fontSize="xs" fontWeight="bold" color="#f94444">
                                     N{videoSpending.toLocaleString()}.00
                                 </Text>
                             </VStack>
-                            <Box h="16" w="1px" bg="gray.200" />
+                            <Box h="18" w="1px" bg="gray.200" alignSelf="center" />
                             <VStack align="center" gap={2} flex="1">
                                 <Box
-                                    w={12}
-                                    h={12}
+                                    w={10}
+                                    h={10}
                                     borderRadius="md"
-                                    bg="gray.100"
+                                    border="1px solid"
+                                    borderColor="#f94444"
                                     display="flex"
                                     alignItems="center"
                                     justifyContent="center"
                                 >
-                                    <Icon as={FiMusic} boxSize={6} color="gray.600" />
+                                    <Icon as={MusicFilledIcon} boxSize={5} color="#f94444" />
                                 </Box>
-                                <Text fontSize="xs" color="gray.600">Audio Ad</Text>
-                                <Text fontSize="sm" fontWeight="bold" color="black">
+                                <Text fontSize="10px" color="gray.600">Audio Ad</Text>
+                                <Text fontSize="xs" fontWeight="bold" color="#f94444">
                                     N{audioSpending.toLocaleString()}.00
                                 </Text>
                             </VStack>
@@ -289,52 +315,70 @@ export const AdsSpending: React.FC = () => {
                     </Box>
 
                     {/* Spending Actions */}
-                    <Box bg="white" p={6} borderRadius="xl">
-                        <Text fontSize="sm" fontWeight="semibold" color="gray.900" mb={2}>
-                            Spending Actions
-                        </Text>
-                        <Text fontSize="xs" color="gray.600" mb={4}>
-                            {clicks.toLocaleString()} + {views.toLocaleString()} = N{totalActions.toLocaleString()}.00
-                        </Text>
-                        <HStack gap={4} justify="space-between">
+                    <Box bg="white" borderRadius="xl" border="1px solid" borderColor="gray.200" p={5}>
+                        <Flex justify="space-between" align="center" mb={3} flexWrap="wrap" gap={2}>
+                            <Text fontSize="xs" fontWeight="semibold" color="gray.900">
+                                Spending Actions
+                            </Text>
+                            <HStack gap={1}>
+                                <Text fontSize="xs" fontWeight="semibold" color="black">
+                                    {clicks.toLocaleString()}
+                                </Text>
+                                <Text fontSize="xs" fontWeight="semibold" color="black">
+                                    +
+                                </Text>
+                                <Text fontSize="xs" fontWeight="semibold" color="black">
+                                    {views.toLocaleString()}
+                                </Text>
+                                <Text fontSize="xs" fontWeight="semibold" color="black">
+                                    =
+                                </Text>
+                                <Text fontSize="xs" fontWeight="semibold" color="#f94444">
+                                    N{totalActions.toLocaleString()}.00
+                                </Text>
+                            </HStack>
+                        </Flex>
+                        <HStack gap={3} justify="space-between" align="stretch">
                             <VStack align="center" gap={2} flex="1">
                                 <Box
-                                    w={12}
-                                    h={12}
+                                    w={10}
+                                    h={10}
                                     borderRadius="md"
-                                    bg="gray.100"
+                                    border="1px solid"
+                                    borderColor="#f94444"
                                     display="flex"
                                     alignItems="center"
                                     justifyContent="center"
                                 >
-                                    <Icon as={FiMousePointer} boxSize={6} color="gray.600" />
+                                    <Icon as={ClickFilledIcon} boxSize={5} color="#f94444" />
                                 </Box>
-                                <Text fontSize="xs" color="gray.600">Clicks</Text>
+                                <Text fontSize="10px" color="gray.600">Clicks</Text>
                                 <Text fontSize="sm" fontWeight="bold" color="black">
                                     {clicks.toLocaleString()}
                                 </Text>
-                                <Text fontSize="xs" fontWeight="bold" color="#f94444">
+                                <Text fontSize="xs" fontWeight="medium" color="#f94444">
                                     N{clicksCost.toLocaleString()}.00
                                 </Text>
                             </VStack>
-                            <Box h="16" w="1px" bg="gray.200" />
+                            <Box h="20" w="1px" bg="gray.200" alignSelf="center" />
                             <VStack align="center" gap={2} flex="1">
                                 <Box
-                                    w={12}
-                                    h={12}
+                                    w={10}
+                                    h={10}
                                     borderRadius="md"
-                                    bg="gray.100"
+                                    border="1px solid"
+                                    borderColor="#f94444"
                                     display="flex"
                                     alignItems="center"
                                     justifyContent="center"
                                 >
-                                    <Icon as={FiEye} boxSize={6} color="gray.600" />
+                                    <Icon as={EyeFilledIcon} boxSize={5} color="#f94444" />
                                 </Box>
-                                <Text fontSize="xs" color="gray.600">Views</Text>
+                                <Text fontSize="10px" color="gray.600">Views</Text>
                                 <Text fontSize="sm" fontWeight="bold" color="black">
                                     {views.toLocaleString()}
                                 </Text>
-                                <Text fontSize="xs" fontWeight="bold" color="#f94444">
+                                <Text fontSize="xs" fontWeight="medium" color="#f94444">
                                     N{viewsCost.toLocaleString()}.00
                                 </Text>
                             </VStack>

@@ -1,7 +1,7 @@
 "use client"
 
 import { Button, HStack } from "@chakra-ui/react"
-import { toaster } from "@/components/ui/toaster"
+import { toaster } from "@/components/ui/toaster-instance"
 
 const ToastDemo = () => {
     return (

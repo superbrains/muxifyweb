@@ -22,10 +22,12 @@ export const useLogin = () => {
 
       toast.success("Welcome back!", "You have been successfully logged in.");
       navigate("/");
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = extractErrorMessage(error);
+
       toast.error(
         "Login failed",
-        error.response?.data?.message || "Invalid credentials"
+        errorMessage
       );
       throw error;
     } finally {
@@ -37,4 +39,24 @@ export const useLogin = () => {
     handleLogin,
     loading,
   };
+};
+
+const extractErrorMessage = (error: unknown): string => {
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "response" in error &&
+    typeof (error as { response?: unknown }).response === "object" &&
+    (error as { response?: { data?: unknown } }).response !== null
+  ) {
+    const data = (error as { response?: { data?: unknown } }).response?.data;
+    if (data && typeof data === "object" && "message" in data) {
+      const message = (data as { message?: string }).message;
+      if (typeof message === "string") {
+        return message;
+      }
+    }
+  }
+
+  return "Invalid credentials";
 };

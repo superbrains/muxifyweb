@@ -4,7 +4,7 @@ import { indexedDbStorage } from "@/shared/lib/indexedDbStorage";
 
 // User type definitions
 export type UserType = "artist" | "company" | "ad-manager";
-export type ArtistSubType = "artist" | "creator" | "dj" | "podcaster";
+export type ArtistSubType = "artist" | "musician" | "creator" | "dj" | "podcaster";
 export type CompanySubType = "record_label" | "distribution" | "publisher" | "management";
 export type AdManagerSubType = "personal" | "business" | "agency" | "enterprise";
 
@@ -62,6 +62,7 @@ export interface CompanyOnboardingData {
   
   // Directors Information
   directors?: DirectorInfo[];
+  artists?: string[];
   
   // Label Logo
   labelLogo?: string; // Base64 or URL
@@ -448,8 +449,8 @@ export const useUserManagementStore = create<UserManagementState>()(
             // Inject empty artists array into user data
             updatedData = {
               ...companyData,
-              artists: [],
-            } as any;
+              artists: companyData.artists ?? [],
+            };
           }
         }
 
@@ -484,8 +485,11 @@ export const useUserManagementStore = create<UserManagementState>()(
 
       clearUser: (userId: string) => {
         const state = get();
-        const { [userId]: removed, ...remainingUsers } = state.users;
-        
+        const remainingUsers = { ...state.users };
+        if (userId in remainingUsers) {
+          delete remainingUsers[userId];
+        }
+
         set({
           users: remainingUsers,
           currentUserId: state.currentUserId === userId ? null : state.currentUserId,

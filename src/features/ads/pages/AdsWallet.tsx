@@ -8,6 +8,7 @@ import {
     Input,
     Grid,
     Icon,
+    Image,
 } from '@chakra-ui/react';
 import { FiCheck, FiX } from 'react-icons/fi';
 import { TopUpModal } from '../components/TopUpModal';
@@ -40,11 +41,11 @@ export const AdsWallet: React.FC = () => {
     ]);
 
     const paymentMethods = [
-        { id: 'paystack', name: 'Paystack', logo: '💳' },
-        { id: 'flutterwave', name: 'Flutterwave', logo: '🌐' },
-        { id: 'fincra', name: 'Fincra', logo: '💰' },
-        { id: 'mtn', name: 'MTN - MoMo', logo: '📱' },
-        { id: 'airtime', name: 'Airtime', logo: '📞' },
+        { id: 'paystack', name: 'Paystack', image: 'https://res.cloudinary.com/dygrsvya5/image/upload/v1762541366/paypal_q3jbsu.png' },
+        { id: 'flutterwave', name: 'Flutterwave', image: 'https://res.cloudinary.com/dygrsvya5/image/upload/v1762541366/flutterwave_h4hwpl.png' },
+        { id: 'fincra', name: 'Fincra', image: 'https://res.cloudinary.com/dygrsvya5/image/upload/v1762541366/fincra_wt7l83.png' },
+        { id: 'mtn', name: 'MTN - MoMo', image: 'https://res.cloudinary.com/dygrsvya5/image/upload/v1762541366/Momo_ea8emj.png' },
+        { id: 'airtime', name: 'Airtime', image: 'https://res.cloudinary.com/dygrsvya5/image/upload/v1762541366/airtime_ut4baa.png' },
     ];
 
     const handleAmountChange = (value: string) => {
@@ -127,7 +128,7 @@ export const AdsWallet: React.FC = () => {
                                 <Text fontSize="sm" fontWeight="semibold">
                                     Funding Method
                                 </Text>
-                                <Grid templateColumns="repeat(2, 1fr)" gap={2}>
+                                <Grid templateColumns={{ base: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)', lg: 'repeat(4, 1fr)' }} gap={2}>
                                     {paymentMethods.map((method) => (
                                         <VStack
                                             key={method.id}
@@ -138,26 +139,20 @@ export const AdsWallet: React.FC = () => {
                                             border="2px solid"
                                             borderColor={selectedMethod === method.id ? '#f94444' : 'gray.100'}
                                             borderRadius="lg"
-                                            bg={selectedMethod === method.id ? '#ffefef' : 'white'}
                                             onClick={() => setSelectedMethod(method.id)}
                                             _hover={{ borderColor: '#f94444' }}
+                                            transition="all 0.2s"
+                                            bg="white"
                                         >
-                                            <Box fontSize="xl">{method.logo}</Box>
+                                            <Image
+                                                src={method.image}
+                                                alt={method.name}
+                                                boxSize="60px"
+                                                objectFit="contain"
+                                            />
                                             <Text fontSize="2xs" textAlign="center" lineHeight="1.2">
                                                 {method.name}
                                             </Text>
-                                            {selectedMethod === method.id && (
-                                                <Box
-                                                    position="absolute"
-                                                    top={1}
-                                                    right={1}
-                                                    bg="#f94444"
-                                                    borderRadius="full"
-                                                    p={0.5}
-                                                >
-                                                    <Icon as={FiCheck} boxSize={2.5} color="white" />
-                                                </Box>
-                                            )}
                                         </VStack>
                                     ))}
                                 </Grid>

@@ -21,13 +21,15 @@ export const MusicTab: React.FC = () => {
     const navigate = useNavigate();
     const { singles, albums } = useMusicStore();
     const { isPodcaster, isDJ, isMusician } = useUserType();
-    
-    const [activeTab, setActiveTab] = useState<'single' | 'album' | 'mix' | 'episode' | 'topic'>(
+    type SubTabId = 'single' | 'album' | 'mix' | 'episode' | 'topic';
+    type InternalTab = 'single' | 'album';
+
+    const [activeTab, setActiveTab] = useState<SubTabId>(
         isPodcaster ? 'episode' : isDJ ? 'mix' : 'single'
     );
 
     // Get tabs based on user type
-    const getSubTabs = () => {
+    const getSubTabs = (): Array<{ id: SubTabId; label: string }> => {
         if (isPodcaster) {
             return [
                 { id: 'episode', label: 'Episode' },
@@ -51,18 +53,18 @@ export const MusicTab: React.FC = () => {
             { id: 'album', label: 'Albums' },
         ];
     };
-    
+
     const subTabs = getSubTabs();
-    
+
     // Map display tabs to internal state
-    const mapToInternalTab = (tab: string): 'single' | 'album' => {
+    const mapToInternalTab = (tab: SubTabId): InternalTab => {
         if (tab === 'episode' || tab === 'mix' || tab === 'single') {
             return 'single';
         }
         return 'album';
     };
-    
-    const mapToDisplayTab = (tab: 'single' | 'album'): string => {
+
+    const mapToDisplayTab = (tab: InternalTab): SubTabId => {
         if (isPodcaster) {
             return tab === 'single' ? 'episode' : 'topic';
         }
@@ -71,10 +73,25 @@ export const MusicTab: React.FC = () => {
         }
         return tab;
     };
-    
-    const filteredItems: (SingleItem | AlbumItem)[] = (activeTab === 'single' || activeTab === 'mix' || activeTab === 'episode') 
-        ? singles 
+
+    const isSingleTab = (tab: SubTabId) => tab === 'single' || tab === 'mix' || tab === 'episode';
+    const filteredItems: (SingleItem | AlbumItem)[] = isSingleTab(activeTab)
+        ? singles
         : albums;
+
+    const handleSubTabChange = (tabId: string) => {
+        const nextTab = subTabs.find((tab) => tab.id === tabId);
+        if (nextTab) {
+            setActiveTab(nextTab.id);
+        }
+    };
+
+    const currentDisplayTab = mapToDisplayTab(mapToInternalTab(activeTab));
+    const albumTabValue = isSingleTab(activeTab) ? 'mix' : 'album';
+    const singleLabel = isPodcaster ? 'Episode' : isDJ ? 'Mix' : 'Single';
+    const singleLabelPlural = isPodcaster ? 'episodes' : isDJ ? 'mixes' : 'singles';
+    const albumLabel = isPodcaster ? 'Topic' : 'Album';
+    const albumLabelPlural = isPodcaster ? 'topics' : 'albums';
 
     return (
         <>
@@ -83,8 +100,8 @@ export const MusicTab: React.FC = () => {
                 {/* Single/Album Tabs */}
                 <AnimatedTabs
                     tabs={subTabs}
-                    activeTab={mapToDisplayTab(activeTab as 'single' | 'album')}
-                    onTabChange={(tab) => setActiveTab(mapToInternalTab(tab) as any)}
+                    activeTab={currentDisplayTab}
+                    onTabChange={handleSubTabChange}
                     size="sm"
                 />
 
@@ -130,7 +147,6 @@ export const MusicTab: React.FC = () => {
                         px={4}
                         _hover={{ bg: 'primary.600' }}
                         onClick={() => {
-                            const albumTabValue = (activeTab === 'single' || activeTab === 'mix' || activeTab === 'episode') ? 'mix' : 'album';
                             navigate(`/upload?tab=music&albumTab=${albumTabValue}`);
                         }}
                     >
@@ -145,7 +161,7 @@ export const MusicTab: React.FC = () => {
                 {filteredItems.length === 0 ? (
                     <Box textAlign="center" py={12}>
                         <Text color="gray.500" fontSize="14px">
-                            No {(activeTab === 'single' || activeTab === 'mix' || activeTab === 'episode') ? (isPodcaster ? 'episodes' : isDJ ? 'mixes' : 'singles') : (isPodcaster ? 'topics' : 'albums')} found
+                            No {isSingleTab(activeTab) ? singleLabelPlural : albumLabelPlural} found
                         </Text>
                         <Button
                             mt={4}
@@ -153,14 +169,11 @@ export const MusicTab: React.FC = () => {
                             color="white"
                             fontSize="12px"
                             onClick={() => {
-                                const albumTabValue = (activeTab === 'single' || activeTab === 'mix' || activeTab === 'episode') ? 'mix' : 'album';
                                 navigate(`/upload?tab=music&albumTab=${albumTabValue}`);
                             }}
                             _hover={{ bg: 'primary.600' }}
                         >
-                            Upload Your First {(activeTab === 'single' || activeTab === 'mix' || activeTab === 'episode') 
-                                ? (isPodcaster ? 'Episode' : isDJ ? 'Mix' : 'Single') 
-                                : (isPodcaster ? 'Topic' : 'Album')}
+                            Upload Your First {isSingleTab(activeTab) ? singleLabel : albumLabel}
                         </Button>
                     </Box>
                 ) : (
@@ -176,9 +189,9 @@ export const MusicTab: React.FC = () => {
                             plays={item.plays}
                             unlocks={item.unlocks}
                             gifts={item.gifts}
-                            type={(activeTab === 'single' || activeTab === 'mix' || activeTab === 'episode') ? 'single' : 'album'}
+                            type={isSingleTab(activeTab) ? 'single' : 'album'}
                             onEdit={() => {
-                                const isSingle = (activeTab === 'single' || activeTab === 'mix' || activeTab === 'episode');
+                                const isSingle = isSingleTab(activeTab);
                                 navigate(isSingle ? `/upload?mixId=${item.id}` : `/upload?albumId=${item.id}`);
                             }}
                             onView={() => console.log('View', item.id)}

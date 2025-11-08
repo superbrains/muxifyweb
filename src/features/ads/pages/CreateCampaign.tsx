@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import {
     Box,
 } from '@chakra-ui/react';
-import { FiImage, FiVideo, FiMusic } from 'react-icons/fi';
 import { AnimatedTabs } from '@shared/components';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { PhotoAdsFlow1 } from '../components/photo-ads/flow-1/PhotoAdsFlow1';
@@ -13,6 +12,7 @@ import { MusicAdsTab } from '../components/MusicAdsTab';
 import { useAdsStore } from '../store/useAdsStore';
 import { useAdsUploadStore } from '../store/useAdsUploadStore';
 import { loadCampaignToStore } from '../utils/loadCampaignToStore';
+import { GalleryIcon, MusicFilledIcon, VideoPlayIcon } from '@/shared/icons/CustomIcons';
 
 export const CreateCampaign: React.FC = () => {
     const [searchParams] = useSearchParams();
@@ -30,10 +30,6 @@ export const CreateCampaign: React.FC = () => {
 
         if (tabParam && ['photo', 'video', 'audio'].includes(tabParam)) {
             setActiveTab(tabParam);
-            // Reset photo flow when switching tabs
-            if (tabParam !== 'photo') {
-                setPhotoFlow(1);
-            }
         }
 
         // If there's an ID param, we're editing - load campaign data
@@ -64,22 +60,22 @@ export const CreateCampaign: React.FC = () => {
     const editCampaignType = editCampaign?.type;
 
     const tabs = [
-        { 
-            id: 'photo', 
-            label: 'Photo Ads', 
-            icon: FiImage,
+        {
+            id: 'photo',
+            label: 'Photo Ads',
+            icon: GalleryIcon,
             disabled: editCampaignId ? editCampaignType !== 'photo' : false,
         },
-        { 
-            id: 'video', 
-            label: 'Video Ads', 
-            icon: FiVideo,
+        {
+            id: 'video',
+            label: 'Video Ads',
+            icon: VideoPlayIcon,
             disabled: editCampaignId ? editCampaignType !== 'video' : false,
         },
-        { 
-            id: 'audio', 
-            label: 'Audio Ads', 
-            icon: FiMusic,
+        {
+            id: 'audio',
+            label: 'Audio Ads',
+            icon: MusicFilledIcon,
             disabled: editCampaignId ? editCampaignType !== 'audio' : false,
         },
     ];
@@ -107,7 +103,7 @@ export const CreateCampaign: React.FC = () => {
 
     return (
         <Box bg="white" minH="100vh" p={{ base: 4, md: 6 }}>
-           
+
 
             {/* Tabs */}
             <Box mb={6}>
@@ -134,8 +130,8 @@ export const CreateCampaign: React.FC = () => {
                 <PhotoAdsFlow2 onNext={handlePhotoFlowNext} onBack={handlePhotoFlowBack} />
             )}
             {activeTab === 'photo' && photoFlow === 3 && (
-                <PhotoAdsFlow3 
-                    onNext={handlePhotoFlowNext} 
+                <PhotoAdsFlow3
+                    onNext={handlePhotoFlowNext}
                     onBack={handlePhotoFlowBack}
                     onResetFlow={() => setPhotoFlow(1)}
                     editCampaignId={editCampaignId}

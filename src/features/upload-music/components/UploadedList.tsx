@@ -14,40 +14,48 @@ export const UploadedList: React.FC<UploadedListProps> = ({ tracks, onDelete, on
         {
             key: 'title' as keyof MusicTrack,
             title: 'Title',
-            render: (value: string, record: MusicTrack) => (
-                <div>
-                    <div className="font-medium text-gray-900">{value}</div>
-                    <div className="text-sm text-gray-500">{record.artist}</div>
-                </div>
-            ),
+            render: (value: unknown, record: MusicTrack) => {
+                const displayValue = typeof value === 'string' ? value : '';
+                return (
+                    <div>
+                        <div className="font-medium text-gray-900">{displayValue}</div>
+                        <div className="text-sm text-gray-500">{record.artist}</div>
+                    </div>
+                );
+            },
         },
         {
             key: 'genre' as keyof MusicTrack,
             title: 'Genre',
-            render: (value: string) => (
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                    {value}
-                </span>
-            ),
+            render: (value: unknown) => {
+                const displayValue = typeof value === 'string' ? value : '';
+                return (
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                        {displayValue}
+                    </span>
+                );
+            },
         },
         {
             key: 'fileSize' as keyof MusicTrack,
             title: 'Size',
-            render: (value: number) => formatFileSize(value),
+            render: (value: unknown) => formatFileSize(typeof value === 'number' ? value : 0),
         },
         {
             key: 'status' as keyof MusicTrack,
             title: 'Status',
-            render: (value: string) => {
+            render: (value: unknown) => {
+                const status = typeof value === 'string' ? value : '';
                 const statusClasses = {
                     completed: 'bg-green-100 text-green-800',
                     processing: 'bg-yellow-100 text-yellow-800',
                     failed: 'bg-red-100 text-red-800',
                     uploading: 'bg-blue-100 text-blue-800',
-                };
+                } as const;
+                const badgeClass = statusClasses[status as keyof typeof statusClasses] ?? 'bg-gray-100 text-gray-800';
                 return (
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusClasses[value as keyof typeof statusClasses]}`}>
-                        {value}
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${badgeClass}`}>
+                        {status}
                     </span>
                 );
             },
@@ -55,12 +63,12 @@ export const UploadedList: React.FC<UploadedListProps> = ({ tracks, onDelete, on
         {
             key: 'createdAt' as keyof MusicTrack,
             title: 'Uploaded',
-            render: (value: string) => formatDate(value),
+            render: (value: unknown) => formatDate(typeof value === 'string' ? value : ''),
         },
         {
             key: 'actions' as keyof MusicTrack,
             title: 'Actions',
-            render: (_value: any, record: MusicTrack) => (
+            render: (_value: unknown, record: MusicTrack) => (
                 <div className="flex space-x-2">
                     {onEdit && (
                         <button

@@ -9,10 +9,24 @@ import {
 import { useUploadMusicStore } from '@uploadMusic/store/useUploadMusicStore';
 import { ReviewTrackItem, ReleaseScheduler } from './';
 import { useUserType } from '@/features/auth/hooks/useUserType';
+import type {
+    ArtistOnboardingData,
+    CompanyOnboardingData,
+    AdManagerOnboardingData,
+} from '@/features/auth/store/useUserManagementStore';
+
+const isArtistData = (data: unknown): data is ArtistOnboardingData =>
+    !!data && typeof (data as ArtistOnboardingData).performingName !== 'undefined';
+
+const isCompanyData = (data: unknown): data is CompanyOnboardingData =>
+    !!data && typeof (data as CompanyOnboardingData).legalCompanyName !== 'undefined';
+
+const isAdManagerData = (data: unknown): data is AdManagerOnboardingData =>
+    !!data && typeof (data as AdManagerOnboardingData).fullName !== 'undefined';
 
 export const AlbumReview: React.FC = () => {
     const { album } = useUploadMusicStore();
-    const { isRecordLabelOnly, userData } = useUserType();
+    const { isRecordLabelOnly, userData, userType } = useUserType();
     const {
         tracks,
         coverArt,
@@ -33,9 +47,19 @@ export const AlbumReview: React.FC = () => {
         if (isRecordLabelOnly) {
             return 'Select Artist';
         }
-        // For non-record labels, use logged in user's name
-        const artistData = userData as any;
-        return artistData?.performingName || artistData?.fullName || 'Artist';
+        if (!userData) {
+            return 'Artist';
+        }
+        if (userType === 'artist' && isArtistData(userData)) {
+            return userData.performingName || userData.fullName || 'Artist';
+        }
+        if (userType === 'company' && isCompanyData(userData)) {
+            return userData.companyName || userData.legalCompanyName || 'Artist';
+        }
+        if (userType === 'ad-manager' && isAdManagerData(userData)) {
+            return userData.fullName || 'Artist';
+        }
+        return 'Artist';
     };
 
     const readyTracks = tracks.filter(track => track.status === 'ready');

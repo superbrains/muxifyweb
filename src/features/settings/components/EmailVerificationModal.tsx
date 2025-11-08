@@ -12,7 +12,7 @@ import {
     Link,
 } from '@chakra-ui/react';
 import { MdClose } from 'react-icons/md';
-import { toaster } from '@/components/ui/toaster';
+import { toaster } from '@/components/ui/toaster-instance';
 
 interface EmailVerificationModalProps {
     isOpen: boolean;
@@ -78,6 +78,7 @@ export const EmailVerificationModal: React.FC<EmailVerificationModalProps> = ({
             });
             onSuccess();
         } catch (error) {
+            console.error('email verification error', error);
             toaster.create({
                 title: 'Verification Failed',
                 description: 'Invalid verification code. Please try again.',

@@ -12,7 +12,7 @@ import {
     Link,
 } from '@chakra-ui/react';
 import { MdClose } from 'react-icons/md';
-import { toaster } from '@/components/ui/toaster';
+import { toaster } from '@/components/ui/toaster-instance';
 
 interface RepeatPinModalProps {
     isOpen: boolean;
@@ -76,6 +76,7 @@ export const RepeatPinModal: React.FC<RepeatPinModalProps> = ({
             });
             onSuccess();
         } catch (error) {
+            console.error('repeat pin error', error);
             toaster.create({
                 title: 'PIN Confirmation Failed',
                 description: 'Failed to confirm PIN. Please try again.',

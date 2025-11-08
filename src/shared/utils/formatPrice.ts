@@ -105,7 +105,7 @@ export function formatPrice(
     }
 
     return formatted;
-  } catch (error) {
+  } catch {
     // Fallback formatting if Intl.NumberFormat fails
     const formattedNumber = numericAmount.toLocaleString(targetLocale, {
       minimumFractionDigits,
