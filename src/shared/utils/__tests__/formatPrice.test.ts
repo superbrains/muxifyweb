@@ -1,7 +1,6 @@
 import {
   formatPrice,
   formatNaira,
-  formatPriceCompact,
   formatNairaCompact,
 } from "../formatPrice";
 

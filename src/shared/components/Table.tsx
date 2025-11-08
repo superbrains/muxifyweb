@@ -1,14 +1,15 @@
 import React from 'react';
+import type { ReactNode } from 'react';
 
 interface Column<T> {
-    key: keyof T;
+    key: keyof T | string;
     title: string;
-    render?: (value: any, record: T) => React.ReactNode;
+    render?: (value: unknown, record: T) => React.ReactNode;
     width?: string;
     align?: 'left' | 'center' | 'right';
 }
 
-interface TableProps<T> {
+interface TableProps<T extends object> {
     data: T[];
     columns: Column<T>[];
     loading?: boolean;
@@ -17,7 +18,7 @@ interface TableProps<T> {
     className?: string;
 }
 
-export const Table = <T extends Record<string, any>>({
+export const Table = <T extends object>({
     data,
     columns,
     loading = false,
@@ -73,10 +74,15 @@ export const Table = <T extends Record<string, any>>({
                                         column.align === 'right' ? 'text-right' : 'text-left'
                                         }`}
                                 >
-                                    {column.render
-                                        ? column.render(record[column.key], record)
-                                        : record[column.key]
-                                    }
+                                    {(() => {
+                                        const cellValue =
+                                            typeof column.key === 'string' && column.key in record
+                                                ? (record as Record<string, unknown>)[column.key]
+                                                : record[column.key as keyof T];
+                                        return column.render
+                                            ? column.render(cellValue, record)
+                                            : (cellValue as ReactNode);
+                                    })()}
                                 </td>
                             ))}
                         </tr>

@@ -10,9 +10,9 @@ import {
     Icon,
     IconButton,
     Heading,
+    Image,
 } from '@chakra-ui/react';
 import { MdClose } from 'react-icons/md';
-import { FiCheck } from 'react-icons/fi';
 
 interface TopUpModalProps {
     isOpen: boolean;
@@ -27,22 +27,22 @@ export const TopUpModal: React.FC<TopUpModalProps> = ({
 }) => {
     const [amount, setAmount] = useState('');
     const [selectedMethod, setSelectedMethod] = useState<string>('paystack');
-    
+
     const paymentMethods = [
-        { id: 'paystack', name: 'Paystack', icon: '💳' },
-        { id: 'flutterwave', name: 'Flutterwave', icon: '🌐' },
-        { id: 'fincra', name: 'Fincra', icon: '💰' },
-        { id: 'mtn', name: 'MTN - MoMo', icon: '📱' },
-        { id: 'airtime', name: 'Airtime', icon: '📞' },
+        { id: 'paystack', name: 'Paystack', image: 'https://res.cloudinary.com/dygrsvya5/image/upload/v1762541366/paypal_q3jbsu.png' },
+        { id: 'flutterwave', name: 'Flutterwave', image: 'https://res.cloudinary.com/dygrsvya5/image/upload/v1762541366/flutterwave_h4hwpl.png' },
+        { id: 'fincra', name: 'Fincra', image: 'https://res.cloudinary.com/dygrsvya5/image/upload/v1762541366/fincra_wt7l83.png' },
+        { id: 'mtn', name: 'MTN - MoMo', image: 'https://res.cloudinary.com/dygrsvya5/image/upload/v1762541366/Momo_ea8emj.png' },
+        { id: 'airtime', name: 'Airtime', image: 'https://res.cloudinary.com/dygrsvya5/image/upload/v1762541366/airtime_ut4baa.png' },
     ];
-    
+
     const handleAmountChange = (value: string) => {
         // Only allow numbers and decimal
         if (/^\d*\.?\d*$/.test(value)) {
             setAmount(value);
         }
     };
-    
+
     const handleSubmit = async () => {
         if (!amount || parseFloat(amount) <= 0) {
             return;
@@ -52,14 +52,14 @@ export const TopUpModal: React.FC<TopUpModalProps> = ({
         onComplete();
         onClose();
     };
-    
+
     return (
         <Dialog.Root open={isOpen} onOpenChange={(e) => !e.open && onClose()}>
             <Dialog.Backdrop />
             <Dialog.Positioner>
-                <Dialog.Content 
-                    maxW="350px" 
-                    p={5} 
+                <Dialog.Content
+                    maxW="350px"
+                    p={5}
                     borderRadius="20px"
                     position="relative"
                 >
@@ -68,14 +68,15 @@ export const TopUpModal: React.FC<TopUpModalProps> = ({
                         variant="ghost"
                         size="sm"
                         position="absolute"
+                        color="primary.500"
                         right={4}
                         top={4}
                         onClick={onClose}
                     >
                         <Icon as={MdClose} boxSize={5} />
                     </IconButton>
-                    
-                    <VStack gap={4} align="stretch" w="full">
+
+                    <VStack gap={6} align="stretch" w="full">
                         {/* Header */}
                         <VStack gap={1}>
                             <Heading size="sm" fontWeight="semibold">
@@ -85,7 +86,7 @@ export const TopUpModal: React.FC<TopUpModalProps> = ({
                                 Add more money to your ad wallet to keep your ad active, and avoid unnecessary cancelling
                             </Text>
                         </VStack>
-                        
+
                         {/* Amount Input */}
                         <VStack gap={2} align="stretch">
                             <Text fontSize="xs" fontWeight="medium" color="gray.900">
@@ -122,48 +123,41 @@ export const TopUpModal: React.FC<TopUpModalProps> = ({
                                 </HStack>
                             </Box>
                         </VStack>
-                        
+
                         {/* Payment Methods */}
-                        <VStack gap={2} align="stretch">
+                        <VStack alignItems="center" gap={5} align="stretch">
                             <Text fontSize="sm" fontWeight="semibold">
                                 Funding Method
                             </Text>
-                            <Box display="grid" gridTemplateColumns="repeat(3, 1fr)" gap={2}>
+                            <Box display="grid" gridTemplateColumns="repeat(4, 1fr)" gap={2}>
                                 {paymentMethods.map((method) => (
                                     <VStack
                                         key={method.id}
                                         position="relative"
-                                        gap={1}
+                                        gap={0}
                                         cursor="pointer"
                                         p={2}
-                                        border="2px solid"
-                                        borderColor={selectedMethod === method.id ? 'primary.500' : 'gray.100'}
+                                        border={'2px solid'}
+                                        borderColor={selectedMethod === method.id ? 'primary.500' : 'red.100'}
                                         borderRadius="lg"
-                                        bg={selectedMethod === method.id ? 'primary.50' : 'white'}
+                                        bg="white"
                                         onClick={() => setSelectedMethod(method.id)}
-                                        _hover={{ borderColor: 'primary.300' }}
+                                        _hover={{ borderColor: selectedMethod === method.id ? 'primary.500' : 'red.300' }}
+                                        transition="all 0.2s"
+                                        align="center"
+                                        justify="center"
                                     >
-                                        <Box fontSize="xl">{method.icon}</Box>
-                                        <Text fontSize="2xs" textAlign="center" lineHeight="1.2">
-                                            {method.name}
-                                        </Text>
-                                        {selectedMethod === method.id && (
-                                            <Box
-                                                position="absolute"
-                                                top={0.5}
-                                                right={0.5}
-                                                bg="primary.500"
-                                                borderRadius="full"
-                                                p={0.5}
-                                            >
-                                                <Icon as={FiCheck} boxSize={2.5} color="white" />
-                                            </Box>
-                                        )}
+                                        <Image
+                                            src={method.image}
+                                            alt={method.name}
+                                            boxSize="50px"
+                                            objectFit="contain"
+                                        />
                                     </VStack>
                                 ))}
                             </Box>
                         </VStack>
-                        
+
                         {/* Submit Button */}
                         <Button
                             bg="primary.500"

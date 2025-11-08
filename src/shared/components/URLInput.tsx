@@ -51,7 +51,7 @@ const validateURL = (url: string): boolean => {
         const hasValidDomain = !!(domain && domain.length > 0);
 
         return isValidProtocol && isValidTLD && hasValidDomain;
-    } catch (error) {
+    } catch {
         return false;
     }
 };

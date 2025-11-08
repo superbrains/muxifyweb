@@ -2,6 +2,7 @@ import React from 'react';
 import { Box, HStack, Icon, Image, Text, VStack, Badge, Flex, Button } from '@chakra-ui/react';
 import { FiVideo, FiMusic, FiEdit2, FiZap } from 'react-icons/fi';
 import { CustomMenu } from '@/shared/components/CustomMenu';
+import { useAdsStore } from '../../store/useAdsStore';
 import type { AdCampaign } from '../../types';
 
 interface AdCardProps {
@@ -9,6 +10,7 @@ interface AdCardProps {
     onEdit?: () => void;
     onDelete?: () => void;
     onView?: () => void;
+    onSuspend?: () => void;
 }
 
 export const AdCard: React.FC<AdCardProps> = ({
@@ -16,7 +18,9 @@ export const AdCard: React.FC<AdCardProps> = ({
     onEdit,
     onDelete,
     onView,
+    onSuspend,
 }) => {
+    const { pauseCampaign } = useAdsStore();
     const getStatusLabel = (campaign: AdCampaign) => {
         if (campaign.isStopped) {
             return 'Inactive';
@@ -72,11 +76,32 @@ export const AdCard: React.FC<AdCardProps> = ({
         console.log('Link copied:', link);
     };
 
+    const handleSuspend = () => {
+        if (onSuspend) {
+            onSuspend();
+        } else {
+            // Default behavior: pause the campaign
+            pauseCampaign(campaign.id);
+        }
+    };
+
+    const handleCardClick = (e: React.MouseEvent) => {
+        // Don't trigger view if clicking on menu or edit button
+        if (
+            (e.target as HTMLElement).closest('[data-menu-trigger]') ||
+            (e.target as HTMLElement).closest('[data-edit-button]')
+        ) {
+            return;
+        }
+        if (onView) {
+            onView();
+        }
+    };
+
     const menuOptions = [
-        { label: 'Edit', value: 'edit', onClick: onEdit },
-        { label: 'View', value: 'view', onClick: onView },
         { label: 'Share', value: 'share', onClick: handleShare },
         { label: 'Copy Link', value: 'copy-link', onClick: handleCopyLink },
+        { label: 'Suspend', value: 'suspend', onClick: handleSuspend },
         { label: 'Delete', value: 'delete', color: 'red.500', onClick: onDelete },
     ];
 
@@ -150,11 +175,20 @@ export const AdCard: React.FC<AdCardProps> = ({
             h="full"
             display="flex"
             flexDirection="column"
-            _hover={{ shadow: 'md', borderColor: 'gray.300' }}
+            _hover={{ shadow: 'md', borderColor: 'gray.300', cursor: 'pointer' }}
             transition="all 0.2s"
+            onClick={handleCardClick}
+            cursor="pointer"
         >
             {/* Three dots menu at top right */}
-            <Box position="absolute" top={3} right={3} zIndex={1}>
+            <Box
+                position="absolute"
+                top={3}
+                right={3}
+                zIndex={1}
+                data-menu-trigger
+                onClick={(e) => e.stopPropagation()}
+            >
                 <CustomMenu options={menuOptions} />
             </Box>
 
@@ -323,10 +357,16 @@ export const AdCard: React.FC<AdCardProps> = ({
                             px={3}
                             py={1.5}
                             borderRadius="8px"
-                            onClick={onEdit}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                if (onEdit) {
+                                    onEdit();
+                                }
+                            }}
                             _hover={{ bg: '#ffe5e5' }}
                             lineHeight="1.4"
                             size="sm"
+                            data-edit-button
                         >
                             <Icon as={FiEdit2} boxSize={4} mr={1.5} />
                             Edit Ad

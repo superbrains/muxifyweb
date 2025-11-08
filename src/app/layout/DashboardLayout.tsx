@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@app/hooks/useAuth';
 import { usePermission } from '@app/hooks/usePermission';
-import { useTheme } from '@app/providers/ThemeProvider';
+import { useTheme } from '@app/hooks/useTheme';
 
 interface Permission {
     canUploadMusic: boolean;

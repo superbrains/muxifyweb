@@ -4,10 +4,13 @@ import { FiArrowRight, FiArrowLeft } from 'react-icons/fi';
 import { FileUploadArea, UploadSuccessPage, DateInput, TimeInput } from '@upload/components';
 import { UploadImageIcon } from '@/shared/icons/CustomIcons';
 import { CountryStateSelect } from '@shared/components';
-import { useAdsUploadStore } from '../store/useAdsUploadStore';
+import { useAdsUploadStore, type UploadFile, type AdBaseInfo, type CallToAction as CallToActionType } from '../store/useAdsUploadStore';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/shared/hooks/useToast';
 import { useAdsStore } from '../store/useAdsStore';
+
+const TARGET_TYPES: ReadonlyArray<AdBaseInfo['target']['type']> = ['music', 'video', 'photo'];
+const CALL_TO_ACTIONS: ReadonlyArray<CallToActionType['action']> = ['signup', 'download', 'view', 'click'];
 
 export const PhotoAdsTab: React.FC = () => {
     const [flow, setFlow] = useState(1);
@@ -34,7 +37,7 @@ export const PhotoAdsTab: React.FC = () => {
     const navigate = useNavigate();
     const { toast } = useToast();
 
-    const handleFileReady = (file: any) => {
+    const handleFileReady = (file: UploadFile | null) => {
         photoSetFile(file);
     };
 
@@ -66,10 +69,14 @@ export const PhotoAdsTab: React.FC = () => {
             }
 
             // Save Flow 1 data
+            const normalizedTargetType: AdBaseInfo['target']['type'] = TARGET_TYPES.includes(targetType as AdBaseInfo['target']['type'])
+                ? (targetType as AdBaseInfo['target']['type'])
+                : 'music';
+
             photoSetAdInfo({
                 title,
                 location: { country, state },
-                target: { type: targetType as any, genre, artists: selectedArtists },
+                target: { type: normalizedTargetType, genre, artists: selectedArtists },
                 schedule: {
                     date: scheduleDate ? new Date(scheduleDate) : null,
                     startTime,
@@ -86,7 +93,11 @@ export const PhotoAdsTab: React.FC = () => {
             }
 
             // Save Flow 2 data
-            photoSetCallToAction({ action: callToAction as any, link: actionLink });
+            const normalizedCallToAction: CallToActionType['action'] = CALL_TO_ACTIONS.includes(callToAction as CallToActionType['action'])
+                ? (callToAction as CallToActionType['action'])
+                : 'signup';
+
+            photoSetCallToAction({ action: normalizedCallToAction, link: actionLink });
             photoSetBudgetReach({
                 amount: parseFloat(budget) || 0,
                 impressions: parseInt(impressions) || 0,
@@ -106,6 +117,12 @@ export const PhotoAdsTab: React.FC = () => {
     const handlePublish = async () => {
         try {
             // Create campaign
+            const normalizedTargetType: AdBaseInfo['target']['type'] = TARGET_TYPES.includes(targetType as AdBaseInfo['target']['type'])
+                ? (targetType as AdBaseInfo['target']['type'])
+                : 'music';
+            const campaignTargetType: 'music' | 'video' | 'audio' =
+                normalizedTargetType === 'photo' ? 'audio' : normalizedTargetType;
+
             const campaign = {
                 title: photoFile?.name || 'Photo Ad',
                 type: 'photo' as const,
@@ -114,7 +131,7 @@ export const PhotoAdsTab: React.FC = () => {
                     state: state || '',
                 },
                 target: {
-                    type: targetType as any,
+                    type: campaignTargetType,
                     genre: genre || undefined,
                     artists: selectedArtists.length > 0 ? selectedArtists : undefined,
                 },

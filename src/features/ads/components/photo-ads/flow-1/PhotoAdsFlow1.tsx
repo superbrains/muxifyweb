@@ -26,7 +26,7 @@ export const PhotoAdsFlow1: React.FC<{
     const [scheduleDate, setScheduleDate] = useState('');
 
     // Mock artist suggestions - in real app, this would come from API
-    const artistSuggestions = [
+    const artistSuggestions = useMemo(() => [
         'Wizkid',
         'Davido',
         'Burna Boy',
@@ -40,7 +40,7 @@ export const PhotoAdsFlow1: React.FC<{
         'Olamide',
         'Pheelz',
         'Spyro'
-    ];
+    ], []);
 
     // Memoize filtered suggestions to avoid recalculating on every render
     const filteredSuggestions = useMemo(() => {
@@ -48,7 +48,7 @@ export const PhotoAdsFlow1: React.FC<{
         suggestion.toLowerCase().includes(artistInput.toLowerCase()) &&
         !selectedArtists.includes(suggestion)
     );
-    }, [artistInput, selectedArtists]);
+    }, [artistInput, selectedArtists, artistSuggestions]);
     const [startTime, setStartTime] = useState('');
     const [endTime, setEndTime] = useState('');
     const [ampm, setAmpm] = useState<'AM' | 'PM'>('AM');

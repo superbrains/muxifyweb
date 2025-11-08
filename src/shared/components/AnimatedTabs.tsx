@@ -1,11 +1,9 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { Box, Button, HStack, Icon } from '@chakra-ui/react';
-import type { IconType } from 'react-icons';
-
 interface Tab {
     id: string;
     label: string;
-    icon?: IconType;
+    icon?: React.ElementType;
     disabled?: boolean;
 }
 

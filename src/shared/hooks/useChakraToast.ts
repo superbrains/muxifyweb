@@ -1,4 +1,4 @@
-import { toaster } from "@/components/ui/toaster";
+import { toaster } from "@/components/ui/toaster-instance";
 
 export const useChakraToast = () => {
   const success = (title: string, description?: string) => {

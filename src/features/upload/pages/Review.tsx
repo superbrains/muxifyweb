@@ -16,6 +16,10 @@ import { useSearchParams } from 'react-router-dom';
 import { useUserManagementStore } from '@/features/auth/store/useUserManagementStore';
 import { useUserType } from '@/features/auth/hooks/useUserType';
 import { ArtistDropdown } from '@/shared/components/ArtistDropdown';
+import type { ArtistOnboardingData } from '@/features/auth/store/useUserManagementStore';
+
+const isArtistData = (data: unknown): data is ArtistOnboardingData =>
+    !!data && typeof (data as ArtistOnboardingData).performingName !== 'undefined';
 
 export const Review: React.FC = () => {
     const { activeTab, setActiveTab, albumTab, setAlbumTab } = useUploadStore();
@@ -156,11 +160,10 @@ export const Review: React.FC = () => {
                 title: videoUpload.videoFile?.name.replace(/\.[^/.]+$/, '') || 'Untitled Video',
                 artist: (() => {
                     const { getCurrentUserData, getCurrentUserType } = useUserManagementStore.getState();
-                    const userData = getCurrentUserData();
-                    const userType = getCurrentUserType();
-                    if (userType === 'artist') {
-                        const artistData = userData as any;
-                        return artistData?.performingName || artistData?.fullName || 'Artist';
+                    const currentUserData = getCurrentUserData();
+                    const currentUserType = getCurrentUserType();
+                    if (currentUserType === 'artist' && isArtistData(currentUserData)) {
+                        return currentUserData.performingName || currentUserData.fullName || 'Artist';
                     }
                     return 'Artist';
                 })(),

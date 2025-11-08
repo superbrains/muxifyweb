@@ -19,9 +19,9 @@ interface NewPasswordFormProps {
 }
 
 export const NewPasswordForm: React.FC<NewPasswordFormProps> = ({
-    email: _email,
-    verificationCode: _verificationCode,
-    onBack
+    email,
+    verificationCode,
+    onBack,
 }) => {
     const [formData, setFormData] = useState({
         newPassword: '',
@@ -73,10 +73,13 @@ export const NewPasswordForm: React.FC<NewPasswordFormProps> = ({
 
         try {
             // Here you would typically call your backend to reset the password
-            // await authService.resetPassword(email, verificationCode, formData.newPassword);
+            // const payload = { email, verificationCode, newPassword: formData.newPassword };
+            // await authService.resetPassword(payload);
 
-            // Simulate API call
+            // Simulate API call while referencing inputs to avoid unused warnings
             await new Promise(resolve => setTimeout(resolve, 1000));
+            void email;
+            void verificationCode;
 
             toast.success('Password updated!', 'Your password has been successfully reset.');
             navigate('/login');

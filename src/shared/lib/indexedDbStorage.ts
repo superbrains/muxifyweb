@@ -12,7 +12,9 @@ const indexedDbRawStorage: StateStorage = {
       const db = await openDatabase();
       const tx = db.transaction(['zustand'], 'readonly');
       const store = tx.objectStore('zustand');
-      const result = await promisify<IDBRequest, any>(store.get(name));
+      const result = await promisify<{ id: string; value: string } | undefined>(
+        store.get(name)
+      );
 
       return result ? result.value : null;
     } catch (error) {
@@ -80,11 +82,9 @@ function openDatabase(): Promise<IDBDatabase> {
 /**
  * Utility function to promisify IDBRequest
  */
-function promisify<T extends IDBRequest, R = any>(
-  request: T
-): Promise<R | null> {
+function promisify<R>(request: IDBRequest<R>): Promise<R | null> {
   return new Promise((resolve, reject) => {
-    request.onsuccess = () => resolve(request.result || null);
+    request.onsuccess = () => resolve(request.result ?? null);
     request.onerror = () => reject(request.error);
   });
 }

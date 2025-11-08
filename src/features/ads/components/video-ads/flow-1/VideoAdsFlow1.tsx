@@ -40,7 +40,7 @@ export const VideoAdsFlow1: React.FC<{
     const [duration, setDuration] = useState<number>(5); // Duration in seconds
 
     // Mock artist suggestions - in real app, this would come from API
-    const artistSuggestions = [
+    const artistSuggestions = useMemo(() => [
         'Wizkid',
         'Davido',
         'Burna Boy',
@@ -54,7 +54,7 @@ export const VideoAdsFlow1: React.FC<{
         'Olamide',
         'Pheelz',
         'Spyro'
-    ];
+    ], []);
 
     // Memoize filtered suggestions to avoid recalculating on every render
     const filteredSuggestions = useMemo(() => {
@@ -62,7 +62,7 @@ export const VideoAdsFlow1: React.FC<{
         suggestion.toLowerCase().includes(artistInput.toLowerCase()) &&
         !selectedArtists.includes(suggestion)
     );
-    }, [artistInput, selectedArtists]);
+    }, [artistInput, selectedArtists, artistSuggestions]);
 
     // Use selectors to only subscribe to specific state slices
     const videoFile = useAdsUploadStore((state) => state.videoFile);

@@ -1,10 +1,11 @@
 export const extractMetadata = (
-  _file: File
+  file: File
 ): Promise<{
   duration?: number;
   bitrate?: number;
   sampleRate?: number;
 }> => {
+  void file;
   return new Promise((resolve) => {
     // This would typically use a library like music-metadata
     // For now, we'll return mock data
@@ -16,7 +17,8 @@ export const extractMetadata = (
   });
 };
 
-export const generateWaveform = (_file: File): Promise<number[]> => {
+export const generateWaveform = (file: File): Promise<number[]> => {
+  void file;
   return new Promise((resolve) => {
     // This would typically use Web Audio API or a library like wavesurfer.js
     // For now, we'll return mock waveform data

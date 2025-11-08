@@ -12,7 +12,7 @@ import {
 } from '@chakra-ui/react';
 import { MdClose } from 'react-icons/md';
 import { usePayoutStore } from '../store/usePayoutStore';
-import { toaster } from '@/components/ui/toaster';
+import { toaster } from '@/components/ui/toaster-instance';
 
 interface AddPayoutAccountModalProps {
     isOpen: boolean;

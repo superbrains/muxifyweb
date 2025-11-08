@@ -11,7 +11,7 @@ import {
     IconButton,
 } from '@chakra-ui/react';
 import { MdClose, MdVisibility, MdVisibilityOff } from 'react-icons/md';
-import { toaster } from '@/components/ui/toaster';
+import { toaster } from '@/components/ui/toaster-instance';
 
 interface UpdatePasswordModalProps {
     isOpen: boolean;
@@ -76,6 +76,7 @@ export const UpdatePasswordModal: React.FC<UpdatePasswordModalProps> = ({
             });
             onSuccess();
         } catch (error) {
+            console.error('update password error', error);
             toaster.create({
                 title: 'Update Failed',
                 description: 'Failed to update password. Please try again.',

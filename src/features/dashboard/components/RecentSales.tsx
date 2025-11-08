@@ -51,43 +51,45 @@ export const RecentSales: React.FC = () => {
         {
             key: 'track' as keyof Sale,
             title: 'Track',
-            render: (value: string) => (
-                <div className="font-medium text-gray-900">{value}</div>
-            ),
+            render: (value: unknown, record: Sale) => {
+                const displayValue = typeof value === 'string' ? value : '';
+                return (
+                    <div>
+                        <div className="font-medium text-gray-900">{displayValue}</div>
+                        <div className="text-sm text-gray-500">{record.platform}</div>
+                    </div>
+                );
+            },
         },
         {
             key: 'platform' as keyof Sale,
             title: 'Platform',
-            render: (value: string) => (
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                    {value}
-                </span>
-            ),
+            render: (value: unknown) => (typeof value === 'string' ? value : ''),
         },
         {
             key: 'amount' as keyof Sale,
             title: 'Amount',
-            render: (value: number) => (
-                <div className="font-medium text-green-600">{formatCurrency(value)}</div>
-            ),
+            render: (value: unknown) => formatCurrency(typeof value === 'number' ? value : 0),
         },
         {
             key: 'date' as keyof Sale,
             title: 'Date',
-            render: (value: string) => formatDate(value),
+            render: (value: unknown) => formatDate(typeof value === 'string' ? value : ''),
         },
         {
             key: 'status' as keyof Sale,
             title: 'Status',
-            render: (value: string) => {
+            render: (value: unknown) => {
+                const status = typeof value === 'string' ? value : '';
                 const statusClasses = {
                     completed: 'bg-green-100 text-green-800',
                     pending: 'bg-yellow-100 text-yellow-800',
                     failed: 'bg-red-100 text-red-800',
-                };
+                } as const;
+                const badgeClass = statusClasses[status as keyof typeof statusClasses] ?? 'bg-gray-100 text-gray-800';
                 return (
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusClasses[value as keyof typeof statusClasses]}`}>
-                        {value}
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${badgeClass}`}>
+                        {status}
                     </span>
                 );
             },

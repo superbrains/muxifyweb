@@ -89,6 +89,20 @@ export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed }) => {
 
     const currentNavItems = getNavItems();
 
+    const isItemActive = React.useCallback(
+        (currentPath: string, targetPath: string) => {
+            if (targetPath === '/') {
+                return currentPath === '/';
+            }
+
+            return (
+                currentPath === targetPath ||
+                currentPath.startsWith(`${targetPath}/`)
+            );
+        },
+        []
+    );
+
     const handleNavClick = (path: string) => {
         // If we're on the same path, toggle collapse state
         if (location.pathname === path) {
@@ -211,7 +225,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed }) => {
                 {/* Navigation Items */}
                 <VStack gap={3} flex={1} align="stretch" zIndex={1000}>
                     {currentNavItems.map((item) => {
-                        const isActive = location.pathname === item.path;
+                        const isActive = isItemActive(location.pathname, item.path);
                         const IconComponent = item.icon;
 
                         return (
