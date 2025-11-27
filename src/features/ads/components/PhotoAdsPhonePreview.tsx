@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { memo } from 'react';
 import { Box, VStack, HStack, Text, Button } from '@chakra-ui/react';
 import { useAdsUploadStore } from '../store/useAdsUploadStore';
 import { FiHeart, FiPlus, FiShare2, FiShuffle, FiRepeat, FiSkipBack, FiSkipForward, FiPlay } from 'react-icons/fi';
@@ -7,8 +7,9 @@ import { MdMusicNote, MdMoreVert } from 'react-icons/md';
 import { IoGift } from 'react-icons/io5';
 import { UploadImageIcon } from '@/shared/icons/CustomIcons';
 
-export const PhotoAdsPhonePreview: React.FC = () => {
-    const { photoFile } = useAdsUploadStore();
+export const PhotoAdsPhonePreview: React.FC = memo(() => {
+    // Only subscribe to photoFile changes, not the entire store
+    const photoFile = useAdsUploadStore((state) => state.photoFile);
 
     return (
         <VStack align="stretch" gap={3} w="full" maxW="300px">
@@ -393,5 +394,5 @@ export const PhotoAdsPhonePreview: React.FC = () => {
             </Box>
         </VStack>
     );
-};
+});
 

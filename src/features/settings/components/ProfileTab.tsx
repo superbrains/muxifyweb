@@ -11,94 +11,128 @@ import {
 import { Select } from '@/shared/components/Select';
 import { PhoneInput } from 'react-international-phone';
 import 'react-international-phone/style.css';
-import { toaster } from '@/components/ui/toaster';
-import { useUserManagementStore } from '@/features/auth/store/useUserManagementStore';
+import { toaster } from '@/components/ui/toaster-instance';
+import {
+    useUserManagementStore,
+    type ArtistOnboardingData,
+    type ArtistSubType,
+    type CompanyOnboardingData,
+    type CompanySubType,
+    type AdManagerOnboardingData,
+} from '@/features/auth/store/useUserManagementStore';
+
+type ProfileFormData = {
+    fullName: string;
+    performingName: string;
+    email: string;
+    residentialAddress: string;
+    userType: string;
+    location: string;
+    recordLabel: string;
+};
+
+const EMPTY_FORM_DATA: ProfileFormData = {
+    fullName: '',
+    performingName: '',
+    email: '',
+    residentialAddress: '',
+    userType: '',
+    location: '',
+    recordLabel: '',
+};
+
+const ARTIST_LABEL_MAP: Record<ArtistSubType, string> = {
+    artist: 'Artist',
+    musician: 'Musician',
+    creator: 'Creator',
+    dj: 'DJ',
+    podcaster: 'Podcaster',
+};
+
+const COMPANY_LABEL_MAP: Record<CompanySubType, string> = {
+    record_label: 'Record Label',
+    distribution: 'Distribution Company',
+    publisher: 'Music Publisher',
+    management: 'Management Company',
+};
+
+const formatLocation = (state?: string, country?: string) =>
+    [state, country].filter(Boolean).join(', ');
+
+const isArtistData = (data: unknown): data is ArtistOnboardingData =>
+    !!data && typeof (data as ArtistOnboardingData).userType === 'string' && (data as ArtistOnboardingData).email !== undefined;
+
+const isCompanyData = (data: unknown): data is CompanyOnboardingData =>
+    !!data && typeof (data as CompanyOnboardingData).userType === 'string' && (data as CompanyOnboardingData).legalCompanyName !== undefined;
+
+const isAdManagerData = (data: unknown): data is AdManagerOnboardingData =>
+    !!data && typeof (data as AdManagerOnboardingData).userType === 'string' && (data as AdManagerOnboardingData).fullName !== undefined;
 
 export const ProfileTab: React.FC = () => {
     const { getCurrentUserData, getCurrentUserType } = useUserManagementStore();
     const userData = getCurrentUserData();
     const userType = getCurrentUserType();
     
-    // Initialize form data from store or defaults
-    const getInitialFormData = () => {
-        if (!userData) {
+    const getInitialFormData = (): ProfileFormData => {
+        if (!userData || !userType) {
+            return EMPTY_FORM_DATA;
+        }
+        
+        if (userType === 'artist' && isArtistData(userData)) {
             return {
-                fullName: '',
-                performingName: '',
-                email: '',
-                residentialAddress: '',
-                userType: '',
-                location: '',
+                fullName: userData.fullName || '',
+                performingName: userData.performingName || '',
+                email: userData.email || '',
+                residentialAddress: userData.residentAddress || '',
+                userType: ARTIST_LABEL_MAP[userData.userType] ?? 'Artist',
+                location: formatLocation(userData.state, userData.country),
+                recordLabel: userData.recordLabel || '',
+            };
+        }
+        
+        if (userType === 'company' && isCompanyData(userData)) {
+            return {
+                fullName: userData.legalCompanyName || '',
+                performingName: userData.companyName || '',
+                email: userData.email || '',
+                residentialAddress: userData.companyAddress || '',
+                userType: COMPANY_LABEL_MAP[userData.userType] ?? 'Company',
+                location: formatLocation(userData.state, userData.country),
                 recordLabel: '',
             };
         }
         
-        if (userType === 'artist') {
-            const artistData = userData as any;
+        if (userType === 'ad-manager' && isAdManagerData(userData)) {
             return {
-                fullName: artistData.fullName || '',
-                performingName: artistData.performingName || '',
-                email: artistData.email || '',
-                residentialAddress: artistData.residentAddress || '',
-                userType: artistData.userType === 'artist' ? 'Artist'
-                    : artistData.userType === 'musician' ? 'Musician'
-                    : artistData.userType === 'creator' ? 'Creator'
-                    : artistData.userType === 'dj' ? 'DJ'
-                    : artistData.userType === 'podcaster' ? 'Podcaster'
-                    : 'Artist',
-                location: `${artistData.state || ''}, ${artistData.country || ''}`.trim().replace(/^,\s*|,\s*$/g, '') || '',
-                recordLabel: artistData.recordLabel || '',
-            };
-        } else if (userType === 'company') {
-            const companyData = userData as any;
-            return {
-                fullName: companyData.legalCompanyName || '',
-                performingName: companyData.companyName || '',
-                email: companyData.email || '',
-                residentialAddress: companyData.companyAddress || '',
-                userType: companyData.userType === 'record_label' ? 'Record Label'
-                    : companyData.userType === 'distribution' ? 'Distribution Company'
-                    : companyData.userType === 'publisher' ? 'Music Publisher'
-                    : companyData.userType === 'management' ? 'Management Company'
-                    : 'Company',
-                location: `${companyData.state || ''}, ${companyData.country || ''}`.trim().replace(/^,\s*|,\s*$/g, '') || '',
-                recordLabel: '',
-            };
-        } else if (userType === 'ad-manager') {
-            const adManagerData = userData as any;
-            return {
-                fullName: adManagerData.fullName || '',
+                fullName: userData.fullName || '',
                 performingName: '',
-                email: adManagerData.email || '',
-                residentialAddress: adManagerData.residentAddress || '',
+                email: userData.email || '',
+                residentialAddress: userData.residentAddress || '',
                 userType: 'Ad Manager',
-                location: `${adManagerData.state || ''}, ${adManagerData.country || ''}`.trim().replace(/^,\s*|,\s*$/g, '') || '',
+                location: formatLocation(userData.state, userData.country),
                 recordLabel: '',
             };
         }
         
-        return {
-            fullName: '',
-            performingName: '',
-            email: '',
-            residentialAddress: '',
-            userType: '',
-            location: '',
-            recordLabel: '',
-        };
+        return EMPTY_FORM_DATA;
     };
     
-    const [phone, setPhone] = useState(userData ? (userData as any).phone || '+234' : '+234 90 345 6789');
+    const [phone, setPhone] = useState(userData?.phone || '+234 90 345 6789');
     const [isEditing, setIsEditing] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [formData, setFormData] = useState(getInitialFormData());
+
+    const artistDisplayPicture = userType === 'artist' && isArtistData(userData) ? userData.displayPicture : undefined;
+    const companyLabelLogo = userType === 'company' && isCompanyData(userData) ? userData.labelLogo : undefined;
+    const adManagerLogo = userType === 'ad-manager' && isAdManagerData(userData) ? userData.companyLogo : undefined;
+    const profileImage = artistDisplayPicture || companyLabelLogo || adManagerLogo;
     
     // Update form data when user data changes
     useEffect(() => {
         if (userData) {
             const newFormData = getInitialFormData();
             setFormData(newFormData);
-            setPhone((userData as any).phone || '+234');
+            setPhone(userData.phone || '+234');
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [userData, userType]);
@@ -122,6 +156,7 @@ export const ProfileTab: React.FC = () => {
 
             setIsEditing(false);
         } catch (error) {
+            console.error('update profile error', error);
             toaster.create({
                 title: 'Update Failed',
                 description: 'Failed to update profile. Please try again.',
@@ -133,7 +168,7 @@ export const ProfileTab: React.FC = () => {
         }
     };
 
-    const handleInputChange = (field: string, value: string) => {
+    const handleInputChange = <K extends keyof ProfileFormData>(field: K, value: ProfileFormData[K]) => {
         setFormData(prev => ({ ...prev, [field]: value }));
     };
 
@@ -156,19 +191,7 @@ export const ProfileTab: React.FC = () => {
                         height={12}
                         borderRadius="full"
                         bg="gray.200"
-                        backgroundImage={userData 
-                            ? (userType === 'artist' 
-                                ? (userData as any).displayPicture 
-                                    ? `url(${(userData as any).displayPicture})`
-                                    : undefined
-                                : userType === 'company'
-                                ? (userData as any).labelLogo
-                                    ? `url(${(userData as any).labelLogo})`
-                                    : undefined
-                                : (userData as any).companyLogo
-                                    ? `url(${(userData as any).companyLogo})`
-                                    : undefined)
-                            : undefined}
+                        backgroundImage={profileImage ? `url(${profileImage})` : undefined}
                         backgroundSize="cover"
                         backgroundPosition="center"
                         display="flex"
@@ -178,7 +201,7 @@ export const ProfileTab: React.FC = () => {
                         fontSize="sm"
                         fontWeight="bold"
                     >
-                        {!userData || (!(userData as any).displayPicture && !(userData as any).labelLogo && !(userData as any).companyLogo)
+                        {!profileImage
                             ? (formData.fullName?.charAt(0).toUpperCase() || 'U')
                             : null}
                     </Box>

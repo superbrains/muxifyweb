@@ -113,7 +113,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     const pageTitle = useMemo(() => {
         const path = location.pathname;
         const routeTitles: Record<string, string> = {
-            '/dashboard': `Hi ${displayName}`,
+            '/': `Hi ${displayName}`,
             '/upload': 'Upload Media',
             '/upload/review': 'Review',
             '/music-videos': 'Music & Videos',
@@ -137,7 +137,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             height="70px"
             position="fixed"
             top={0}
-            left={windowWidth < 768 ? (isCollapsed ? '72px' : '230px') : (isCollapsed ? '85px' : '230px')}
+            left={windowWidth < 768 ? (isCollapsed ? '72px' : '245px') : (isCollapsed ? '85px' : '245px')}
             right={0}
             transition="left 0.3s ease"
             zIndex={999}

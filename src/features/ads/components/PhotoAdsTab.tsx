@@ -4,10 +4,13 @@ import { FiArrowRight, FiArrowLeft } from 'react-icons/fi';
 import { FileUploadArea, UploadSuccessPage, DateInput, TimeInput } from '@upload/components';
 import { UploadImageIcon } from '@/shared/icons/CustomIcons';
 import { CountryStateSelect } from '@shared/components';
-import { useAdsUploadStore } from '../store/useAdsUploadStore';
+import { useAdsUploadStore, type UploadFile, type AdBaseInfo, type CallToAction as CallToActionType } from '../store/useAdsUploadStore';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/shared/hooks/useToast';
 import { useAdsStore } from '../store/useAdsStore';
+
+const TARGET_TYPES: ReadonlyArray<AdBaseInfo['target']['type']> = ['music', 'video', 'photo'];
+const CALL_TO_ACTIONS: ReadonlyArray<CallToActionType['action']> = ['signup', 'download', 'view', 'click'];
 
 export const PhotoAdsTab: React.FC = () => {
     const [flow, setFlow] = useState(1);
@@ -22,37 +25,37 @@ export const PhotoAdsTab: React.FC = () => {
     const [startTime, setStartTime] = useState('');
     const [endTime, setEndTime] = useState('');
     const [ampm, setAmpm] = useState<'AM' | 'PM'>('AM');
-    
+
     // Flow 2 fields
     const [callToAction, setCallToAction] = useState('signup');
     const [actionLink, setActionLink] = useState('');
     const [budget, setBudget] = useState('');
     const [impressions, setImpressions] = useState('');
-    
+
     const { photoFile, photoSetFile, photoSetAdInfo, photoSetCallToAction, photoSetBudgetReach, resetPhotoAds } = useAdsUploadStore();
     const { addCampaign } = useAdsStore();
     const navigate = useNavigate();
     const { toast } = useToast();
-    
-    const handleFileReady = (file: any) => {
+
+    const handleFileReady = (file: UploadFile | null) => {
         photoSetFile(file);
     };
-    
+
     const handleFileSelect = (file: File) => {
         console.log('File selected:', file);
     };
-    
+
     const handleAddArtist = () => {
         if (artistInput.trim() && !selectedArtists.includes(artistInput.trim())) {
             setSelectedArtists([...selectedArtists, artistInput.trim()]);
             setArtistInput('');
         }
     };
-    
+
     const handleRemoveArtist = (artist: string) => {
         setSelectedArtists(selectedArtists.filter(a => a !== artist));
     };
-    
+
     const handleNext = () => {
         if (flow === 1) {
             // Validate Flow 1
@@ -64,12 +67,16 @@ export const PhotoAdsTab: React.FC = () => {
                 toast.error('Fields required', 'Please fill in all required fields');
                 return;
             }
-            
+
             // Save Flow 1 data
+            const normalizedTargetType: AdBaseInfo['target']['type'] = TARGET_TYPES.includes(targetType as AdBaseInfo['target']['type'])
+                ? (targetType as AdBaseInfo['target']['type'])
+                : 'music';
+
             photoSetAdInfo({
                 title,
                 location: { country, state },
-                target: { type: targetType as any, genre, artists: selectedArtists },
+                target: { type: normalizedTargetType, genre, artists: selectedArtists },
                 schedule: {
                     date: scheduleDate ? new Date(scheduleDate) : null,
                     startTime,
@@ -84,9 +91,13 @@ export const PhotoAdsTab: React.FC = () => {
                 toast.error('Fields required', 'Please fill in all required fields');
                 return;
             }
-            
+
             // Save Flow 2 data
-            photoSetCallToAction({ action: callToAction as any, link: actionLink });
+            const normalizedCallToAction: CallToActionType['action'] = CALL_TO_ACTIONS.includes(callToAction as CallToActionType['action'])
+                ? (callToAction as CallToActionType['action'])
+                : 'signup';
+
+            photoSetCallToAction({ action: normalizedCallToAction, link: actionLink });
             photoSetBudgetReach({
                 amount: parseFloat(budget) || 0,
                 impressions: parseInt(impressions) || 0,
@@ -94,7 +105,7 @@ export const PhotoAdsTab: React.FC = () => {
             setFlow(3); // Go to review
         }
     };
-    
+
     const handleBack = () => {
         if (flow > 1) {
             setFlow(flow - 1);
@@ -102,10 +113,16 @@ export const PhotoAdsTab: React.FC = () => {
             navigate(-1);
         }
     };
-    
+
     const handlePublish = async () => {
         try {
             // Create campaign
+            const normalizedTargetType: AdBaseInfo['target']['type'] = TARGET_TYPES.includes(targetType as AdBaseInfo['target']['type'])
+                ? (targetType as AdBaseInfo['target']['type'])
+                : 'music';
+            const campaignTargetType: 'music' | 'video' | 'audio' =
+                normalizedTargetType === 'photo' ? 'audio' : normalizedTargetType;
+
             const campaign = {
                 title: photoFile?.name || 'Photo Ad',
                 type: 'photo' as const,
@@ -114,7 +131,7 @@ export const PhotoAdsTab: React.FC = () => {
                     state: state || '',
                 },
                 target: {
-                    type: targetType as any,
+                    type: campaignTargetType,
                     genre: genre || undefined,
                     artists: selectedArtists.length > 0 ? selectedArtists : undefined,
                 },
@@ -129,22 +146,22 @@ export const PhotoAdsTab: React.FC = () => {
                 mediaName: photoFile?.name,
                 mediaSize: photoFile?.size,
             };
-            
+
             addCampaign(campaign);
             resetPhotoAds();
             setFlow(4);
-            
+
             toast.success('Campaign created', 'Your photo ad campaign has been submitted for review');
         } catch (error) {
             console.error('Publish error:', error);
             toast.error('Error', 'Failed to create campaign');
         }
     };
-    
+
     if (flow === 4) {
         return (
             <UploadSuccessPage
-                onUnderstand={() => navigate('/ads/dashboard')}
+                onUnderstand={() => navigate('/')}
                 onUploadMore={() => {
                     setFlow(1);
                     resetPhotoAds();
@@ -152,7 +169,7 @@ export const PhotoAdsTab: React.FC = () => {
             />
         );
     }
-    
+
     if (flow === 3) {
         // Review Flow
         return (
@@ -164,7 +181,7 @@ export const PhotoAdsTab: React.FC = () => {
                     </Button>
                     <Text fontSize="lg" fontWeight="bold">Review</Text>
                 </HStack>
-                
+
                 <Flex gap={5} direction={{ base: 'column', lg: 'row' }}>
                     <Box flex="1">
                         <VStack align="stretch" gap={5}>
@@ -199,7 +216,7 @@ export const PhotoAdsTab: React.FC = () => {
                             </Box>
                         </VStack>
                     </Box>
-                    
+
                     <Box w={{ base: 'full', lg: '400px' }} bg="gray.100" borderRadius="lg" p={4}>
                         <Text fontSize="lg" fontWeight="bold" textAlign="center" mb={4}>
                             Preview
@@ -215,7 +232,7 @@ export const PhotoAdsTab: React.FC = () => {
                         )}
                     </Box>
                 </Flex>
-                
+
                 <Flex justify="flex-end" gap={3} mt={6}>
                     <Button
                         variant="ghost"
@@ -235,7 +252,7 @@ export const PhotoAdsTab: React.FC = () => {
             </Box>
         );
     }
-    
+
     if (flow === 2) {
         // Flow 2: Call to Action, Budget, Reach
         return (
@@ -247,7 +264,7 @@ export const PhotoAdsTab: React.FC = () => {
                     </Button>
                     <Text fontSize="lg" fontWeight="bold">Budget & Targeting</Text>
                 </HStack>
-                
+
                 <Flex gap={5} direction={{ base: 'column', lg: 'row' }}>
                     <Box flex="1">
                         <VStack align="stretch" gap={5}>
@@ -277,7 +294,7 @@ export const PhotoAdsTab: React.FC = () => {
                                     </Box>
                                 </VStack>
                             </Box>
-                            
+
                             <Box>
                                 <Text fontSize="lg" fontWeight="bold" mb={4}>Budget</Text>
                                 <Box>
@@ -290,7 +307,7 @@ export const PhotoAdsTab: React.FC = () => {
                                     />
                                 </Box>
                             </Box>
-                            
+
                             <Box>
                                 <Text fontSize="lg" fontWeight="bold" mb={4}>Reach</Text>
                                 <Box>
@@ -308,7 +325,7 @@ export const PhotoAdsTab: React.FC = () => {
                             </Box>
                         </VStack>
                     </Box>
-                    
+
                     <Box w={{ base: 'full', lg: '400px' }} bg="gray.100" borderRadius="lg" p={4}>
                         <Text fontSize="lg" fontWeight="bold" textAlign="center" mb={4}>
                             Preview
@@ -324,7 +341,7 @@ export const PhotoAdsTab: React.FC = () => {
                         )}
                     </Box>
                 </Flex>
-                
+
                 <Flex justify="flex-end" gap={3} mt={6}>
                     <Button
                         variant="ghost"
@@ -344,7 +361,7 @@ export const PhotoAdsTab: React.FC = () => {
             </Box>
         );
     }
-    
+
     // Flow 1: Upload Photo & Basic Info
     return (
         <Flex gap={5} direction={{ base: 'column', lg: 'row' }}>
@@ -362,7 +379,7 @@ export const PhotoAdsTab: React.FC = () => {
                             h="40px"
                         />
                     </Box>
-                    
+
                     <Box>
                         <Text fontSize="16px" fontWeight="bold" color="gray.900" mb={3}>
                             Location
@@ -374,7 +391,7 @@ export const PhotoAdsTab: React.FC = () => {
                             onStateChange={setState}
                         />
                     </Box>
-                    
+
                     <Box>
                         <Text fontSize="16px" fontWeight="bold" color="gray.900" mb={3}>
                             Target
@@ -429,7 +446,7 @@ export const PhotoAdsTab: React.FC = () => {
                             )}
                         </VStack>
                     </Box>
-                    
+
                     <Box>
                         <Text fontSize="16px" fontWeight="bold" color="gray.900" mb={3}>
                             Ad Schedule
@@ -470,7 +487,7 @@ export const PhotoAdsTab: React.FC = () => {
                             </HStack>
                         </VStack>
                     </Box>
-                    
+
                     <FileUploadArea
                         accept=".jpg,.jpeg,.png,.gif"
                         maxSize={50}
@@ -481,7 +498,7 @@ export const PhotoAdsTab: React.FC = () => {
                         Icon={UploadImageIcon}
                         fileType="image"
                     />
-                    
+
                     <Flex justify="space-between" gap={3}>
                         <Button variant="ghost" onClick={handleBack}>
                             Back
@@ -498,7 +515,7 @@ export const PhotoAdsTab: React.FC = () => {
                     </Flex>
                 </VStack>
             </Box>
-            
+
             <Box w={{ base: 'full', lg: '400px' }} bg="gray.100" borderRadius="lg" p={4}>
                 <Text fontSize="lg" fontWeight="bold" textAlign="center" mb={4}>
                     Ads Preview

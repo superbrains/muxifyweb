@@ -1,15 +1,19 @@
-import React, { useState } from 'react';
-import { Box, VStack, HStack, Text, Button, Input, Flex, Icon, Avatar } from '@chakra-ui/react';
+import React, { useState, useEffect } from 'react';
+import { Box, VStack, HStack, Text, Button, Input, Flex, Icon, Avatar, Spinner } from '@chakra-ui/react';
 import { FiArrowLeft } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
 import { useAdsUploadStore } from '../../../store/useAdsUploadStore';
+import { useAdsStore } from '../../../store/useAdsStore';
 import { PhotoAdsPhonePreview } from '../../PhotoAdsPhonePreview';
 import { UploadSuccessPage } from '@upload/components';
+import { fileToBase64 } from '@shared/lib/fileUtils';
 
 export const PhotoAdsFlow3: React.FC<{
     onNext: () => void;
     onBack: () => void;
-}> = ({ onBack, onNext }) => {
+    onResetFlow?: () => void;
+    editCampaignId?: string | null;
+}> = ({ onBack, onNext, onResetFlow, editCampaignId }) => {
     // onNext is not used - navigation handled by success page buttons
     void onNext;
 
@@ -17,12 +21,33 @@ export const PhotoAdsFlow3: React.FC<{
     const [isPublishing, setIsPublishing] = useState(false);
     const navigate = useNavigate();
 
+    // Hide overflow and scroll to top when success page is shown
+    useEffect(() => {
+        if (isPublished) {
+            document.body.style.overflow = 'hidden';
+            // Scroll to top of the page
+            window.scrollTo({ top: 0, behavior: 'instant' });
+            // Also scroll the main container if it exists
+            const mainContainer = document.querySelector('main') || document.documentElement;
+            mainContainer.scrollTo({ top: 0, behavior: 'instant' });
+        } else {
+            document.body.style.overflow = '';
+        }
+        // Cleanup on unmount
+        return () => {
+            document.body.style.overflow = '';
+        };
+    }, [isPublished]);
+
     const {
+        photoFile,
         photoAdInfo,
         photoCallToAction,
         photoBudgetReach,
         resetPhotoAds,
     } = useAdsUploadStore();
+    const { addCampaign, updateCampaign } = useAdsStore();
+    const isEditMode = !!editCampaignId;
 
     const formatDate = (date: Date | null): string => {
         if (!date) return '';
@@ -37,9 +62,77 @@ export const PhotoAdsFlow3: React.FC<{
     };
 
     const handlePublish = async () => {
+        if (!photoAdInfo || !photoBudgetReach) {
+            console.error('Missing required ad information');
+            return;
+        }
+
         setIsPublishing(true);
 
         try {
+            // Convert photo file to base64 if it exists
+            let mediaData: string | undefined;
+            let mediaName: string | undefined;
+            let mediaSize: string | undefined;
+
+            if (photoFile) {
+                mediaName = photoFile.name;
+
+                if (photoFile.file) {
+                    // File exists, convert to base64
+                    mediaData = await fileToBase64(photoFile.file);
+                    mediaSize = photoFile.size || `${(photoFile.file.size / (1024 * 1024)).toFixed(2)} MB`;
+                } else if (photoFile.url) {
+                    // URL exists (from compressImage - already a data URL)
+                    // Extract base64 part from data URL
+                    if (photoFile.url.startsWith('data:')) {
+                        // Extract base64 string (everything after the comma)
+                        mediaData = photoFile.url.split(',')[1];
+                    } else {
+                        // Fallback: use URL as-is (shouldn't happen for photos)
+                        mediaData = photoFile.url;
+                    }
+                    mediaSize = photoFile.size || '0 MB';
+                }
+            }
+
+            // Format schedule date to ISO string
+            const scheduleDate = photoAdInfo.schedule.date
+                ? photoAdInfo.schedule.date.toISOString()
+                : new Date().toISOString();
+
+            // Create campaign object
+            const campaign = {
+                title: photoAdInfo.title,
+                type: 'photo' as const,
+                location: {
+                    country: photoAdInfo.location.country,
+                    state: photoAdInfo.location.state,
+                },
+                target: {
+                    type: photoAdInfo.target.type === 'photo' ? 'music' : photoAdInfo.target.type,
+                    genre: photoAdInfo.target.genre,
+                    artists: photoAdInfo.target.artists || [],
+                },
+                schedule: {
+                    date: scheduleDate,
+                    startTime: photoAdInfo.schedule.startTime,
+                    endTime: photoAdInfo.schedule.endTime,
+                },
+                budget: photoBudgetReach.amount,
+                status: 'active' as const,
+                mediaData,
+                mediaName,
+                mediaSize,
+            };
+
+            // Add or update campaign in ads store
+            if (isEditMode && editCampaignId) {
+                updateCampaign(editCampaignId, campaign);
+            } else {
+                addCampaign(campaign);
+            }
+
             // Simulate API call with async promise
             await new Promise((resolve) => {
                 setTimeout(() => {
@@ -50,7 +143,7 @@ export const PhotoAdsFlow3: React.FC<{
             // Show success page first
             setIsPublished(true);
 
-            // Clear the store state after showing success
+            // Clear the upload store state after showing success
             resetPhotoAds();
         } catch (error) {
             console.error('Publish failed:', error);
@@ -62,17 +155,23 @@ export const PhotoAdsFlow3: React.FC<{
 
     const handleUnderstand = () => {
         // Navigate to ads dashboard
-        navigate('/ads/dashboard');
+        navigate('/');
     };
 
     const handleCreateMore = () => {
-        // Navigate back to create campaign (store already cleared)
-        navigate('/ads/create-campaign');
+        // Close success page and reset to flow 1
+        setIsPublished(false);
+        if (onResetFlow) {
+            onResetFlow();
+        } else {
+            // Fallback: navigate with tab param
+            navigate('/ads/create-campaign?tab=photo');
+        }
     };
 
     return (
         <VStack align="stretch" gap={0}>
-            {/* Top Bar with Title and Navigation */}
+            {/* Top Bar with Title */}
             <Box
                 w="full"
                 py={3}
@@ -84,46 +183,6 @@ export const PhotoAdsFlow3: React.FC<{
                     <Text fontSize="md" fontWeight="bold" color="gray.900">
                         Photo Ads
                     </Text>
-                    <HStack gap={2}>
-                        <Button
-                            variant="ghost"
-                            onClick={onBack}
-                            bg="rgba(249,68,68,0.05)"
-                            border="1px solid"
-                            borderColor="rgba(249,68,68,0.3)"
-                            borderRadius="10px"
-                            size="xs"
-                            px={3}
-                            fontSize="12px"
-                            color="rgba(249,68,68,1)"
-                            _hover={{ bg: 'rgba(249,68,68,0.1)', borderColor: 'rgba(249,68,68,0.5)' }}
-                        >
-                            <Icon as={FiArrowLeft} mr={1} />
-                            Back
-                        </Button>
-                        <Button
-                            bg="primary.500"
-                            color="white"
-                            onClick={handlePublish}
-                            borderRadius="10px"
-                            size="xs"
-                            w="200px"
-                            display="flex"
-                            alignItems="center"
-                            justifyContent="center"
-                            px={3}
-                            _hover={{ bg: 'primary.600' }}
-                            loading={isPublishing}
-                            loadingText="Publishing..."
-                            disabled={isPublishing}
-                        >
-                            {!isPublishing && (
-                                <Flex align="center" w="full" justify="center">
-                                    <Text fontSize="12px">Publish</Text>
-                                </Flex>
-                            )}
-                        </Button>
-                    </HStack>
                 </Flex>
             </Box>
 
@@ -372,6 +431,49 @@ export const PhotoAdsFlow3: React.FC<{
                 <Box flex="1" display="flex" justifyContent="center">
                     <PhotoAdsPhonePreview />
                 </Box>
+            </Flex>
+
+            {/* Bottom Navigation Buttons */}
+            <Flex justify="space-between" align="center" px={4} py={4} borderTop="1px solid" borderColor="gray.200" mt={4}>
+                <Button
+                    variant="ghost"
+                    onClick={onBack}
+                    bg="rgba(249,68,68,0.05)"
+                    border="1px solid"
+                    borderColor="rgba(249,68,68,0.3)"
+                    borderRadius="10px"
+                    size="xs"
+                    px={3}
+                    fontSize="12px"
+                    color="rgba(249,68,68,1)"
+                    _hover={{ bg: 'rgba(249,68,68,0.1)', borderColor: 'rgba(249,68,68,0.5)' }}
+                >
+                    <Icon as={FiArrowLeft} mr={1} />
+                    Back
+                </Button>
+                <Button
+                    bg="primary.500"
+                    color="white"
+                    onClick={handlePublish}
+                    borderRadius="10px"
+                    size="xs"
+                    w="200px"
+                    display="flex"
+                    alignItems="center"
+                    justifyContent="center"
+                    px={3}
+                    _hover={{ bg: 'primary.600' }}
+                    disabled={isPublishing}
+                >
+                    {isPublishing ? (
+                        <HStack gap={2}>
+                            <Spinner size="sm" color="white" />
+                            <Text fontSize="12px">{isEditMode ? 'Updating...' : 'Publishing...'}</Text>
+                        </HStack>
+                    ) : (
+                        <Text fontSize="12px">{isEditMode ? 'Update' : 'Publish'}</Text>
+                    )}
+                </Button>
             </Flex>
 
             {/* Success Page Modal */}

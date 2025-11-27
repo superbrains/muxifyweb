@@ -10,6 +10,13 @@ import { ProfileTab, VerificationTab, PaymentTab, SecurityTab } from '../compone
 import { useUserManagementStore } from '@/features/auth/store/useUserManagementStore';
 import { useUserType } from '@/features/auth/hooks/useUserType';
 import { ArtistDropdown } from '@/shared/components/ArtistDropdown';
+import type { ArtistOnboardingData, CompanyOnboardingData } from '@/features/auth/store/useUserManagementStore';
+
+const isArtistData = (data: unknown): data is ArtistOnboardingData =>
+    !!data && typeof (data as ArtistOnboardingData).userType === 'string';
+
+const isCompanyData = (data: unknown): data is CompanyOnboardingData =>
+    !!data && typeof (data as CompanyOnboardingData).userType === 'string';
 
 export const Settings: React.FC = () => {
     const [activeTab, setActiveTab] = useState('profile');
@@ -21,22 +28,35 @@ export const Settings: React.FC = () => {
     // Get settings title based on user type
     const getSettingsTitle = () => {
         if (!userType) return 'Settings';
-        if (userType === 'artist') {
-            const artistData = userData as any;
-            if (artistData?.userType === 'artist') return 'Artist Settings';
-            if (artistData?.userType === 'musician') return 'Musician Settings';
-            if (artistData?.userType === 'creator') return 'Creator Settings';
-            if (artistData?.userType === 'dj') return 'DJ Settings';
-            if (artistData?.userType === 'podcaster') return 'Podcaster Settings';
-            return 'Artist Settings';
+        if (userType === 'artist' && isArtistData(userData)) {
+            switch (userData.userType) {
+                case 'artist':
+                    return 'Artist Settings';
+                case 'musician':
+                    return 'Musician Settings';
+                case 'creator':
+                    return 'Creator Settings';
+                case 'dj':
+                    return 'DJ Settings';
+                case 'podcaster':
+                    return 'Podcaster Settings';
+                default:
+                    return 'Artist Settings';
+            }
         }
-        if (userType === 'company') {
-            const companyData = userData as any;
-            if (companyData?.userType === 'record_label') return 'Record Label Settings';
-            if (companyData?.userType === 'distribution') return 'Distribution Company Settings';
-            if (companyData?.userType === 'publisher') return 'Music Publisher Settings';
-            if (companyData?.userType === 'management') return 'Management Company Settings';
-            return 'Company Settings';
+        if (userType === 'company' && isCompanyData(userData)) {
+            switch (userData.userType) {
+                case 'record_label':
+                    return 'Record Label Settings';
+                case 'distribution':
+                    return 'Distribution Company Settings';
+                case 'publisher':
+                    return 'Music Publisher Settings';
+                case 'management':
+                    return 'Management Company Settings';
+                default:
+                    return 'Company Settings';
+            }
         }
         if (userType === 'ad-manager') return 'Ad Manager Settings';
         return 'Settings';

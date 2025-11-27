@@ -41,7 +41,7 @@ export const AdManagerCompanyLogo: React.FC = () => {
                     <ReusableImageUpload
                         title="Company Logo"
                         subtitle="This is the identity of your company"
-                        nextRoute="/dashboard"
+                        nextRoute="/"
                         uploadType="logo"
                     />
                 </Box>

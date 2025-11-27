@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@app/hooks/useAuth';
 import { usePermission } from '@app/hooks/usePermission';
-import { useTheme } from '@app/providers/ThemeProvider';
+import { useTheme } from '@app/hooks/useTheme';
 
 interface Permission {
     canUploadMusic: boolean;
@@ -17,7 +17,7 @@ interface Permission {
 }
 
 const navigation = [
-    { name: 'Dashboard', href: '/dashboard', icon: '📊' },
+    { name: 'Dashboard', href: '/', icon: '📊' },
     { name: 'Upload Music', href: '/upload-music', icon: '🎵', permission: 'canUploadMusic' },
     { name: 'Upload Video', href: '/upload-video', icon: '🎬', permission: 'canUploadVideo' },
     { name: 'Music & Videos', href: '/music-videos', icon: '🎶' },

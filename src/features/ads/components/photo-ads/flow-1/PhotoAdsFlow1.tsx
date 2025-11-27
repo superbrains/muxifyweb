@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo, useCallback, useEffect } from 'react';
 import { Box, VStack, HStack, Text, Button, Input, Flex, Icon, Avatar } from '@chakra-ui/react';
 import { FiArrowRight, FiArrowLeft, FiX, FiSearch } from 'react-icons/fi';
 import { useAdsUploadStore } from '../../../store/useAdsUploadStore';
@@ -26,7 +26,7 @@ export const PhotoAdsFlow1: React.FC<{
     const [scheduleDate, setScheduleDate] = useState('');
 
     // Mock artist suggestions - in real app, this would come from API
-    const artistSuggestions = [
+    const artistSuggestions = useMemo(() => [
         'Wizkid',
         'Davido',
         'Burna Boy',
@@ -40,18 +40,57 @@ export const PhotoAdsFlow1: React.FC<{
         'Olamide',
         'Pheelz',
         'Spyro'
-    ];
+    ], []);
 
-    const filteredSuggestions = artistSuggestions.filter(suggestion =>
+    // Memoize filtered suggestions to avoid recalculating on every render
+    const filteredSuggestions = useMemo(() => {
+        return artistSuggestions.filter(suggestion =>
         suggestion.toLowerCase().includes(artistInput.toLowerCase()) &&
         !selectedArtists.includes(suggestion)
     );
+    }, [artistInput, selectedArtists, artistSuggestions]);
     const [startTime, setStartTime] = useState('');
     const [endTime, setEndTime] = useState('');
     const [ampm, setAmpm] = useState<'AM' | 'PM'>('AM');
 
-    const { photoFile, photoSetFile, photoSetAdInfo } = useAdsUploadStore();
+    // Use selectors to only subscribe to specific state slices
+    const photoFile = useAdsUploadStore((state) => state.photoFile);
+    const photoAdInfo = useAdsUploadStore((state) => state.photoAdInfo);
+    const photoSetFile = useAdsUploadStore((state) => state.photoSetFile);
+    const photoSetAdInfo = useAdsUploadStore((state) => state.photoSetAdInfo);
     const toast = useChakraToast();
+
+    // Populate form fields from store when editing (photoAdInfo exists)
+    // Only populate if photoAdInfo exists (edit mode), not for new campaigns
+    useEffect(() => {
+        if (photoAdInfo) {
+            setTitle(photoAdInfo.title || '');
+            setCountry(photoAdInfo.location.country || '');
+            setState(photoAdInfo.location.state || '');
+            setTargetType(photoAdInfo.target.type || 'music');
+            setGenre(photoAdInfo.target.genre || '');
+            setSelectedArtists(photoAdInfo.target.artists || []);
+            if (photoAdInfo.schedule.date) {
+                const date = new Date(photoAdInfo.schedule.date);
+                setScheduleDate(date.toISOString().split('T')[0]);
+            }
+            setStartTime(photoAdInfo.schedule.startTime || '');
+            setEndTime(photoAdInfo.schedule.endTime || '');
+            setAmpm(photoAdInfo.schedule.ampm || 'AM');
+        } else {
+            // Reset fields when creating new campaign (photoAdInfo is null)
+            setTitle('');
+            setCountry('');
+            setState('');
+            setTargetType('music');
+            setGenre('');
+            setSelectedArtists([]);
+            setScheduleDate('');
+            setStartTime('');
+            setEndTime('');
+            setAmpm('AM');
+        }
+    }, [photoAdInfo]);
 
     const handleFileSelect = (file: File) => {
         console.log('File selected:', file);
@@ -86,29 +125,26 @@ export const PhotoAdsFlow1: React.FC<{
         url?: string;
     }
 
-    const handleArtistInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Memoize handler to prevent unnecessary re-renders
+    const handleArtistInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
         const newValue = e.target.value;
         setArtistInput(newValue);
-        const filtered = artistSuggestions.filter(suggestion =>
-            suggestion.toLowerCase().includes(newValue.toLowerCase()) &&
-            !selectedArtists.includes(suggestion)
-        );
-        setShowSuggestions(newValue.length > 0 && filtered.length > 0);
-    };
+        // We'll update showSuggestions in useEffect based on filteredSuggestions
+    }, []);
 
-    const handleSuggestionSelect = (suggestion: string) => {
+    const handleSuggestionSelect = useCallback((suggestion: string) => {
         if (!selectedArtists.includes(suggestion)) {
-            setSelectedArtists([...selectedArtists, suggestion]);
+            setSelectedArtists((prev) => [...prev, suggestion]);
         }
-        setArtistInput('');
+            setArtistInput('');
         setShowSuggestions(false);
-    };
+    }, [selectedArtists]);
 
-    const handleArtistInputFocus = () => {
+    const handleArtistInputFocus = useCallback(() => {
         if (artistInput.length > 0 && filteredSuggestions.length > 0) {
             setShowSuggestions(true);
         }
-    };
+    }, [artistInput.length, filteredSuggestions.length]);
 
     const handleArtistInputBlur = () => {
         // Use a small delay to allow clicks on suggestions to work
@@ -117,9 +153,14 @@ export const PhotoAdsFlow1: React.FC<{
         }, 150);
     };
 
-    const handleRemoveArtist = (artist: string) => {
-        setSelectedArtists(selectedArtists.filter(a => a !== artist));
-    };
+    const handleRemoveArtist = useCallback((artist: string) => {
+        setSelectedArtists((prev) => prev.filter(a => a !== artist));
+    }, []);
+
+    // Update showSuggestions based on filtered suggestions
+    useEffect(() => {
+        setShowSuggestions(artistInput.length > 0 && filteredSuggestions.length > 0);
+    }, [artistInput.length, filteredSuggestions.length]);
 
     const handleRemovePhoto = () => {
         photoSetFile(null);
@@ -153,7 +194,7 @@ export const PhotoAdsFlow1: React.FC<{
 
     return (
         <VStack align="stretch" gap={0}>
-            {/* Top Bar with Title and Navigation */}
+            {/* Top Bar with Title */}
             <Box
                 w="full"
                 py={3}
@@ -165,42 +206,6 @@ export const PhotoAdsFlow1: React.FC<{
                     <Text fontSize="md" fontWeight="bold" color="gray.900">
                         Photo Ads
                     </Text>
-                    <HStack gap={2}>
-                        <Button
-                            variant="ghost"
-                            onClick={onBack}
-                            bg="rgba(249,68,68,0.05)"
-                            border="1px solid"
-                            borderColor="rgba(249,68,68,0.3)"
-                            borderRadius="10px"
-                            size="xs"
-                            px={3}
-                            fontSize="12px"
-                            color="rgba(249,68,68,1)"
-                            _hover={{ bg: 'rgba(249,68,68,0.1)', borderColor: 'rgba(249,68,68,0.5)' }}
-                        >
-                            <Icon as={FiArrowLeft} mr={1} />
-                            Back
-                        </Button>
-                        <Button
-                            bg="primary.500"
-                            color="white"
-                            onClick={handleNext}
-                            borderRadius="10px"
-                            size="xs"
-                            w="200px"
-                            display="flex"
-                            alignItems="center"
-                            justifyContent="center"
-                            px={3}
-                            _hover={{ bg: 'primary.600' }}
-                        >
-                            <Flex align="center" w="full" justify="space-between">
-                                <Text alignSelf="start" mr={2} fontSize="12px" >Next</Text>
-                                <Icon alignSelf="end" as={FiArrowRight} />
-                            </Flex>
-                        </Button>
-                    </HStack>
                 </Flex>
             </Box>
 
@@ -247,6 +252,7 @@ export const PhotoAdsFlow1: React.FC<{
                                 size="xs"
                                 h="40px"
                                 borderRadius="10px"
+                                autoComplete="off"
                             />
                         </Box>
 
@@ -281,7 +287,7 @@ export const PhotoAdsFlow1: React.FC<{
                                             { value: 'video', label: 'Video' },
                                         ]}
                                         width="100%"
-                                        fontSize="14px"
+                                        fontSize="12px"
                                         borderRadius="10px"
                                         borderColor="gray.300"
                                         size="sm"
@@ -302,7 +308,7 @@ export const PhotoAdsFlow1: React.FC<{
                                             { value: 'rnb', label: 'R&B' },
                                         ]}
                                         width="100%"
-                                        fontSize="14px"
+                                        fontSize="12px"
                                         borderRadius="10px"
                                         borderColor="gray.300"
                                         size="sm"
@@ -314,16 +320,16 @@ export const PhotoAdsFlow1: React.FC<{
                                     </Text>
                                     <Box position="relative" w="full">
                                         <Box position="relative">
-                                            <Input
+                                    <Input
                                                 ref={artistInputRef}
-                                                placeholder="Search"
-                                                value={artistInput}
+                                        placeholder="Search"
+                                        value={artistInput}
                                                 onChange={handleArtistInputChange}
                                                 onFocus={handleArtistInputFocus}
                                                 onBlur={handleArtistInputBlur}
-                                                size="xs"
-                                                h="40px"
-                                                borderRadius="10px"
+                                        size="xs"
+                                        h="40px"
+                                        borderRadius="10px"
                                                 pl="40px"
                                             />
                                             <Icon
@@ -335,8 +341,8 @@ export const PhotoAdsFlow1: React.FC<{
                                                 color="gray.400"
                                                 boxSize={4}
                                                 pointerEvents="none"
-                                            />
-                                        </Box>
+                                    />
+                                </Box>
 
                                         {/* Suggestions Dropdown */}
                                         {showSuggestions && filteredSuggestions.length > 0 && (
@@ -393,35 +399,35 @@ export const PhotoAdsFlow1: React.FC<{
                                     {/* Selected Artists Chips */}
                                     {selectedArtists.length > 0 && (
                                         <HStack flexWrap="wrap" gap={2} mt={3}>
-                                            {selectedArtists.map((artist) => (
-                                                <Box
-                                                    key={artist}
-                                                    bg="gray.100"
+                                        {selectedArtists.map((artist) => (
+                                            <Box
+                                                key={artist}
+                                                bg="gray.100"
                                                     px={3}
                                                     py={2}
-                                                    borderRadius="full"
-                                                    display="flex"
-                                                    alignItems="center"
+                                                borderRadius="full"
+                                                display="flex"
+                                                alignItems="center"
                                                     gap={2}
-                                                >
+                                            >
                                                     <Avatar.Root size="xs" flexShrink={0}>
                                                         <Avatar.Fallback fontSize="10px" bg="primary.100" color="primary.500">
                                                             {artist.charAt(0)}
                                                         </Avatar.Fallback>
                                                     </Avatar.Root>
                                                     <Text fontSize="xs" color="gray.900">{artist}</Text>
-                                                    <Icon
-                                                        as={FiX}
-                                                        cursor="pointer"
-                                                        onClick={() => handleRemoveArtist(artist)}
+                                                <Icon
+                                                    as={FiX}
+                                                    cursor="pointer"
+                                                    onClick={() => handleRemoveArtist(artist)}
                                                         color="rgba(249,68,68,1)"
                                                         boxSize={3.5}
                                                         _hover={{ color: 'rgba(249,68,68,0.8)' }}
-                                                    />
-                                                </Box>
-                                            ))}
-                                        </HStack>
-                                    )}
+                                                />
+                                            </Box>
+                                        ))}
+                                    </HStack>
+                                )}
                                 </Box>
                             </VStack>
                         </Box>
@@ -470,6 +476,44 @@ export const PhotoAdsFlow1: React.FC<{
                 <Box flex="1" display="flex" justifyContent="center">
                     <PhotoAdsPhonePreview />
                 </Box>
+            </Flex>
+
+            {/* Bottom Navigation Buttons */}
+            <Flex justify="space-between" align="center" px={4} py={4} borderTop="1px solid" borderColor="gray.200" mt={4}>
+                <Button
+                    variant="ghost"
+                    onClick={onBack}
+                    bg="rgba(249,68,68,0.05)"
+                    border="1px solid"
+                    borderColor="rgba(249,68,68,0.3)"
+                    borderRadius="10px"
+                    size="xs"
+                    px={3}
+                    fontSize="12px"
+                    color="rgba(249,68,68,1)"
+                    _hover={{ bg: 'rgba(249,68,68,0.1)', borderColor: 'rgba(249,68,68,0.5)' }}
+                >
+                    <Icon as={FiArrowLeft} mr={1} />
+                    Back
+                </Button>
+                <Button
+                    bg="primary.500"
+                    color="white"
+                    onClick={handleNext}
+                    borderRadius="10px"
+                    size="xs"
+                    w="200px"
+                    display="flex"
+                    alignItems="center"
+                    justifyContent="center"
+                    px={3}
+                    _hover={{ bg: 'primary.600' }}
+                >
+                    <Flex align="center" w="full" justify="space-between">
+                        <Text alignSelf="start" mr={2} fontSize="12px" >Next</Text>
+                        <Icon alignSelf="end" as={FiArrowRight} />
+                    </Flex>
+                </Button>
             </Flex>
         </VStack>
     );

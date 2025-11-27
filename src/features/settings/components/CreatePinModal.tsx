@@ -12,7 +12,7 @@ import {
     Link,
 } from '@chakra-ui/react';
 import { MdClose } from 'react-icons/md';
-import { toaster } from '@/components/ui/toaster';
+import { toaster } from '@/components/ui/toaster-instance';
 
 interface CreatePinModalProps {
     isOpen: boolean;
@@ -76,6 +76,7 @@ export const CreatePinModal: React.FC<CreatePinModalProps> = ({
             });
             onSuccess();
         } catch (error) {
+            console.error('create pin error', error);
             toaster.create({
                 title: 'PIN Creation Failed',
                 description: 'Failed to create PIN. Please try again.',

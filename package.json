@@ -3,12 +3,17 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "engines": {
+    "node": ">=20.19.0",
+    "npm": ">=10.0.0"
+  },
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && vite build && npm run copy-config",
+    "copy-config": "node --input-type=module -e \"import { copyFileSync } from 'fs'; copyFileSync('staticwebapp.config.json', 'dist/staticwebapp.config.json')\"",
     "lint": "eslint .",
-    "preview": "vite preview"
-    
+    "preview": "vite preview",
+    "push:all": "git push -u private main && git push -u origin main"
   },
   "dependencies": {
     "@chakra-ui/react": "^3.27.1",

@@ -12,7 +12,7 @@ import {
     Link,
 } from '@chakra-ui/react';
 import { MdClose } from 'react-icons/md';
-import { toaster } from '@/components/ui/toaster';
+import { toaster } from '@/components/ui/toaster-instance';
 
 interface AuthorizeAccountModalProps {
     isOpen: boolean;
@@ -76,6 +76,7 @@ export const AuthorizeAccountModal: React.FC<AuthorizeAccountModalProps> = ({
             });
             onSuccess();
         } catch (error) {
+            console.error('authorize account error', error);
             toaster.create({
                 title: 'Authorization Failed',
                 description: 'Invalid PIN. Please try again.',

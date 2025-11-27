@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useCallback, useEffect } from "react";
 import { useDashboardStore } from "../store/useDashboardStore";
 import { dashboardService } from "../services/dashboardService";
 import { useChakraToast } from "@shared/hooks";
@@ -17,7 +17,7 @@ export const useDashboard = () => {
 
   const toast = useChakraToast();
 
-  const loadDashboardData = async () => {
+  const loadDashboardData = useCallback(async () => {
     setLoading(true);
     try {
       const [statsResponse, salesResponse, performanceResponse] =
@@ -30,31 +30,34 @@ export const useDashboard = () => {
       setStats(statsResponse.data);
       setRecentSales(salesResponse.data);
       setPerformanceData(performanceResponse.data);
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error(
         "Failed to load dashboard data",
-        error.response?.data?.message
+        extractDashboardErrorMessage(error)
       );
     } finally {
       setLoading(false);
     }
-  };
+  }, [setLoading, setStats, setRecentSales, setPerformanceData, toast]);
 
-  const loadPerformanceData = async (period: "7d" | "30d" | "90d") => {
-    try {
-      const response = await dashboardService.getPerformanceData(period);
-      setPerformanceData(response.data);
-    } catch (error: any) {
-      toast.error(
-        "Failed to load performance data",
-        error.response?.data?.message
-      );
-    }
-  };
+  const loadPerformanceData = useCallback(
+    async (period: "7d" | "30d" | "90d") => {
+      try {
+        const response = await dashboardService.getPerformanceData(period);
+        setPerformanceData(response.data);
+      } catch (error: unknown) {
+        toast.error(
+          "Failed to load performance data",
+          extractDashboardErrorMessage(error)
+        );
+      }
+    },
+    [setPerformanceData, toast]
+  );
 
   useEffect(() => {
-    loadDashboardData();
-  }, []);
+    void loadDashboardData();
+  }, [loadDashboardData]);
 
   return {
     stats,
@@ -64,4 +67,24 @@ export const useDashboard = () => {
     loadDashboardData,
     loadPerformanceData,
   };
+};
+
+const extractDashboardErrorMessage = (error: unknown): string => {
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "response" in error &&
+    typeof (error as { response?: unknown }).response === "object" &&
+    (error as { response?: { data?: unknown } }).response !== null
+  ) {
+    const data = (error as { response?: { data?: unknown } }).response?.data;
+    if (data && typeof data === "object" && "message" in data) {
+      const message = (data as { message?: string }).message;
+      if (typeof message === "string") {
+        return message;
+      }
+    }
+  }
+
+  return "An unexpected error occurred";
 };

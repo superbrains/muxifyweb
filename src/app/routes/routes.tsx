@@ -1,6 +1,7 @@
 import { lazy } from 'react';
 import type { RouteObject } from 'react-router-dom';
 import ProtectedRoute from './ProtectedRoute';
+import DashboardRouter from './DashboardRouter';
 
 // Lazy imports
 const Login = lazy(() => import('@auth/pages/Login'));
@@ -23,7 +24,6 @@ const AdManagerEmailVerification = lazy(() => import('@onboarding/pages/AdManage
 const AdManagerInformation = lazy(() => import('@onboarding/pages/AdManagerInformation'));
 const AdManagerDirectorInformation = lazy(() => import('@onboarding/pages/AdManagerDirectorInformation'));
 const AdManagerCompanyLogo = lazy(() => import('@onboarding/pages/AdManagerCompanyLogo'));
-const Dashboard = lazy(() => import('@dashboard/pages/Dashboard'));
 const Upload = lazy(() => import('@upload/pages/Upload'));
 const Review = lazy(() => import('@upload/pages/Review'));
 const EarningsAndRoyalty = lazy(() => import('@earningRoyalty/pages/EarningsAndRoyalty'));
@@ -40,6 +40,10 @@ const MusicVideos = lazy(() => import('@musicVideo/pages/MusicVideos'));
 const AdsDashboard = lazy(() => import('@ads/pages/AdsDashboard'));
 const AdsEmptyState = lazy(() => import('@ads/pages/AdsEmptyState'));
 const CreateCampaign = lazy(() => import('@ads/pages/CreateCampaign'));
+const AdLibrary = lazy(() => import('@ads/pages/AdLibrary'));
+const AdCampaignView = lazy(() => import('@ads/pages/AdCampaignView'));
+const AdsSpending = lazy(() => import('@ads/pages/AdsSpending'));
+const AdsWallet = lazy(() => import('@ads/pages/AdsWallet'));
 
 export const appRoutes: RouteObject[] = [
     { path: '/login', element: <Login /> },
@@ -66,7 +70,7 @@ export const appRoutes: RouteObject[] = [
         path: '/',
         element: <ProtectedRoute />,
         children: [
-            { path: '/dashboard', element: <Dashboard /> },
+            { index: true, element: <DashboardRouter /> },
             { path: '/upload', element: <Upload /> },
             { path: '/upload/review', element: <Review /> },
             { path: '/earning-royalty', element: <EarningsAndRoyalty /> },
@@ -81,8 +85,12 @@ export const appRoutes: RouteObject[] = [
             { path: '/settings', element: <Settings /> },
             { path: '/music-videos', element: <MusicVideos /> },
             // Ad Manager routes
-            { path: '/ads/dashboard', element: <AdsDashboard /> },
+            { path: '/', element: <AdsDashboard /> },
             { path: '/ads/create-campaign', element: <CreateCampaign /> },
+            { path: '/ads/library', element: <AdLibrary /> },
+            { path: '/ads/view/:id', element: <AdCampaignView /> },
+            { path: '/ads/spending', element: <AdsSpending /> },
+            { path: '/ads/wallet', element: <AdsWallet /> },
             { path: '/ads', element: <AdsEmptyState /> },
         ],
     },

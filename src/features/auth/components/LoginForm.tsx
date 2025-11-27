@@ -65,7 +65,7 @@ export const LoginForm: React.FC = () => {
             login(user);
 
             toast.success('Welcome back!', 'You have been successfully logged in.');
-            navigate('/dashboard');
+            navigate('/');
         } catch (error: unknown) {
             let errorMessage = 'Invalid credentials';
             if (error && typeof error === 'object' && 'response' in error) {

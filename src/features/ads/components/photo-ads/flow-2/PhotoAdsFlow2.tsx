@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Box, VStack, HStack, Text, Button, Input, Flex, Icon } from '@chakra-ui/react';
 import { FiArrowRight, FiArrowLeft, FiPlus } from 'react-icons/fi';
 import { useAdsUploadStore } from '../../../store/useAdsUploadStore';
 import { PhotoAdsPhonePreview } from '../../PhotoAdsPhonePreview';
-import { Select } from '@shared/components';
+import { Select, URLInput } from '@shared/components';
 import { TopUpModal } from '../../TopUpModal';
 import { useToast } from '@/shared/hooks/useToast';
 
@@ -17,8 +17,40 @@ export const PhotoAdsFlow2: React.FC<{
     const [reach, setReach] = useState('0');
     const [isTopUpOpen, setIsTopUpOpen] = useState(false);
 
-    const { photoSetCallToAction, photoSetBudgetReach } = useAdsUploadStore();
+    // Use selectors to only subscribe to specific actions, not the entire store
+    const photoCallToAction = useAdsUploadStore((state) => state.photoCallToAction);
+    const photoBudgetReach = useAdsUploadStore((state) => state.photoBudgetReach);
+    const photoSetCallToAction = useAdsUploadStore((state) => state.photoSetCallToAction);
+    const photoSetBudgetReach = useAdsUploadStore((state) => state.photoSetBudgetReach);
     const { toast } = useToast();
+
+    // Populate form fields from store when editing
+    // Only populate if data exists (edit mode), not for new campaigns
+    useEffect(() => {
+        if (photoCallToAction) {
+            setCtaAction(photoCallToAction.action || 'signup');
+            // Always set link, even if empty (user might have entered it)
+            if (photoCallToAction.link !== undefined) {
+                setLink(photoCallToAction.link);
+            }
+        } else {
+            // Reset when creating new campaign
+            setCtaAction('signup');
+            setLink('');
+        }
+        if (photoBudgetReach) {
+            // Always set budget from store (formatted to 2 decimal places)
+            setBudget(photoBudgetReach.amount.toFixed(2));
+            // Always set reach from store
+            if (photoBudgetReach.impressions !== undefined) {
+                setReach(photoBudgetReach.impressions.toString());
+            }
+        } else {
+            // Reset when creating new campaign
+            setBudget('0.00');
+            setReach('0');
+        }
+    }, [photoCallToAction, photoBudgetReach]);
 
     const handleTopUpComplete = () => {
         // Handle top up completion - could show success message
@@ -46,7 +78,7 @@ export const PhotoAdsFlow2: React.FC<{
 
     return (
         <VStack align="stretch" gap={0}>
-            {/* Top Bar with Title and Navigation */}
+            {/* Top Bar with Title */}
             <Box
                 w="full"
                 py={3}
@@ -58,42 +90,6 @@ export const PhotoAdsFlow2: React.FC<{
                     <Text fontSize="md" fontWeight="bold" color="gray.900">
                         Photo Ads
                     </Text>
-                    <HStack gap={2}>
-                        <Button
-                            variant="ghost"
-                            onClick={onBack}
-                            bg="rgba(249,68,68,0.05)"
-                            border="1px solid"
-                            borderColor="rgba(249,68,68,0.3)"
-                            borderRadius="10px"
-                            size="xs"
-                            px={3}
-                            fontSize="12px"
-                            color="rgba(249,68,68,1)"
-                            _hover={{ bg: 'rgba(249,68,68,0.1)', borderColor: 'rgba(249,68,68,0.5)' }}
-                        >
-                            <Icon as={FiArrowLeft} mr={1} />
-                            Back
-                        </Button>
-                        <Button
-                            bg="primary.500"
-                            color="white"
-                            onClick={handleNext}
-                            borderRadius="10px"
-                            size="xs"
-                            w="200px"
-                            display="flex"
-                            alignItems="center"
-                            justifyContent="center"
-                            px={3}
-                            _hover={{ bg: 'primary.600' }}
-                        >
-                            <Flex align="center" w="full" justify="space-between">
-                                <Text alignSelf="start" mr={2} fontSize="12px">Next</Text>
-                                <Icon alignSelf="end" as={FiArrowRight} />
-                            </Flex>
-                        </Button>
-                    </HStack>
                 </Flex>
             </Box>
 
@@ -132,10 +128,10 @@ export const PhotoAdsFlow2: React.FC<{
                             <Text fontSize="sm" fontWeight="bold" color="gray.900" mb={2}>
                                 Link
                             </Text>
-                            <Input
+                            <URLInput
                                 placeholder="https://"
                                 value={link}
-                                onChange={(e) => setLink(e.target.value)}
+                                onChange={setLink}
                                 size="xs"
                                 h="40px"
                                 borderRadius="10px"
@@ -227,6 +223,44 @@ export const PhotoAdsFlow2: React.FC<{
                 <Box flex="1" display="flex" justifyContent="center">
                     <PhotoAdsPhonePreview />
                 </Box>
+            </Flex>
+
+            {/* Bottom Navigation Buttons */}
+            <Flex justify="space-between" align="center" px={4} py={4} borderTop="1px solid" borderColor="gray.200" mt={4}>
+                <Button
+                    variant="ghost"
+                    onClick={onBack}
+                    bg="rgba(249,68,68,0.05)"
+                    border="1px solid"
+                    borderColor="rgba(249,68,68,0.3)"
+                    borderRadius="10px"
+                    size="xs"
+                    px={3}
+                    fontSize="12px"
+                    color="rgba(249,68,68,1)"
+                    _hover={{ bg: 'rgba(249,68,68,0.1)', borderColor: 'rgba(249,68,68,0.5)' }}
+                >
+                    <Icon as={FiArrowLeft} mr={1} />
+                    Back
+                </Button>
+                <Button
+                    bg="primary.500"
+                    color="white"
+                    onClick={handleNext}
+                    borderRadius="10px"
+                    size="xs"
+                    w="200px"
+                    display="flex"
+                    alignItems="center"
+                    justifyContent="center"
+                    px={3}
+                    _hover={{ bg: 'primary.600' }}
+                >
+                    <Flex align="center" w="full" justify="space-between">
+                        <Text alignSelf="start" mr={2} fontSize="12px">Next</Text>
+                        <Icon alignSelf="end" as={FiArrowRight} />
+                    </Flex>
+                </Button>
             </Flex>
 
             {/* Top Up Modal */}

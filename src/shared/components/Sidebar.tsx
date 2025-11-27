@@ -21,8 +21,8 @@ import {
     PaymentsIcon,
     MuxifyLogoIcon,
     StatusUpIcon,
-    GraphIcon,
     WalletMoneyIcon,
+    AdLibraryIcon,
 } from '@/shared/icons/CustomIcons';
 import { useWindowWidth } from '../hooks/useWindowsWidth';
 import { useUserType } from '@/features/auth/hooks/useUserType';
@@ -39,7 +39,7 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-    { icon: DashboardIcon, label: 'Dashboard', path: '/dashboard' },
+    { icon: DashboardIcon, label: 'Dashboard', path: '/' },
     { icon: LeaderboardIcon, label: 'Leaderboard', path: '/leaderboard' },
     { icon: EarningsAndRoyaltyIcon, label: 'Earnings & Royalty', path: '/earning-royalty' },
     { icon: MusicIcon, label: 'Music/Videos', path: '/music-videos' },
@@ -73,11 +73,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed }) => {
 
     // Ad Manager specific nav items
     const adManagerNavItems: NavItem[] = [
-        { icon: DashboardIcon, label: 'Dashboard', path: '/ads/dashboard' },
-        { icon: LeaderboardIcon, label: 'Leaderboard', path: '/ads/leaderboard' },
-        { icon: StatusUpIcon, label: 'Spending', path: '/ads/spending' },
-        { icon: GraphIcon, label: 'Ad Report', path: '/ads/report' },
-        { icon: WalletMoneyIcon, label: 'Payments', path: '/ads/payments' },
+        { icon: DashboardIcon, label: 'Dashboard', path: '/' },
+        { icon: AdLibraryIcon, label: 'Ad Library', path: '/ads/library' },
+        { icon: StatusUpIcon, label: 'Ad Spending', path: '/ads/spending' },
+        { icon: WalletMoneyIcon, label: 'Ad Wallet', path: '/ads/wallet' },
     ];
 
     // Get the appropriate nav items based on user type
@@ -89,6 +88,20 @@ export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed }) => {
     };
 
     const currentNavItems = getNavItems();
+
+    const isItemActive = React.useCallback(
+        (currentPath: string, targetPath: string) => {
+            if (targetPath === '/') {
+                return currentPath === '/';
+            }
+
+            return (
+                currentPath === targetPath ||
+                currentPath.startsWith(`${targetPath}/`)
+            );
+        },
+        []
+    );
 
     const handleNavClick = (path: string) => {
         // If we're on the same path, toggle collapse state
@@ -111,10 +124,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed }) => {
     return (
         <motion.div
             initial={{
-                width: isMobile ? (shouldShowCollapsed ? 72 : 230) : (shouldShowCollapsed ? 105 : 230),
+                width: isMobile ? (shouldShowCollapsed ? 72 : 245) : (shouldShowCollapsed ? 105 : 245),
             }}
             animate={{
-                width: isMobile ? (shouldShowCollapsed ? 72 : 230) : (shouldShowCollapsed ? 105 : 230),
+                width: isMobile ? (shouldShowCollapsed ? 72 : 245) : (shouldShowCollapsed ? 105 : 245),
             }}
             transition={isInitialRender ? { duration: 0 } : {
                 duration: 0.3,
@@ -212,7 +225,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed }) => {
                 {/* Navigation Items */}
                 <VStack gap={3} flex={1} align="stretch" zIndex={1000}>
                     {currentNavItems.map((item) => {
-                        const isActive = location.pathname === item.path;
+                        const isActive = isItemActive(location.pathname, item.path);
                         const IconComponent = item.icon;
 
                         return (
