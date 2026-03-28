@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
     Box,
     Text,
@@ -6,14 +6,120 @@ import {
     HStack,
     Flex,
     Grid,
+    Spinner,
+    Center,
 } from '@chakra-ui/react';
 import Chart from 'react-apexcharts';
 import { AnimatedTabs } from '@shared/components/AnimatedTabs';
 import { formatNaira } from '@shared/utils';
+import { earningsService } from '../services/earningsService';
+import type { EarningsSummaryDto, EarningsHistoryDto, DashboardAnalyticsDto, EarningDto } from '../types';
+import { getEarningTypeLabel } from '../types';
+
+// Helper functions
+const mapTimeFilterToPeriod = (filter: string): string => {
+    switch (filter) {
+        case 'daily': return '7d';
+        case 'weekly': return '30d';
+        case 'monthly': return '90d';
+        case 'yearly': return '12m';
+        default: return '30d';
+    }
+};
+
+const calculateChartPercentages = (summary: EarningsSummaryDto | null) => {
+    if (!summary) return [0, 0, 0];
+    const total = summary.giftEarnings + summary.contentUnlockEarnings +
+        summary.streamingEarnings + summary.bonusEarnings;
+    if (total === 0) return [0, 0, 0];
+    return [
+        Math.round((summary.contentUnlockEarnings / total) * 100),
+        Math.round((summary.giftEarnings / total) * 100),
+        Math.round(((summary.streamingEarnings + summary.bonusEarnings) / total) * 100)
+    ];
+};
+
+const mapHistoryToCommissionData = (earnings: EarningDto[]) =>
+    earnings.map((e, i) => ({
+        id: i + 1,
+        type: getEarningTypeLabel(e.type) + ' Commission',
+        source: e.description || 'N/A',
+        date: new Date(e.earnedAt).toLocaleDateString(),
+        amount: formatNaira(e.amountInSmallestUnit)
+    }));
 
 export const MusicTab: React.FC = () => {
     const [timeFilter, setTimeFilter] = useState<'daily' | 'weekly' | 'monthly' | 'yearly'>('daily');
     const [commissionFilter, setCommissionFilter] = useState<'all' | 'gifts' | 'sponsorship' | 'unlock'>('all');
+
+    // API State
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [summary, setSummary] = useState<EarningsSummaryDto | null>(null);
+    const [history, setHistory] = useState<EarningsHistoryDto | null>(null);
+    const [analytics, setAnalytics] = useState<DashboardAnalyticsDto | null>(null);
+
+    // Fetch data on mount and when timeFilter changes
+    useEffect(() => {
+        const fetchData = async () => {
+            setLoading(true);
+            setError(null);
+            try {
+                const [summaryRes, historyRes, analyticsRes] = await Promise.all([
+                    earningsService.getSummary(),
+                    earningsService.getHistory({ pageSize: 20 }),
+                    earningsService.getAnalytics(mapTimeFilterToPeriod(timeFilter))
+                ]);
+                setSummary(summaryRes.data);
+                setHistory(historyRes.data);
+                setAnalytics(analyticsRes.data);
+            } catch (err) {
+                setError('Failed to load earnings data');
+                console.error('Error fetching earnings data:', err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchData();
+    }, [timeFilter]);
+
+    // Derived values from API data
+    const unlockTotalAmount = summary?.contentUnlockEarnings ?? 0;
+    const giftingTotalAmount = summary?.giftEarnings ?? 0;
+    const commissionTotalAmount = (summary?.streamingEarnings ?? 0) + (summary?.bonusEarnings ?? 0);
+
+    const chartPercentages = useMemo(() => calculateChartPercentages(summary), [summary]);
+    const unlockChartSeries = chartPercentages;
+    const giftingChartSeries = chartPercentages;
+    const commissionChartSeries = chartPercentages;
+    const pieChartSeries = chartPercentages;
+
+    // Map commission data from API
+    const commissionData = useMemo(() =>
+        history?.earnings ? mapHistoryToCommissionData(history.earnings) : [],
+        [history]
+    );
+
+    // Map activity chart data from API
+    const activityChartCategories = useMemo(() =>
+        analytics?.giftEarningsChart?.data?.map(d => d.label) ?? ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'],
+        [analytics]
+    );
+
+    const activityChartSeries = useMemo(() => [
+        {
+            name: 'Gifts',
+            data: analytics?.giftEarningsChart?.data?.map(d => d.value) ?? []
+        },
+        {
+            name: 'Unlocked',
+            data: analytics?.unlockEarningsChart?.data?.map(d => d.value) ?? []
+        },
+        {
+            name: 'Commission',
+            data: analytics?.otherEarningsChart?.data?.map(d => d.value) ?? []
+        }
+    ], [analytics]);
 
     const pieChartLabels = ['Unlocking', 'Gifting', 'Commission'];
 
@@ -87,9 +193,6 @@ export const MusicTab: React.FC = () => {
         },
     };
 
-    const unlockChartSeries = [65, 25, 10];
-    const unlockTotalAmount = 374384348; // Example amount in kobo
-
     // Donut Chart Options for Gifting
     const giftingChartOptions = {
         ...unlockChartOptions,
@@ -131,9 +234,6 @@ export const MusicTab: React.FC = () => {
             },
         },
     };
-
-    const giftingChartSeries = [70, 20, 10];
-    const giftingTotalAmount = 425000000; // Example amount in kobo
 
     // Donut Chart Options for Commission
     const commissionChartOptions = {
@@ -177,9 +277,6 @@ export const MusicTab: React.FC = () => {
         },
     };
 
-    const commissionChartSeries = [60, 25, 15];
-    const commissionTotalAmount = 298500000; // Example amount in kobo
-
     // Pie Chart Options for Overall Earnings
     const pieChartOptions = {
         chart: {
@@ -222,8 +319,6 @@ export const MusicTab: React.FC = () => {
         },
     };
 
-    const pieChartSeries = [50, 25, 10.5];
-
     // Activity Insights Line Chart
     const activityChartOptions = {
         chart: {
@@ -259,7 +354,7 @@ export const MusicTab: React.FC = () => {
             }
         },
         xaxis: {
-            categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'],
+            categories: activityChartCategories,
             labels: {
                 style: {
                     fontSize: '12px',
@@ -294,37 +389,35 @@ export const MusicTab: React.FC = () => {
         },
     };
 
-    const activityChartSeries = [
-        {
-            name: 'Gifts',
-            data: [280, 260, 220, 180, 140, 120, 140, 200, 280, 360, 390, 380]
-        },
-        {
-            name: 'Unlocked',
-            data: [300, 360, 390, 395, 380, 340, 280, 240, 240, 280, 340, 380]
-        },
-        {
-            name: 'Commission',
-            data: [290, 330, 365, 380, 360, 310, 250, 220, 250, 300, 350, 380]
-        }
-    ];
-
-    // Commission data
-    const commissionData = [
-        { id: 1, type: 'Gift Commission', source: 'The Money (with Olamide)', date: '26/8/2025', amount: formatNaira(50000) },
-        { id: 2, type: 'Unlock Commission', source: 'The Money (with Olamide)', date: '26/8/2025', amount: formatNaira(50000) },
-        { id: 3, type: 'Sponsorship Commission', source: 'The Money (with Olamide)', date: '26/8/2025', amount: formatNaira(50000) },
-        { id: 4, type: 'Unlock Commission', source: 'The Money (with Olamide)', date: '26/8/2025', amount: formatNaira(50000) },
-        { id: 5, type: 'Sponsorship Commission', source: 'The Money (with Olamide)', date: '26/8/2025', amount: formatNaira(50000) },
-        { id: 6, type: 'Gift Commission', source: 'The Money (with Olamide)', date: '26/8/2025', amount: formatNaira(50000) },
-        { id: 7, type: 'Unlock Commission', source: 'The Money (with Olamide)', date: '26/8/2025', amount: formatNaira(50000) },
-    ];
-
     const filteredCommissionData = commissionFilter === 'all'
         ? commissionData
         : commissionData.filter(item =>
             item.type.toLowerCase().includes(commissionFilter.toLowerCase())
         );
+
+    // Loading state
+    if (loading) {
+        return (
+            <Center py={20} bg="white" borderBottomRadius="xl">
+                <VStack gap={4}>
+                    <Spinner size="xl" color="red.500" thickness="4px" />
+                    <Text color="gray.600">Loading earnings data...</Text>
+                </VStack>
+            </Center>
+        );
+    }
+
+    // Error state
+    if (error) {
+        return (
+            <Center py={20} bg="white" borderBottomRadius="xl">
+                <VStack gap={4}>
+                    <Text color="red.500" fontSize="lg" fontWeight="semibold">Error</Text>
+                    <Text color="gray.600">{error}</Text>
+                </VStack>
+            </Center>
+        );
+    }
 
     return (
         <VStack gap={6} align="stretch" bg="white" borderBottomRadius="xl" p={4}>
@@ -345,19 +438,18 @@ export const MusicTab: React.FC = () => {
                 <Box display="flex" gap={4}>
                     <VStack align="start" gap={1}>
                         <Text fontSize="lg" color="red.500" fontWeight="bold">
-                            {formatNaira(25550000)}
+                            {formatNaira(summary?.earningsThisMonth ?? 0)}
                         </Text>
                         <Text fontSize="11px" color="gray.900">
-                            Total Earning Today
+                            Earnings This Period
                         </Text>
                     </VStack>
                     <VStack align="start" gap={1}>
-
                         <Text fontSize="lg" color="red.500" fontWeight="bold">
-                            {formatNaira(100000000)}
+                            {formatNaira(summary?.totalEarnedAmount ?? 0)}
                         </Text>
                         <Text fontSize="11px" color="gray.900">
-                            Total Earning Today
+                            Total Earnings (All Time)
                         </Text>
                     </VStack>
                 </Box>

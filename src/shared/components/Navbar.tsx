@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useRef } from 'react';
+import React, { useMemo, useState, useRef, useEffect } from 'react';
 import {
     Box,
     HStack,
@@ -50,7 +50,20 @@ export const Navbar: React.FC<NavbarProps> = ({
     // Notification state
     const [isNotificationOpen, setIsNotificationOpen] = useState(false);
     const notificationButtonRef = useRef<HTMLButtonElement>(null);
-    const { unreadCount } = useNotificationStore();
+    const { unreadCount, connectSignalR, disconnectSignalR, fetchUnreadCount } = useNotificationStore();
+
+    // Initialize SignalR connection and fetch unread count on mount
+    useEffect(() => {
+        // Connect to SignalR for real-time notifications
+        connectSignalR();
+        // Fetch initial unread count
+        fetchUnreadCount();
+
+        // Cleanup on unmount
+        return () => {
+            disconnectSignalR();
+        };
+    }, [connectSignalR, disconnectSignalR, fetchUnreadCount]);
 
     // Get user data from store
     const { getCurrentUserData, getCurrentUserType } = useUserManagementStore();
@@ -92,7 +105,10 @@ export const Navbar: React.FC<NavbarProps> = ({
                 : (userData as AdManagerOnboardingData).companyLogo)
         : userAvatar;
 
-    const handleLogout = () => {
+    const handleLogout = async () => {
+        // Disconnect from SignalR
+        await disconnectSignalR();
+
         // Clear user management store
         const { clearAllUsers } = useUserManagementStore.getState();
         clearAllUsers();

@@ -1,37 +1,123 @@
 import { api } from "@shared/services/api";
+import { tokenStorage } from "@app/lib/axiosInstance";
 import type { User } from "@shared/types";
 
-export interface LoginCredentials {
+// Request DTOs matching backend
+export interface LoginRequest {
   email: string;
   password: string;
 }
 
-export interface RegisterData {
+export interface RegisterRequest {
   email: string;
   password: string;
-  name: string;
-  role: "artist" | "dj" | "creator" | "record_label";
+  name?: string;
+  phone?: string;
+  role?: "artist" | "dj" | "creator" | "record_label";
 }
 
-export interface AuthResponse {
+export interface LogoutRequest {
+  refreshToken?: string;
+  revokeAll?: boolean;
+}
+
+export interface RefreshTokenRequest {
+  refreshToken: string;
+}
+
+export interface ForgotPasswordRequest {
+  email: string;
+}
+
+export interface ResetPasswordRequest {
+  token: string;
+  password: string;
+}
+
+export interface VerifyEmailRequest {
+  code: string;
+}
+
+// Response DTOs matching backend
+export interface AuthResult {
   user: User;
   token: string;
+  refreshToken: string;
 }
 
+export interface TokenResult {
+  token: string;
+  refreshToken: string;
+}
+
+export interface MessageResponse {
+  message: string;
+}
+
+// Legacy type aliases for backward compatibility
+export type LoginCredentials = LoginRequest;
+export type RegisterData = RegisterRequest;
+export type AuthResponse = AuthResult;
+
 export const authService = {
-  login: (credentials: LoginCredentials) =>
-    api.post<AuthResponse>("/auth/login", credentials),
+  login: async (credentials: LoginRequest): Promise<AuthResult> => {
+    const response = await api.post<AuthResult>("/auth/login", credentials);
+    const { token, refreshToken } = response.data;
+    tokenStorage.setTokens(token, refreshToken);
+    return response.data;
+  },
 
-  register: (data: RegisterData) =>
-    api.post<AuthResponse>("/auth/register", data),
+  register: async (data: RegisterRequest): Promise<AuthResult> => {
+    const response = await api.post<AuthResult>("/auth/register", data);
+    const { token, refreshToken } = response.data;
+    tokenStorage.setTokens(token, refreshToken);
+    return response.data;
+  },
 
-  logout: () => api.post("/auth/logout"),
+  logout: async (request?: LogoutRequest): Promise<void> => {
+    const refreshToken = tokenStorage.getRefreshToken();
+    await api.post("/auth/logout", {
+      refreshToken: request?.refreshToken ?? refreshToken,
+      revokeAll: request?.revokeAll ?? true,
+    });
+    tokenStorage.clearTokens();
+  },
 
-  refreshToken: () => api.post<{ token: string }>("/auth/refresh"),
+  refreshToken: async (): Promise<TokenResult> => {
+    const refreshToken = tokenStorage.getRefreshToken();
+    if (!refreshToken) {
+      throw new Error("No refresh token available");
+    }
+    const response = await api.post<TokenResult>("/auth/refresh", {
+      refreshToken,
+    });
+    const { token, refreshToken: newRefreshToken } = response.data;
+    tokenStorage.setTokens(token, newRefreshToken);
+    return response.data;
+  },
 
-  forgotPassword: (email: string) =>
-    api.post("/auth/forgot-password", { email }),
+  forgotPassword: async (email: string): Promise<MessageResponse> => {
+    const response = await api.post<MessageResponse>("/auth/forgot-password", {
+      email,
+    });
+    return response.data;
+  },
 
-  resetPassword: (token: string, password: string) =>
-    api.post("/auth/reset-password", { token, password }),
+  resetPassword: async (
+    token: string,
+    password: string
+  ): Promise<MessageResponse> => {
+    const response = await api.post<MessageResponse>("/auth/reset-password", {
+      token,
+      password,
+    });
+    return response.data;
+  },
+
+  verifyEmail: async (code: string): Promise<MessageResponse> => {
+    const response = await api.post<MessageResponse>("/auth/verify-email", {
+      code,
+    });
+    return response.data;
+  },
 };

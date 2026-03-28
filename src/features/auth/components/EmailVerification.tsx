@@ -38,7 +38,7 @@ export const EmailVerification: React.FC<EmailVerificationProps> = ({
             onCodeChange(updatedCode);
 
             // Auto-focus next input
-            if (value && index < 4) {
+            if (value && index < 5) {
                 const nextInput = document.querySelector(`input[data-index="${index + 1}"]`) as HTMLInputElement;
                 nextInput?.focus();
             }
@@ -66,7 +66,7 @@ export const EmailVerification: React.FC<EmailVerificationProps> = ({
 
             <Box w="full">
                 <HStack justify="center" gap={2} mb={3}>
-                    {[0, 1, 2, 3, 4].map((index) => (
+                    {[0, 1, 2, 3, 4, 5].map((index) => (
                         <Input
                             key={index}
                             value={verificationCode[index] || ''}
@@ -124,7 +124,7 @@ export const EmailVerification: React.FC<EmailVerificationProps> = ({
                 fontWeight="medium"
                 borderRadius="10px"
                 _hover={{ bg: 'primary.600' }}
-                disabled={verificationCode.length !== 5}
+                disabled={verificationCode.length !== 6}
             >
                 Verify Now
             </Button>

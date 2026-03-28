@@ -1,23 +1,22 @@
-import { 
-    // Navigate, 
-    Outlet 
-} from 'react-router-dom';
-// import { useUserStore } from '@app/store/useUserStore';
-// import { usePermission } from '@app/hooks/usePermission';
-import { ProtectedLayout } from '@shared/components';
+import { Navigate, Outlet } from "react-router-dom";
+import { useUserStore } from "@app/store/useUserStore";
+import { tokenStorage } from "@app/lib/axiosInstance";
+import { ProtectedLayout } from "@shared/components";
 
 const ProtectedRoute = () => {
-    // const user = useUserStore(state => state.user);
-    // const isAllowed = usePermission(user?.role);
+  const { user, isAuthenticated } = useUserStore();
+  const hasToken = !!tokenStorage.getAccessToken();
 
-    // if (!user) return <Navigate to="/login" replace />;
-    // if (!isAllowed) return <Navigate to="/unauthorized" replace />;
+  // User must have both a valid token and user data to access protected routes
+  if (!hasToken || !isAuthenticated || !user) {
+    return <Navigate to="/login" replace />;
+  }
 
-    return (
-        <ProtectedLayout>
-            <Outlet />
-        </ProtectedLayout>
-    );
+  return (
+    <ProtectedLayout>
+      <Outlet />
+    </ProtectedLayout>
+  );
 };
 
 export default ProtectedRoute;

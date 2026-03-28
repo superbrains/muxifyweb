@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Box,
     Grid,
@@ -7,6 +7,8 @@ import {
     HStack,
     VStack,
     Flex,
+    Spinner,
+    Center,
 } from '@chakra-ui/react';
 import { FaGift } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
@@ -14,12 +16,73 @@ import Chart from 'react-apexcharts';
 import { ComposableMap, Geographies, Geography } from 'react-simple-maps';
 import { AddUserIcon, CalendarIcon, GiftIcon, MusicFilledIcon, MusicIconOutlinedIcon, PlayerIcon, SalesDashboardIcon, UploadIcon } from '@/shared/icons/CustomIcons';
 import { useWindowWidth } from '@/shared/hooks/useWindowsWidth';
+import { useDashboard } from '../hooks/useDashboard';
+import { formatCurrency } from '@shared/lib';
+import { leaderboardService } from '@/features/leaderboard/services/leaderboardService';
+import type { TopGifterDto } from '@/features/leaderboard/types';
+import {
+    mapAnalyticsToActivityChart,
+    mapAnalyticsToRevenueChart,
+    mapAnalyticsToEarningsComparisonChart,
+    mapAnalyticsToPopularActivityChart,
+    getAnalyticsCategories,
+    calculateYAxisMax,
+} from '../utils/chartMappers';
 import '../styles/dashboard.css';
+
+// Helper function to format large numbers
+const formatNumber = (num: number): string => {
+    if (num >= 1000000) {
+        return `${(num / 1000000).toFixed(1)}M`;
+    }
+    if (num >= 1000) {
+        return `${(num / 1000).toFixed(0)}K`;
+    }
+    return num.toLocaleString();
+};
 
 export const Dashboard: React.FC = () => {
     const navigate = useNavigate();
     const { windowWidth } = useWindowWidth();
-    // Activity Insights Chart Data
+    const {
+        statsDto,
+        analyticsDto,
+        topTracksDto,
+        isLoading,
+        error,
+    } = useDashboard();
+
+    // Top Gifters state
+    const [topGifters, setTopGifters] = useState<TopGifterDto[]>([]);
+    const [topGiftersLoading, setTopGiftersLoading] = useState(true);
+
+    // Fetch top gifters on mount
+    useEffect(() => {
+        const fetchTopGifters = async () => {
+            try {
+                setTopGiftersLoading(true);
+                const response = await leaderboardService.getTopGifters(5, 'all-time');
+                setTopGifters(response.entries);
+            } catch (err) {
+                console.error('Failed to fetch top gifters:', err);
+            } finally {
+                setTopGiftersLoading(false);
+            }
+        };
+        void fetchTopGifters();
+    }, []);
+
+    // Helper to get avatar background color based on index
+    const getAvatarBgColor = (index: number): string => {
+        const colors = ['#8B5CF6', '#A855F7', '#1F2937', '#A855F7', '#8B5CF6'];
+        return colors[index % colors.length];
+    };
+
+    // Activity Insights Chart Data - derived from API
+    const activityChartSeries = mapAnalyticsToActivityChart(analyticsDto);
+    const activityCategories = getAnalyticsCategories(analyticsDto, ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec']);
+    const activityYMax = calculateYAxisMax(activityChartSeries, 1.2);
+
     const activityChartOptions = {
         chart: {
             type: 'line' as const,
@@ -54,7 +117,7 @@ export const Dashboard: React.FC = () => {
             }
         },
         xaxis: {
-            categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'],
+            categories: activityCategories,
             labels: {
                 style: {
                     fontSize: '10px',
@@ -66,7 +129,7 @@ export const Dashboard: React.FC = () => {
         },
         yaxis: {
             min: 0,
-            max: 400,
+            max: activityYMax || 400,
             tickAmount: 4,
             labels: {
                 style: {
@@ -89,22 +152,11 @@ export const Dashboard: React.FC = () => {
         },
     };
 
-    const activityChartSeries = [
-        {
-            name: 'Plays',
-            data: [290, 330, 365, 380, 360, 310, 250, 220, 250, 300, 350, 380]
-        },
-        {
-            name: 'Gifts',
-            data: [280, 260, 220, 180, 140, 120, 140, 200, 280, 360, 390, 380]
-        },
-        {
-            name: 'Unlocked',
-            data: [300, 360, 390, 395, 380, 340, 280, 240, 240, 280, 340, 380]
-        }
-    ];
+    // Total Revenue Chart Data - derived from API
+    const revenueChartSeries = mapAnalyticsToRevenueChart(analyticsDto);
+    const revenueCategories = getAnalyticsCategories(analyticsDto, ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']);
+    const revenueYMax = calculateYAxisMax(revenueChartSeries, 1.2);
 
-    // Total Revenue Chart Data
     const revenueChartOptions = {
         chart: {
             type: 'bar' as const,
@@ -151,7 +203,7 @@ export const Dashboard: React.FC = () => {
             }
         },
         xaxis: {
-            categories: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
+            categories: revenueCategories,
             labels: {
                 rotateAlways: false,
                 style: {
@@ -164,7 +216,7 @@ export const Dashboard: React.FC = () => {
         },
         yaxis: {
             min: 0,
-            max: 25000,
+            max: revenueYMax || 25000,
             tickAmount: 5,
             labels: {
                 style: {
@@ -190,22 +242,10 @@ export const Dashboard: React.FC = () => {
         },
     };
 
-    const revenueChartSeries = [
-        {
-            name: 'Gifting',
-            data: [8000, 12000, 15000, 18000, 20000, 22000, 25000]
-        },
-        {
-            name: 'Unlocked',
-            data: [5000, 8000, 10000, 12000, 15000, 18000, 20000]
-        },
-        {
-            name: 'Commission',
-            data: [3000, 5000, 7000, 9000, 11000, 13000, 15000]
-        }
-    ];
+    // Earnings Chart Data - derived from API
+    const earningsChartSeries = mapAnalyticsToEarningsComparisonChart(analyticsDto);
+    const earningsCategories = getAnalyticsCategories(analyticsDto, ['Week 1', 'Week 2', 'Week 3', 'Week 4']);
 
-    // Earnings Chart Data
     const earningsChartOptions = {
         chart: {
             type: 'area' as const,
@@ -227,7 +267,7 @@ export const Dashboard: React.FC = () => {
                 }
             }
         }],
-        colors: ['#10B981', '#EF4444'],
+        colors: ['#10B981', '#3B82F6'],
         dataLabels: {
             enabled: false
         },
@@ -242,7 +282,7 @@ export const Dashboard: React.FC = () => {
         },
         markers: {
             size: 5,
-            colors: ['#10B981', '#EF4444'],
+            colors: ['#10B981', '#3B82F6'],
             strokeColors: '#fff',
             strokeWidth: 2,
             shape: 'circle' as const,
@@ -251,7 +291,7 @@ export const Dashboard: React.FC = () => {
             }
         },
         xaxis: {
-            categories: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+            categories: earningsCategories,
             labels: {
                 show: false,
             },
@@ -275,18 +315,9 @@ export const Dashboard: React.FC = () => {
         },
     };
 
-    const earningsChartSeries = [
-        {
-            name: 'Last Month Earnings',
-            data: [250000, 280000, 290000, 300004]
-        },
-        {
-            name: 'This Month Earning',
-            data: [80000, 95000, 100000, 104504]
-        }
-    ];
+    // Popular Activity Chart Data - derived from API
+    const popularActivityChartSeries = mapAnalyticsToPopularActivityChart(analyticsDto);
 
-    // Popular Activity Chart Data
     const popularActivityChartOptions = {
         chart: {
             type: 'bar' as const,
@@ -311,7 +342,7 @@ export const Dashboard: React.FC = () => {
             show: false,
         },
         xaxis: {
-            categories: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+            categories: getAnalyticsCategories(analyticsDto, ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']).slice(0, 6),
             labels: {
                 show: false,
             },
@@ -339,16 +370,31 @@ export const Dashboard: React.FC = () => {
         },
     };
 
-    const popularActivityChartSeries = [
-        {
-            name: 'Unlock',
-            data: [300, 450, 300, 250, 200, 350]
-        },
-        {
-            name: 'Gifting',
-            data: [200, 250, 300, 250, 200, 200]
-        }
-    ];
+    // Show loading spinner while data is being fetched
+    if (isLoading && !statsDto) {
+        return (
+            <Center minH="100vh" bg="gray.50">
+                <VStack gap={4}>
+                    <Spinner size="xl" color="primary.500" thickness="4px" />
+                    <Text color="gray.600">Loading dashboard...</Text>
+                </VStack>
+            </Center>
+        );
+    }
+
+    // Show error message if there was an error
+    if (error && !statsDto) {
+        return (
+            <Center minH="100vh" bg="gray.50">
+                <VStack gap={4}>
+                    <Text color="red.500" fontSize="lg">{error}</Text>
+                    <Button colorScheme="primary" onClick={() => window.location.reload()}>
+                        Retry
+                    </Button>
+                </VStack>
+            </Center>
+        );
+    }
 
     return (
         <VStack gap={{ base: 2, lg: 6 }} bg="gray.50" minH="100vh">
@@ -426,13 +472,13 @@ export const Dashboard: React.FC = () => {
                                 <SalesDashboardIcon boxSize={6} />
                                 <VStack align="start" gap={1}>
                                     <Text fontSize="md" fontWeight="bold" color="gray.900">
-                                        N100k
+                                        {statsDto?.totalEarnings.formattedValue || formatCurrency(0)}
                                     </Text>
                                     <Text fontSize="9px" color="gray.600">
                                         Total Earning
                                     </Text>
-                                    <Text fontSize="8px" color="green.500">
-                                        +8% from yesterday
+                                    <Text fontSize="8px" color={statsDto?.totalEarnings.isPositiveChange ? "green.500" : "red.500"}>
+                                        {statsDto?.totalEarnings.isPositiveChange ? '+' : ''}{statsDto?.totalEarnings.percentChange.toFixed(1) || 0}% from yesterday
                                     </Text>
                                 </VStack>
 
@@ -445,13 +491,13 @@ export const Dashboard: React.FC = () => {
                                 <GiftIcon boxSize={6} />
                                 <VStack align="start" gap={1}>
                                     <Text fontSize="md" fontWeight="bold" color="gray.900">
-                                        300
+                                        {formatNumber(analyticsDto?.totalGiftsReceived || 0)}
                                     </Text>
                                     <Text fontSize="9px" color="gray.600">
                                         Total Gifts
                                     </Text>
                                     <Text fontSize="8px" color="green.500">
-                                        +5% from yesterday
+                                        This period
                                     </Text>
                                 </VStack>
 
@@ -464,13 +510,13 @@ export const Dashboard: React.FC = () => {
                                 <MusicIconOutlinedIcon boxSize={6} />
                                 <VStack align="start" gap={1}>
                                     <Text fontSize="md" fontWeight="bold" color="gray.900">
-                                        500,000
+                                        {formatNumber(analyticsDto?.totalContentUnlocks || 0)}
                                     </Text>
                                     <Text fontSize="9px" color="gray.600">
                                         Total Unlocked
                                     </Text>
                                     <Text fontSize="8px" color="green.500">
-                                        +1.2% from yesterday
+                                        This period
                                     </Text>
                                 </VStack>
 
@@ -483,13 +529,13 @@ export const Dashboard: React.FC = () => {
                                 <PlayerIcon boxSize={6} />
                                 <VStack align="start" gap={1}>
                                     <Text fontSize="md" fontWeight="bold" color="gray.900">
-                                        1,112,000
+                                        {statsDto?.totalPlays.formattedValue || formatNumber(0)}
                                     </Text>
                                     <Text fontSize="9px" color="gray.600">
                                         Plays
                                     </Text>
-                                    <Text fontSize="8px" color="red.500">
-                                        0.5% from yesterday
+                                    <Text fontSize="8px" color={statsDto?.totalPlays.isPositiveChange ? "green.500" : "red.500"}>
+                                        {statsDto?.totalPlays.isPositiveChange ? '+' : ''}{statsDto?.totalPlays.percentChange.toFixed(1) || 0}% from yesterday
                                     </Text>
                                 </VStack>
 
@@ -508,13 +554,13 @@ export const Dashboard: React.FC = () => {
                                 <AddUserIcon boxSize={6} />
                                 <VStack align="start" gap={1}>
                                     <Text fontSize="md" fontWeight="bold" color="gray.900">
-                                        100,000
+                                        {statsDto?.totalFollowers.formattedValue || formatNumber(0)}
                                     </Text>
                                     <Text fontSize="9px" color="gray.600">
                                         New Fans/Followers
                                     </Text>
-                                    <Text fontSize="8px" color="red.500">
-                                        0.5% from yesterday
+                                    <Text fontSize="8px" color={statsDto?.totalFollowers.isPositiveChange ? "green.500" : "red.500"}>
+                                        {statsDto?.totalFollowers.isPositiveChange ? '+' : ''}{statsDto?.totalFollowers.percentChange.toFixed(1) || 0}% from yesterday
                                     </Text>
                                 </VStack>
                             </VStack>
@@ -631,46 +677,53 @@ export const Dashboard: React.FC = () => {
                         </Box>
                         {/* Table Body */}
                         <Box as="tbody">
-                            {[
-                                { rank: '01', name: 'With you ft. Omah Lay', popularity: 95, sales: '50,000,00' },
-                                { rank: '02', name: 'Skelewu', popularity: 75, sales: '40,000,00' },
-                                { rank: '03', name: 'Risk ft. Popcaan', popularity: 60, sales: '35,000,00' },
-                                { rank: '04', name: 'Hmmm ft. Chris Brown', popularity: 40, sales: '25,000,00' }
-                            ].map((item, index) => (
-                                <Box as="tr" key={index} _hover={{ bg: 'gray.50' }}>
-                                    <Box as="td" fontSize="10px" color="#7B91B0" fontWeight="semibold" px={2} py={3} borderBottom="1px solid" borderColor="gray.100">
-                                        {item.rank}
-                                    </Box>
-                                    <Box as="td" fontSize="10px" color="gray.700" fontWeight="medium" px={2} py={3} borderBottom="1px solid" borderColor="gray.100">
-                                        {item.name}
-                                    </Box>
-                                    <Box as="td" px={2} py={3} borderBottom="1px solid" borderColor="gray.100">
-                                        <Box w="100%" bg="red.300" h={1} borderRadius="full" overflow="hidden">
+                            {(topTracksDto?.tracks || []).slice(0, 4).map((track, index) => {
+                                // Calculate popularity as percentage of max plays in the list
+                                const maxPlays = Math.max(...(topTracksDto?.tracks || []).map(t => t.playCount), 1);
+                                const popularity = Math.round((track.playCount / maxPlays) * 100);
+                                return (
+                                    <Box as="tr" key={track.id} _hover={{ bg: 'gray.50' }}>
+                                        <Box as="td" fontSize="10px" color="#7B91B0" fontWeight="semibold" px={2} py={3} borderBottom="1px solid" borderColor="gray.100">
+                                            {String(index + 1).padStart(2, '0')}
+                                        </Box>
+                                        <Box as="td" fontSize="10px" color="gray.700" fontWeight="medium" px={2} py={3} borderBottom="1px solid" borderColor="gray.100">
+                                            {track.title}
+                                        </Box>
+                                        <Box as="td" px={2} py={3} borderBottom="1px solid" borderColor="gray.100">
+                                            <Box w="100%" bg="red.300" h={1} borderRadius="full" overflow="hidden">
+                                                <Box
+                                                    w={`${popularity}%`}
+                                                    h="100%"
+                                                    bg="primary.500"
+                                                    borderRadius="full"
+                                                />
+                                            </Box>
+                                        </Box>
+                                        <Box as="td" fontSize="9px" color="red.500" fontWeight="semibold" px={2} py={3} textAlign="right" borderBottom="1px solid" borderColor="gray.100">
                                             <Box
-                                                w={`${item.popularity}%`}
-                                                h="100%"
-                                                bg="primary.500"
-                                                borderRadius="full"
-                                            />
+                                                as="span"
+                                                border="1px solid"
+                                                borderColor="red.500"
+                                                color="red.500"
+                                                bg="primary.70"
+                                                px={2}
+                                                py={1}
+                                                borderRadius="md"
+                                                display="inline-block"
+                                            >
+                                                {formatCurrency(track.earningsDisplay)}
+                                            </Box>
                                         </Box>
                                     </Box>
-                                    <Box as="td" fontSize="9px" color="red.500" fontWeight="semibold" px={2} py={3} textAlign="right" borderBottom="1px solid" borderColor="gray.100">
-                                        <Box
-                                            as="span"
-                                            border="1px solid"
-                                            borderColor="red.500"
-                                            color="red.500"
-                                            bg="primary.70"
-                                            px={2}
-                                            py={1}
-                                            borderRadius="md"
-                                            display="inline-block"
-                                        >
-                                            {item.sales}
-                                        </Box>
+                                );
+                            })}
+                            {(!topTracksDto?.tracks || topTracksDto.tracks.length === 0) && (
+                                <Box as="tr">
+                                    <Box as="td" colSpan={4} textAlign="center" py={8} color="gray.500" fontSize="sm">
+                                        No tracks data available
                                     </Box>
                                 </Box>
-                            ))}
+                            )}
                         </Box>
                     </Box>
                 </Box>
@@ -693,9 +746,11 @@ export const Dashboard: React.FC = () => {
                         <VStack gap={0} align="center">
                             <HStack gap={1}>
                                 <Box w={2} h={2} bg="#10B981" borderRadius="full" />
-                                <Text fontSize="9px" whiteSpace="nowrap" color="#7B91B0">Last Month Earnings</Text>
+                                <Text fontSize="9px" whiteSpace="nowrap" color="#7B91B0">Period Earnings</Text>
                             </HStack>
-                            <Text fontSize="10px" fontWeight="bold" color="gray.900">N300,004</Text>
+                            <Text fontSize="10px" fontWeight="bold" color="gray.900">
+                                {formatCurrency(analyticsDto?.totalEarningsDisplay || 0)}
+                            </Text>
                         </VStack>
                         <Box
                             h="32px"
@@ -705,10 +760,12 @@ export const Dashboard: React.FC = () => {
                         />
                         <VStack gap={0} align="center">
                             <HStack gap={1}>
-                                <Box w={2} h={2} bg="#EF4444" borderRadius="full" />
-                                <Text fontSize="9px" whiteSpace="nowrap" color="#7B91B0">This Month Earning</Text>
+                                <Box w={2} h={2} bg="#3B82F6" borderRadius="full" />
+                                <Text fontSize="9px" whiteSpace="nowrap" color="#7B91B0">Total Plays</Text>
                             </HStack>
-                            <Text fontSize="10px" fontWeight="bold" color="gray.900">N104,504</Text>
+                            <Text fontSize="10px" fontWeight="bold" color="gray.900">
+                                {formatNumber(analyticsDto?.totalPlays || 0)}
+                            </Text>
                         </VStack>
                     </HStack>
                 </Box>
@@ -719,59 +776,73 @@ export const Dashboard: React.FC = () => {
                         Top Giver
                     </Text>
 
-                    <VStack align="stretch" gap={0.5}>
-                        {[
-                            { name: 'big_josh', songs: 'With You, If, Funds, Skelewu...', worth: '156,000', bg: '#8B5CF6' },
-                            { name: 'aku_baby', songs: 'With You, If, Funds, Skelewu...', worth: '156,000', bg: '#A855F7' },
-                            { name: 'moving_man', songs: 'Rema, Oriental Brother, P...', worth: '156,000', bg: '#1F2937' },
-                            { name: 'webby_girl', songs: 'Fola, Omah Lay, Burna B..', worth: '156,000', bg: '#A855F7' },
-                            { name: 'sean_nero', songs: 'Tiwa, Davido, Olamide, Lil..', worth: '156,000', bg: '#8B5CF6' }
-                        ].map((giver, index) => (
-                            <HStack key={index} justify="space-between" align="center" py={2}>
-                                <HStack gap={3}>
-                                    <Box
-                                        w={6}
-                                        h={6}
-                                        borderRadius="full"
-                                        bg={giver.bg}
-                                        color="white"
-                                        display="flex"
-                                        alignItems="center"
-                                        justifyContent="center"
-                                        fontSize="8px"
-                                        fontWeight="bold"
-                                    >
-                                        {giver.name.charAt(0).toUpperCase()}
-                                    </Box>
-                                    <VStack align="start" gap={0}>
-                                        <HStack gap={1}>
-                                            <Text fontSize="10px" fontWeight="semibold" color="gray.900">
-                                                {giver.name}
+                    {topGiftersLoading ? (
+                        <Center py={8}>
+                            <Spinner size="sm" color="primary.500" />
+                        </Center>
+                    ) : topGifters.length === 0 ? (
+                        <Center py={8}>
+                            <Text fontSize="12px" color="gray.500">No top gifters yet</Text>
+                        </Center>
+                    ) : (
+                        <VStack align="stretch" gap={0.5}>
+                            {topGifters.map((giver, index) => (
+                                <HStack key={giver.userId} justify="space-between" align="center" py={2}>
+                                    <HStack gap={3}>
+                                        {giver.avatarUrl ? (
+                                            <Box
+                                                w={6}
+                                                h={6}
+                                                borderRadius="full"
+                                                bgImage={`url(${giver.avatarUrl})`}
+                                                bgSize="cover"
+                                                bgPosition="center"
+                                            />
+                                        ) : (
+                                            <Box
+                                                w={6}
+                                                h={6}
+                                                borderRadius="full"
+                                                bg={getAvatarBgColor(index)}
+                                                color="white"
+                                                display="flex"
+                                                alignItems="center"
+                                                justifyContent="center"
+                                                fontSize="8px"
+                                                fontWeight="bold"
+                                            >
+                                                {(giver.displayName || giver.username || 'U').charAt(0).toUpperCase()}
+                                            </Box>
+                                        )}
+                                        <VStack align="start" gap={0}>
+                                            <HStack gap={1}>
+                                                <Text fontSize="10px" fontWeight="semibold" color="gray.900">
+                                                    {giver.displayName || giver.username || 'Unknown'}
+                                                </Text>
+                                                {giver.currentMedal && (
+                                                    <Text fontSize="9px">{giver.medalIcon || '🏆'}</Text>
+                                                )}
+                                            </HStack>
+                                            <Text fontSize="7px" color="#C0C5D0" mt={0.5}>
+                                                {giver.giftCount} gift{giver.giftCount !== 1 ? 's' : ''} sent
                                             </Text>
-                                            <Text fontSize="9px">💎</Text>
-                                            <Text fontSize="9px">💍</Text>
-                                            <Text fontSize="9px">👑</Text>
-                                            <Text fontSize="9px">💎</Text>
+                                        </VStack>
+                                    </HStack>
+                                    <VStack align="end" gap={0}>
+                                        <HStack gap={1}>
+                                            <FaGift color="#F97316" size={12} />
+                                            <Text fontSize="10px" fontWeight="bold" color="gray.900">
+                                                {giver.totalGiftValue.toLocaleString()}
+                                            </Text>
                                         </HStack>
                                         <Text fontSize="7px" color="#C0C5D0" mt={0.5}>
-                                            {giver.songs}
+                                            Gift Worth
                                         </Text>
                                     </VStack>
                                 </HStack>
-                                <VStack align="end" gap={0}>
-                                    <HStack gap={1}>
-                                        <FaGift color="#F97316" size={12} />
-                                        <Text fontSize="10px" fontWeight="bold" color="gray.900">
-                                            {giver.worth}
-                                        </Text>
-                                    </HStack>
-                                    <Text fontSize="7px" color="#C0C5D0" mt={0.5}>
-                                        Gift Worth
-                                    </Text>
-                                </VStack>
-                            </HStack>
-                        ))}
-                    </VStack>
+                            ))}
+                        </VStack>
+                    )}
                 </Box>
             </Flex>
 
@@ -855,7 +926,9 @@ export const Dashboard: React.FC = () => {
                                     <Box w={2.5} h={2.5} bg="#F97316" borderRadius="full" />
                                     <Text fontSize="8px" color="#7B91B0">Gifting</Text>
                                 </HStack>
-                                <Text fontSize="8px" fontWeight="semibold" color="gray.900" ml={4}>1,135</Text>
+                                <Text fontSize="8px" fontWeight="semibold" color="gray.900" ml={4}>
+                                    {formatNumber(analyticsDto?.totalGiftsReceived || 0)}
+                                </Text>
                             </VStack>
                             <Box
                                 h="32px"
@@ -868,7 +941,9 @@ export const Dashboard: React.FC = () => {
                                     <Box w={2.5} h={2.5} bg="#3B82F6" borderRadius="full" />
                                     <Text fontSize="8px" color="#7B91B0">Plays</Text>
                                 </HStack>
-                                <Text fontSize="8px" fontWeight="semibold" color="gray.900" ml={4}>635</Text>
+                                <Text fontSize="8px" fontWeight="semibold" color="gray.900" ml={4}>
+                                    {formatNumber(analyticsDto?.totalPlays || 0)}
+                                </Text>
                             </VStack>
                             <Box
                                 h="32px"
@@ -881,7 +956,9 @@ export const Dashboard: React.FC = () => {
                                     <Box w={2.5} h={2.5} bg="#10B981" borderRadius="full" />
                                     <Text fontSize="8px" color="#7B91B0">Unlock</Text>
                                 </HStack>
-                                <Text fontSize="8px" fontWeight="semibold" color="gray.900" ml={4}>635</Text>
+                                <Text fontSize="8px" fontWeight="semibold" color="gray.900" ml={4}>
+                                    {formatNumber(analyticsDto?.totalContentUnlocks || 0)}
+                                </Text>
                             </VStack>
                         </HStack>
 
@@ -916,7 +993,9 @@ export const Dashboard: React.FC = () => {
                                 <Box w={2.5} h={2.5} bg="#EF4444" borderRadius="full" />
                                 <Text fontSize="8px" color="#7B91B0">Gifting</Text>
                             </HStack>
-                            <Text fontSize="8px" fontWeight="bold" color="gray.900">1,135</Text>
+                            <Text fontSize="8px" fontWeight="bold" color="gray.900">
+                                {formatNumber(analyticsDto?.totalGiftsReceived || 0)}
+                            </Text>
                         </VStack>
                         <Box
                             h="32px"
@@ -929,7 +1008,9 @@ export const Dashboard: React.FC = () => {
                                 <Box w={2.5} h={2.5} bg="#F59E0B" borderRadius="full" />
                                 <Text fontSize="8px" color="#7B91B0">Unlock</Text>
                             </HStack>
-                            <Text fontSize="8px" fontWeight="bold" color="gray.900">635</Text>
+                            <Text fontSize="8px" fontWeight="bold" color="gray.900">
+                                {formatNumber(analyticsDto?.totalContentUnlocks || 0)}
+                            </Text>
                         </VStack>
                     </HStack>
                 </Box>

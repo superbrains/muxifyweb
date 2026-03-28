@@ -1,8 +1,17 @@
+export type UserRole =
+  | "fan"
+  | "artist"
+  | "dj"
+  | "creator"
+  | "record_label"
+  | "ad_manager"
+  | "admin";
+
 export interface User {
   id: string;
   email: string;
   name: string;
-  role: "artist" | "dj" | "creator" | "record_label";
+  role: UserRole;
   avatar?: string;
   isVerified: boolean;
   createdAt: string;

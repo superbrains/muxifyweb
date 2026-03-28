@@ -10,6 +10,8 @@ import {
 } from '@chakra-ui/react';
 import { useChakraToast } from '@shared/hooks';
 import { useUserManagementStore } from '@/features/auth/store/useUserManagementStore';
+import { authService } from '@/features/auth/services/authService';
+import { getApiErrorMessage } from '@/shared/lib/errorUtils';
 
 interface ReusableEmailVerificationProps {
     title?: string;
@@ -53,7 +55,7 @@ export const ReusableEmailVerification: React.FC<ReusableEmailVerificationProps>
             setVerificationCode(updatedCode);
 
             // Auto-focus next input
-            if (value && index < 4) {
+            if (value && index < 5) {
                 const nextInput = document.querySelector(`input[data-index="${index + 1}"]`) as HTMLInputElement;
                 nextInput?.focus();
             }
@@ -69,8 +71,8 @@ export const ReusableEmailVerification: React.FC<ReusableEmailVerificationProps>
     };
 
     const handleVerificationSubmit = async () => {
-        if (verificationCode.length !== 5) {
-            setError('Please enter the complete verification code');
+        if (verificationCode.length !== 6) {
+            setError('Please enter the complete 6-digit verification code');
             return;
         }
 
@@ -78,20 +80,21 @@ export const ReusableEmailVerification: React.FC<ReusableEmailVerificationProps>
         setError('');
 
         try {
+            // Verify email with backend API
+            await authService.verifyEmail(verificationCode);
+
             // Mark email as verified in store
             if (userId) {
                 setCurrentUser(userId);
                 markEmailVerified(userId);
             }
 
-            // Here you would typically verify the code with your backend
-            await new Promise(resolve => setTimeout(resolve, 1000));
             toast.success('Verification successful!', 'Your email has been verified.');
             navigate(nextRoute, {
                 state: { userId }
             });
-        } catch {
-            const errorMessage = 'Invalid verification code';
+        } catch (err: unknown) {
+            const errorMessage = getApiErrorMessage(err, 'Invalid verification code');
             setError(errorMessage);
             toast.error('Verification failed', errorMessage);
         } finally {
@@ -106,12 +109,13 @@ export const ReusableEmailVerification: React.FC<ReusableEmailVerificationProps>
         setError('');
 
         try {
-            // Here you would typically resend the verification code
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            // Request a new verification code via forgot password flow (reuses the same email logic)
+            // Note: If a dedicated resend endpoint is added, update this call
+            await authService.forgotPassword(email);
             setResendTimer(60);
             toast.success('Code resent!', 'Check your email for the new verification code.');
-        } catch {
-            const errorMessage = 'Failed to resend code';
+        } catch (err: unknown) {
+            const errorMessage = getApiErrorMessage(err, 'Failed to resend code');
             setError(errorMessage);
             toast.error('Resend failed', errorMessage);
         } finally {
@@ -136,7 +140,7 @@ export const ReusableEmailVerification: React.FC<ReusableEmailVerificationProps>
             <VStack gap={10} align="center" w="full">
                 <Box w="full">
                     <HStack justify="center" gap={2} mb={3}>
-                        {[0, 1, 2, 3, 4].map((index) => (
+                        {[0, 1, 2, 3, 4, 5].map((index) => (
                             <Input
                                 key={index}
                                 value={verificationCode[index] || ''}
@@ -198,7 +202,7 @@ export const ReusableEmailVerification: React.FC<ReusableEmailVerificationProps>
                     fontWeight="medium"
                     borderRadius="10px"
                     _hover={{ bg: 'primary.600' }}
-                    disabled={verificationCode.length !== 5}
+                    disabled={verificationCode.length !== 6}
                 >
                     Verify Now
                 </Button>

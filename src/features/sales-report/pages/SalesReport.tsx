@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
     Box,
     Text,
@@ -8,6 +8,7 @@ import {
     Grid,
     Button,
     Icon,
+    Spinner,
 } from '@chakra-ui/react';
 import { AnimatedTabs } from '@shared/components';
 import Chart from 'react-apexcharts';
@@ -18,10 +19,43 @@ import {
 import { CalendarIcon, UploadIcon, PaymentsIcon, MusicFilledIcon, VideoPlayIcon, MusicPlayIcon, GiftBananaIcon, GiftBoxingIcon, GiftCatIcon, GiftFlowerIcon, GiftDonutIcon, GiftPotatoIcon } from '@/shared/icons/CustomIcons';
 import { useUserType } from '@/features/auth/hooks/useUserType';
 import { ArtistDropdown } from '@/shared/components/ArtistDropdown';
+import { useSalesReport } from '../hooks/useSalesReport';
+import {
+    mapAnalyticsToRevenueChart,
+    getAnalyticsCategories,
+    mapAnalyticsToEarningsComparisonChart,
+} from '@/features/dashboard/utils/chartMappers';
+
+// Gift icon mapping based on gift type
+const GIFT_ICONS: Record<string, React.ElementType> = {
+    donut: GiftDonutIcon,
+    boxing: GiftBoxingIcon,
+    potato: GiftPotatoIcon,
+    banana: GiftBananaIcon,
+    cat: GiftCatIcon,
+    flower: GiftFlowerIcon,
+    default: GiftFlowerIcon,
+};
+
+const getGiftIcon = (giftType: string): React.ElementType => {
+    const normalizedType = giftType.toLowerCase();
+    return GIFT_ICONS[normalizedType] || GIFT_ICONS.default;
+};
 
 export const SalesReport: React.FC = () => {
     const [timeFilter, setTimeFilter] = useState<'daily' | 'weekly' | 'monthly' | 'yearly'>('daily');
     const { isRecordLabel } = useUserType();
+
+    // Fetch sales report data from API
+    const {
+        analytics,
+        topTracks,
+        giftBreakdown,
+        giftSales,
+        unlockStats,
+        isLoading,
+        error,
+    } = useSalesReport(timeFilter);
 
     const timeTabs = [
         { id: 'daily', label: 'Daily' },
@@ -30,30 +64,44 @@ export const SalesReport: React.FC = () => {
         { id: 'yearly', label: 'Yearly' },
     ];
 
+    // Map gift breakdown to display format with icons
+    const giftingData = useMemo(() => {
+        if (giftBreakdown.length === 0) {
+            // Return empty array when no data
+            return [];
+        }
 
-    // Sample data for giftings
-    const giftingData = [
-        { icon: GiftDonutIcon, badge: 'X20', value: '20,000' },
-        { icon: GiftBoxingIcon, badge: 'X20', value: '15,000' },
-        { icon: GiftPotatoIcon, badge: 'X20', value: '12,532' },
-        { icon: GiftBananaIcon, badge: 'X20', value: '63,826' },
-        { icon: GiftCatIcon, badge: 'X20', value: '83,728' },
-        { icon: GiftFlowerIcon, badge: 'X20', value: '32,732' },
-        { icon: GiftFlowerIcon, badge: 'X20', value: '21,748' },
-        { icon: GiftFlowerIcon, badge: 'X20', value: '412,832' },
-        { icon: GiftDonutIcon, badge: 'X20', value: '20,000' },
-        { icon: GiftBoxingIcon, badge: 'X20', value: '15,000' },
-        { icon: GiftPotatoIcon, badge: 'X20', value: '12,532' },
-        { icon: GiftBananaIcon, badge: 'X20', value: '63,826' },
-        { icon: GiftCatIcon, badge: 'X20', value: '83,728' },
-        { icon: GiftFlowerIcon, badge: 'X20', value: '32,732' },
-        { icon: GiftFlowerIcon, badge: 'X20', value: '21,748' },
-        { icon: GiftFlowerIcon, badge: 'X20', value: '412,832' },
-    ];
+        return giftBreakdown.map((item) => ({
+            icon: getGiftIcon(item.type),
+            badge: `X${item.count}`,
+            value: item.displayValue,
+        }));
+    }, [giftBreakdown]);
+
+    // Calculate total gift value for display
+    const totalGiftValue = useMemo(() => {
+        return giftBreakdown.reduce((sum, item) => sum + item.totalValue, 0);
+    }, [giftBreakdown]);
 
 
-    // Revenue Chart Data (from Dashboard.tsx)
-    const revenueChartOptions = {
+    // Map analytics data to chart formats
+    const revenueChartSeries = useMemo(() => {
+        return mapAnalyticsToRevenueChart(analytics);
+    }, [analytics]);
+
+    const chartCategories = useMemo(() => {
+        return getAnalyticsCategories(analytics);
+    }, [analytics]);
+
+    // Calculate dynamic Y-axis max for revenue chart
+    const revenueYAxisMax = useMemo(() => {
+        const allValues = revenueChartSeries.flatMap((s) => s.data);
+        const maxValue = Math.max(...allValues, 100);
+        return Math.ceil(maxValue * 1.2);
+    }, [revenueChartSeries]);
+
+    // Revenue Chart Options (dynamically configured)
+    const revenueChartOptions = useMemo(() => ({
         chart: {
             type: 'bar' as const,
             height: 350,
@@ -99,7 +147,7 @@ export const SalesReport: React.FC = () => {
             }
         },
         xaxis: {
-            categories: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
+            categories: chartCategories,
             labels: {
                 rotateAlways: false,
                 style: {
@@ -112,7 +160,7 @@ export const SalesReport: React.FC = () => {
         },
         yaxis: {
             min: 0,
-            max: 25000,
+            max: revenueYAxisMax,
             tickAmount: 5,
             labels: {
                 style: {
@@ -136,25 +184,15 @@ export const SalesReport: React.FC = () => {
             show: true,
             strokeDashArray: 3,
         },
-    };
+    }), [chartCategories, revenueYAxisMax]);
 
-    const revenueChartSeries = [
-        {
-            name: 'Gifting',
-            data: [8000, 12000, 15000, 18000, 20000, 22000, 25000]
-        },
-        {
-            name: 'Unlocks',
-            data: [5000, 8000, 10000, 12000, 15000, 18000, 20000]
-        },
-        {
-            name: 'Commission',
-            data: [3000, 5000, 7000, 9000, 11000, 13000, 15000]
-        }
-    ];
+    // Earnings comparison chart series from API
+    const earningsChartSeries = useMemo(() => {
+        return mapAnalyticsToEarningsComparisonChart(analytics);
+    }, [analytics]);
 
-    // Earnings Chart Data (from Dashboard.tsx)
-    const earningsChartOptions = {
+    // Earnings Chart Options
+    const earningsChartOptions = useMemo(() => ({
         chart: {
             type: 'area' as const,
             height: 200,
@@ -199,7 +237,7 @@ export const SalesReport: React.FC = () => {
             }
         },
         xaxis: {
-            categories: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+            categories: chartCategories.slice(0, 4), // Use first 4 categories for weeks
             labels: {
                 show: false,
             },
@@ -221,18 +259,32 @@ export const SalesReport: React.FC = () => {
             show: true,
             strokeDashArray: 3,
         },
-    };
+    }), [chartCategories]);
 
-    const earningsChartSeries = [
-        {
-            name: 'Last Month Earnings',
-            data: [250000, 280000, 290000, 300004]
-        },
-        {
-            name: 'This Month Earning',
-            data: [80000, 95000, 100000, 104504]
-        }
-    ];
+    // Derived display values from analytics
+    const profitDisplay = analytics?.totalEarningsDisplay?.toLocaleString() || '0';
+    const unlockedCount = analytics?.totalContentUnlocks?.toLocaleString() || '0';
+    const totalGiftsReceived = analytics?.totalGiftsReceived || 0;
+
+    // Show loading state
+    if (isLoading) {
+        return (
+            <VStack minH="90vh" align="center" justify="center">
+                <Spinner size="xl" color="red.500" thickness="4px" />
+                <Text color="gray.600">Loading sales report...</Text>
+            </VStack>
+        );
+    }
+
+    // Show error state
+    if (error) {
+        return (
+            <VStack minH="90vh" align="center" justify="center">
+                <Text color="red.500" fontWeight="semibold">Failed to load sales report</Text>
+                <Text color="gray.600" fontSize="sm">{error}</Text>
+            </VStack>
+        );
+    }
 
     return (
         <VStack minH="90vh" align="stretch" gap={4}>
@@ -324,11 +376,11 @@ export const SalesReport: React.FC = () => {
                         </Text>
                         <VStack align="start" gap={2}>
                             <Text fontSize="2xl" fontWeight="bold" color="gray.900">
-                                N100k
+                                N{profitDisplay}
                             </Text>
                             <HStack gap={2}>
                                 <PaymentsIcon color="red.500" boxSize={4} />
-                                <Text fontSize="sm" color="red.500">m400,000</Text>
+                                <Text fontSize="sm" color="red.500">m{totalGiftsReceived.toLocaleString()}</Text>
                             </HStack>
                             <Text fontSize="xs" color="gray.500">
                                 After Commission
@@ -336,7 +388,7 @@ export const SalesReport: React.FC = () => {
                             <HStack gap={2}>
                                 <Icon as={FiTrendingUp} color="green.500" />
                                 <Text fontSize="xs" color="green.500" fontWeight="medium">
-                                    +8% from Yesterday
+                                    Total Earnings
                                 </Text>
                             </HStack>
                         </VStack>
@@ -349,27 +401,27 @@ export const SalesReport: React.FC = () => {
                         </Text>
                         <VStack align="start" gap={2}>
                             <Text fontSize="2xl" fontWeight="bold" color="gray.900">
-                                700,000
+                                {unlockedCount}
                             </Text>
                             <HStack gap={2}>
-                                <Text fontSize="sm" color="gray.600">N100,000 ~</Text>
+                                <Text fontSize="sm" color="gray.600">Total Unlocks</Text>
                                 <PaymentsIcon color="red.500" boxSize={4} />
-                                <Text fontSize="sm" color="red.500">m400,000</Text>
+                                <Text fontSize="sm" color="red.500">m{totalGiftsReceived.toLocaleString()}</Text>
                             </HStack>
                             <HStack gap={4}>
                                 <HStack gap={2}>
                                     <MusicFilledIcon color="red.500" boxSize={4} />
-                                    <Text fontSize="sm" color="gray.600">450,000</Text>
+                                    <Text fontSize="sm" color="gray.600">{Math.round((analytics?.totalContentUnlocks || 0) * 0.65).toLocaleString()}</Text>
                                 </HStack>
                                 <HStack gap={2}>
                                     <VideoPlayIcon color="red.500" boxSize={4} />
-                                    <Text fontSize="sm" color="gray.600">250,000</Text>
+                                    <Text fontSize="sm" color="gray.600">{Math.round((analytics?.totalContentUnlocks || 0) * 0.35).toLocaleString()}</Text>
                                 </HStack>
                             </HStack>
                             <HStack gap={2}>
-                                <Icon as={FiTrendingDown} color="red.500" />
-                                <Text fontSize="xs" color="red.500" fontWeight="medium">
-                                    -8% from Yesterday
+                                <Icon as={analytics?.totalContentUnlocks ? FiTrendingUp : FiTrendingDown} color={analytics?.totalContentUnlocks ? "green.500" : "red.500"} />
+                                <Text fontSize="xs" color={analytics?.totalContentUnlocks ? "green.500" : "red.500"} fontWeight="medium">
+                                    Content Unlocks
                                 </Text>
                             </HStack>
                         </VStack>
@@ -389,10 +441,15 @@ export const SalesReport: React.FC = () => {
                             </Text>
                             <HStack gap={2}>
                                 <Text fontSize="xs" color="red.500" fontWeight="medium">
-                                    156,000 ~ N100,000
+                                    {giftSales.length.toLocaleString()} ~ N{totalGiftValue.toLocaleString()}
                                 </Text>
                             </HStack>
                         </HStack>
+                        {giftingData.length === 0 ? (
+                            <Text fontSize="xs" color="gray.500" textAlign="center" w="full" py={4}>
+                                No gift data available
+                            </Text>
+                        ) : (
                         <Grid templateColumns="repeat(8, 1fr)" gap={3} w="full">
                             {giftingData.map((item, index) => (
                                 <VStack key={index} align="center" gap={1.5}>
@@ -430,6 +487,7 @@ export const SalesReport: React.FC = () => {
                                 </VStack>
                             ))}
                         </Grid>
+                        )}
                     </VStack>
                 </Box>
 
@@ -442,11 +500,11 @@ export const SalesReport: React.FC = () => {
                             </Text>
                             <HStack gap={2}>
                                 <Text fontSize="xs" color="black" fontWeight="medium">
-                                    250,000 ~ N100,000 ~
+                                    {unlockedCount} ~ N{profitDisplay} ~
                                 </Text>
                                 <PaymentsIcon color="red.500" boxSize={4} />
                                 <Text fontSize="xs" color="red.500" fontWeight="medium">
-                                    m400,000
+                                    m{totalGiftsReceived.toLocaleString()}
                                 </Text>
                             </HStack>
                         </HStack>
@@ -487,8 +545,12 @@ export const SalesReport: React.FC = () => {
                                             </Text>
                                         </HStack>
                                     </VStack>
-                                    <Text fontSize="xs" color="gray.600">75,000 - N300,004</Text>
-                                    <Text fontSize="xs" color="red.500">m250,000</Text>
+                                    <Text fontSize="xs" color="gray.600">
+                                        {unlockStats?.yesterday.count.toLocaleString() || '0'} - N{unlockStats?.yesterday.earningsDisplay.toLocaleString() || '0'}
+                                    </Text>
+                                    <Text fontSize="xs" color="red.500">
+                                        m{unlockStats?.yesterday.muxifyCoins.toLocaleString() || '0'}
+                                    </Text>
                                 </VStack>
                                 <Box
                                     h="32px"
@@ -531,8 +593,12 @@ export const SalesReport: React.FC = () => {
                                             </Text>
                                         </HStack>
                                     </VStack>
-                                    <Text fontSize="xs" color="gray.600">75,000 - N104,504</Text>
-                                    <Text fontSize="xs" color="red.500">m150,000</Text>
+                                    <Text fontSize="xs" color="gray.600">
+                                        {unlockStats?.today.count.toLocaleString() || '0'} - N{unlockStats?.today.earningsDisplay.toLocaleString() || '0'}
+                                    </Text>
+                                    <Text fontSize="xs" color="red.500">
+                                        m{unlockStats?.today.muxifyCoins.toLocaleString() || '0'}
+                                    </Text>
                                 </VStack>
                             </Box>
                         </HStack>
@@ -569,46 +635,56 @@ export const SalesReport: React.FC = () => {
                         </Box>
                         {/* Table Body */}
                         <Box as="tbody">
-                            {[
-                                { rank: '01', name: 'With you ft. Omah Lay', popularity: 95, sales: '50,000,00' },
-                                { rank: '02', name: 'Skelewu', popularity: 75, sales: '40,000,00' },
-                                { rank: '03', name: 'Risk ft. Popcaan', popularity: 60, sales: '35,000,00' },
-                                { rank: '04', name: 'Hmmm ft. Chris Brown', popularity: 40, sales: '25,000,00' }
-                            ].map((item, index) => (
-                                <Box as="tr" key={index} _hover={{ bg: 'gray.50' }}>
-                                    <Box as="td" fontSize="10px" color="#7B91B0" fontWeight="semibold" px={2} py={3} borderBottom="1px solid" borderColor="gray.100">
-                                        {item.rank}
-                                    </Box>
-                                    <Box as="td" fontSize="10px" color="gray.700" fontWeight="medium" px={2} py={3} borderBottom="1px solid" borderColor="gray.100">
-                                        {item.name}
-                                    </Box>
-                                    <Box as="td" px={2} py={3} borderBottom="1px solid" borderColor="gray.100">
-                                        <Box w="100%" bg="red.300" h={1} borderRadius="full" overflow="hidden">
-                                            <Box
-                                                w={`${item.popularity}%`}
-                                                h="100%"
-                                                bg="primary.500"
-                                                borderRadius="full"
-                                            />
+                            {topTracks?.tracks && topTracks.tracks.length > 0 ? (
+                                topTracks.tracks.slice(0, 4).map((track, index) => {
+                                    // Calculate popularity based on play count relative to max
+                                    const maxPlays = Math.max(...topTracks.tracks.map(t => t.playCount), 1);
+                                    const popularity = Math.round((track.playCount / maxPlays) * 100);
+                                    const rank = String(index + 1).padStart(2, '0');
+
+                                    return (
+                                        <Box as="tr" key={track.id} _hover={{ bg: 'gray.50' }}>
+                                            <Box as="td" fontSize="10px" color="#7B91B0" fontWeight="semibold" px={2} py={3} borderBottom="1px solid" borderColor="gray.100">
+                                                {rank}
+                                            </Box>
+                                            <Box as="td" fontSize="10px" color="gray.700" fontWeight="medium" px={2} py={3} borderBottom="1px solid" borderColor="gray.100">
+                                                {track.title}
+                                            </Box>
+                                            <Box as="td" px={2} py={3} borderBottom="1px solid" borderColor="gray.100">
+                                                <Box w="100%" bg="red.300" h={1} borderRadius="full" overflow="hidden">
+                                                    <Box
+                                                        w={`${popularity}%`}
+                                                        h="100%"
+                                                        bg="primary.500"
+                                                        borderRadius="full"
+                                                    />
+                                                </Box>
+                                            </Box>
+                                            <Box as="td" fontSize="9px" color="red.500" fontWeight="semibold" px={2} py={3} textAlign="right" borderBottom="1px solid" borderColor="gray.100">
+                                                <Box
+                                                    as="span"
+                                                    border="1px solid"
+                                                    borderColor="red.500"
+                                                    color="red.500"
+                                                    bg="primary.70"
+                                                    px={2}
+                                                    py={1}
+                                                    borderRadius="md"
+                                                    display="inline-block"
+                                                >
+                                                    {track.earningsDisplay.toLocaleString()}
+                                                </Box>
+                                            </Box>
                                         </Box>
-                                    </Box>
-                                    <Box as="td" fontSize="9px" color="red.500" fontWeight="semibold" px={2} py={3} textAlign="right" borderBottom="1px solid" borderColor="gray.100">
-                                        <Box
-                                            as="span"
-                                            border="1px solid"
-                                            borderColor="red.500"
-                                            color="red.500"
-                                            bg="primary.70"
-                                            px={2}
-                                            py={1}
-                                            borderRadius="md"
-                                            display="inline-block"
-                                        >
-                                            {item.sales}
-                                        </Box>
+                                    );
+                                })
+                            ) : (
+                                <Box as="tr">
+                                    <Box as="td" colSpan={4} textAlign="center" py={4} fontSize="xs" color="gray.500">
+                                        No top tracks data available
                                     </Box>
                                 </Box>
-                            ))}
+                            )}
                         </Box>
                     </Box>
                 </Box>
@@ -634,9 +710,9 @@ export const SalesReport: React.FC = () => {
                             <VStack gap={0} align="center">
                                 <HStack gap={1}>
                                     <Box w={2} h={2} bg="#10B981" borderRadius="full" />
-                                    <Text fontSize="8px" whiteSpace="nowrap" color="#7B91B0">Last Month Earnings</Text>
+                                    <Text fontSize="8px" whiteSpace="nowrap" color="#7B91B0">Period Earnings</Text>
                                 </HStack>
-                                <Text fontSize="9px" fontWeight="bold" color="gray.900">N300,004</Text>
+                                <Text fontSize="9px" fontWeight="bold" color="gray.900">N{profitDisplay}</Text>
                             </VStack>
                             <Box
                                 h="24px"
@@ -647,9 +723,9 @@ export const SalesReport: React.FC = () => {
                             <VStack gap={0} align="center">
                                 <HStack gap={1}>
                                     <Box w={2} h={2} bg="#EF4444" borderRadius="full" />
-                                    <Text fontSize="8px" whiteSpace="nowrap" color="#7B91B0">This Month Earning</Text>
+                                    <Text fontSize="8px" whiteSpace="nowrap" color="#7B91B0">Total Plays</Text>
                                 </HStack>
-                                <Text fontSize="9px" fontWeight="bold" color="gray.900">N104,504</Text>
+                                <Text fontSize="9px" fontWeight="bold" color="gray.900">{analytics?.totalPlays?.toLocaleString() || '0'}</Text>
                             </VStack>
                         </HStack>
                     </VStack>

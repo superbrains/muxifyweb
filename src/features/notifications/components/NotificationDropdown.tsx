@@ -28,7 +28,11 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
         notifications,
         unreadCount,
         isLoading,
+        error,
+        hasMore,
+        isLoadingMore,
         fetchNotifications,
+        fetchMoreNotifications,
         markAsRead,
         markAllAsRead,
     } = useNotificationStore();
@@ -71,6 +75,10 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
 
     const handleMarkAllAsRead = () => {
         markAllAsRead();
+    };
+
+    const handleLoadMore = () => {
+        fetchMoreNotifications();
     };
 
     const displayedNotifications = notifications.slice(0, 10); // Show max 10 notifications
@@ -170,6 +178,32 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
                             >
                                 <Spinner size="sm" color="primary.500" />
                             </Box>
+                        ) : error ? (
+                            <Box
+                                display="flex"
+                                flexDirection="column"
+                                justifyContent="center"
+                                alignItems="center"
+                                py={8}
+                                px={4}
+                                gap={2}
+                            >
+                                <Text
+                                    fontSize="xs"
+                                    color="red.500"
+                                    textAlign="center"
+                                >
+                                    {error}
+                                </Text>
+                                <Button
+                                    size="xs"
+                                    variant="ghost"
+                                    colorScheme="primary"
+                                    onClick={() => fetchNotifications()}
+                                >
+                                    Try again
+                                </Button>
+                            </Box>
                         ) : displayedNotifications.length === 0 ? (
                             <Box
                                 display="flex"
@@ -212,7 +246,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
                     </Box>
 
                     {/* Footer */}
-                    {notifications.length > 10 && (
+                    {(notifications.length > 10 || hasMore) && (
                         <>
                             <Box
                                 borderTop="1px solid"
@@ -229,8 +263,13 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
                                     _hover={{
                                         bg: 'primary.50',
                                     }}
+                                    onClick={handleLoadMore}
+                                    disabled={isLoadingMore}
                                 >
-                                    View all notifications
+                                    {isLoadingMore ? (
+                                        <Spinner size="xs" mr={2} />
+                                    ) : null}
+                                    {isLoadingMore ? 'Loading...' : 'View all notifications'}
                                 </Button>
                             </Box>
                         </>

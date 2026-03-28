@@ -18,6 +18,19 @@ import 'react-international-phone/style.css';
 import { useChakraToast } from '@shared/hooks';
 import { PasswordInput } from "@/components/ui/password-input";
 import { useUserManagementStore } from '@/features/auth/store/useUserManagementStore';
+import { authService } from '@/features/auth/services/authService';
+import { useUserStore } from '@/app/store/useUserStore';
+import { getApiErrorMessage } from '@/shared/lib/errorUtils';
+import type { RegisterRequest } from '@/features/auth/services/authService';
+
+// Map frontend user types to backend role format
+const userTypeToRole: Record<string, RegisterRequest['role']> = {
+    artist: 'artist',
+    musician: 'artist',  // Musicians are also artists
+    creator: 'creator',
+    dj: 'dj',
+    podcaster: 'creator', // Podcasters use creator role
+};
 
 // Collections for select options
 const userTypes = createListCollection({
@@ -60,6 +73,7 @@ export const ArtistRegistrationForm: React.FC = () => {
     const toast = useChakraToast();
     const navigate = useNavigate();
     const { initializeUser } = useUserManagementStore();
+    const { login } = useUserStore();
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
@@ -111,21 +125,29 @@ export const ArtistRegistrationForm: React.FC = () => {
 
         setLoading(true);
         try {
-            // Initialize user in the store
-            const userId = initializeUser('artist', formData.email, formData.phone, formData.userType);
+            // Map frontend userType to backend role
+            const role = userTypeToRole[formData.userType] || 'artist';
 
-            // Here you would typically register the user
-            // For now, we'll simulate success and navigate to email verification
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            // Register with the backend API
+            const result = await authService.register({
+                email: formData.email,
+                password: formData.password,
+                phone: formData.phone,
+                role,
+            });
+
+            // Store user in global state
+            login(result.user);
+
+            // Also initialize in user management store for onboarding flow
+            const userId = initializeUser('artist', formData.email, formData.phone, formData.userType);
 
             toast.success('Registration successful!', 'Please verify your email to continue.');
             navigate('/onboarding/artist/verify-email', {
                 state: { email: formData.email, userType: formData.userType, userId }
             });
         } catch (error: unknown) {
-            const errorMessage = error && typeof error === 'object' && 'response' in error
-                ? (error as { response?: { data?: { message?: string } } }).response?.data?.message || 'Something went wrong'
-                : 'Something went wrong';
+            const errorMessage = getApiErrorMessage(error, 'Registration failed. Please try again.');
             toast.error('Registration failed', errorMessage);
         } finally {
             setLoading(false);
@@ -325,6 +347,7 @@ export const ArtistRegistrationForm: React.FC = () => {
                     <Button
                         type="submit"
                         loading={loading}
+                        disabled={loading}
                         bg="primary.500"
                         color="white"
                         size="md"

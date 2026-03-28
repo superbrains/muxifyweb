@@ -90,9 +90,8 @@ export const ResetPassword: React.FC = () => {
         setError('');
 
         try {
-            // Here you would typically verify the code with your backend
-            // For now, we'll simulate success
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            // Verify the code with the backend
+            await authService.verifyEmail(verificationCode);
             toast.success('Verification successful!', 'You can now create a new password.');
             setVerifying(false);
             setCreatingPassword(true);

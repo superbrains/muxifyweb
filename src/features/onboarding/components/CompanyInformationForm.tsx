@@ -14,6 +14,8 @@ import {
 import { useChakraToast } from '@shared/hooks';
 import { CountryStateSelect } from '@shared/components/CountryStateSelect';
 import { useUserManagementStore } from '@/features/auth/store/useUserManagementStore';
+import { profileService } from '../services/profileService';
+import { getApiErrorMessage } from '@/shared/lib/errorUtils';
 
 // Collections for select options
 const businessTypes = createListCollection({
@@ -107,7 +109,20 @@ export const CompanyInformationForm: React.FC = () => {
 
         setLoading(true);
         try {
-            // Save information to store
+            // Complete company profile via API
+            const updatedProfile = await profileService.completeCompanyProfile({
+                legalName: formData.legalCompanyName,
+                tradingName: formData.companyName || undefined,
+                natureOfBusiness: formData.natureOfBusiness,
+                address: {
+                    street: formData.companyAddress,
+                    city: formData.state, // Using state as city for now
+                    state: formData.state,
+                    country: formData.country,
+                },
+            });
+
+            // Save information to local store for flow tracking
             if (userId) {
                 setCurrentUser(userId);
                 saveCompanyInformation(userId, {
@@ -120,17 +135,12 @@ export const CompanyInformationForm: React.FC = () => {
                 });
             }
 
-            // Here you would typically save the company information
-            await new Promise(resolve => setTimeout(resolve, 1000));
-
             toast.success('Company information saved!', 'Your company details have been updated.');
             navigate('/onboarding/company/director-information', {
-                state: { userId }
+                state: { userId: updatedProfile.id || userId }
             });
         } catch (error: unknown) {
-            const errorMessage = error && typeof error === 'object' && 'response' in error
-                ? (error as { response?: { data?: { message?: string } } }).response?.data?.message || 'Please try again.'
-                : 'Please try again.';
+            const errorMessage = getApiErrorMessage(error, 'Failed to save company information.');
             toast.error('Failed to save information', errorMessage);
         } finally {
             setLoading(false);

@@ -1,16 +1,8 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { indexedDbStorage } from "@/shared/lib/indexedDbStorage";
-
-export interface User {
-  id: string;
-  email: string;
-  name: string;
-  role: "artist" | "dj" | "creator" | "record_label";
-  avatar?: string;
-  isVerified: boolean;
-  createdAt: string;
-}
+import { tokenStorage } from "@app/lib/axiosInstance";
+import type { User } from "@shared/types/user";
 
 interface UserState {
   user: User | null;
@@ -28,7 +20,10 @@ export const useUserStore = create<UserState>()(
       isAuthenticated: false,
       setUser: (user) => set({ user, isAuthenticated: !!user }),
       login: (user) => set({ user, isAuthenticated: true }),
-      logout: () => set({ user: null, isAuthenticated: false }),
+      logout: () => {
+        tokenStorage.clearTokens();
+        set({ user: null, isAuthenticated: false });
+      },
       updateUser: (updates) => {
         const currentUser = get().user;
         if (currentUser) {

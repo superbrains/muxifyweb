@@ -10,6 +10,7 @@ import {
     Grid,
     Image,
     Badge,
+    Spinner,
 } from '@chakra-ui/react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FiPause, FiEdit2, FiStopCircle, FiPlus, FiCalendar, FiMusic } from 'react-icons/fi';
@@ -26,20 +27,66 @@ import { PauseAdModal } from '../components/PauseAdModal';
 import { StopAdModal } from '../components/StopAdModal';
 import { ResumeAdModal } from '../components/ResumeAdModal';
 import { SetSpendingLimitModal } from '../components/SetSpendingLimitModal';
+import type { AdCampaignDto } from '../types';
 
 export const AdCampaignView = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
-    const { getCampaignById, pauseCampaign, resumeCampaign, startCampaign, stopCampaign } = useAdsStore();
+    const {
+        getCampaignById,
+        pauseCampaign,
+        resumeCampaign,
+        startCampaign,
+        stopCampaign,
+        fetchCampaignById,
+        wallet,
+        fetchWallet,
+        isLoadingCampaign,
+    } = useAdsStore();
     const [activeChartTab, setActiveChartTab] = useState('people');
     const [isPauseModalOpen, setIsPauseModalOpen] = useState(false);
     const [isStopModalOpen, setIsStopModalOpen] = useState(false);
     const [isResumeModalOpen, setIsResumeModalOpen] = useState(false);
     const [isSpendingLimitModalOpen, setIsSpendingLimitModalOpen] = useState(false);
     const [isTopUpModalOpen, setIsTopUpModalOpen] = useState(false);
+    const [campaignDto, setCampaignDto] = useState<AdCampaignDto | null>(null);
 
-    // Get campaign data from store
-    const campaign = id ? getCampaignById(id) : null;
+    // Get campaign data from store (local first, then try API)
+    const localCampaign = id ? getCampaignById(id) : null;
+
+    // Fetch campaign from API if not in local store
+    useEffect(() => {
+        if (id && !localCampaign) {
+            fetchCampaignById(id).then((dto) => {
+                if (dto) setCampaignDto(dto);
+            });
+        }
+        fetchWallet();
+    }, [id, localCampaign, fetchCampaignById, fetchWallet]);
+
+    // Use local campaign or convert DTO to local format
+    const campaign = localCampaign || (campaignDto ? {
+        id: campaignDto.id,
+        title: campaignDto.name,
+        type: campaignDto.type.toLowerCase() as 'photo' | 'video' | 'audio',
+        location: { country: 'Nigeria', state: '' },
+        target: { type: campaignDto.type.toLowerCase() as 'music' | 'video' | 'audio' },
+        schedule: {
+            date: campaignDto.startDate,
+            startTime: '',
+            endTime: campaignDto.endDate || '',
+        },
+        budget: campaignDto.budgetDisplay,
+        status: campaignDto.status,
+        isPaused: campaignDto.status === 'paused',
+        isStopped: campaignDto.status === 'stopped' || campaignDto.status === 'completed',
+        createdAt: campaignDto.createdAt,
+        updatedAt: campaignDto.createdAt,
+        mediaData: campaignDto.creativeUrl,
+        impressions: campaignDto.impressions,
+        clicks: campaignDto.clicks,
+        amountSpent: campaignDto.amountSpentDisplay,
+    } : null);
 
     // Load campaign to upload store for phone previews
     useEffect(() => {
@@ -47,6 +94,19 @@ export const AdCampaignView = () => {
             loadCampaignToStore(campaign);
         }
     }, [campaign]);
+
+    if (isLoadingCampaign) {
+        return (
+            <Box bg="#fafbfc" minH="100vh" p={6}>
+                <VStack align="stretch" gap={0}>
+                    <Box bg="white" display="flex" flexDirection="column" gap={8} px={6} py={6} borderRadius="11px" alignItems="center">
+                        <Spinner size="lg" color="primary.500" />
+                        <Text fontSize="15px" fontWeight="bold" color="black">Loading campaign...</Text>
+                    </Box>
+                </VStack>
+            </Box>
+        );
+    }
 
     if (!campaign) {
         return (
@@ -123,17 +183,18 @@ export const AdCampaignView = () => {
         return `data:${mimeType};base64,${campaign.mediaData}`;
     };
 
-    // Mock stats (static data - these would come from analytics in a real app)
-    const views = 10243532;
-    const clicks = 500000;
-    const impressions = 10743532;
-    const spend = 15000;
+    // Use real campaign stats from API
+    const views = campaign.impressions || 0;
+    const clicks = campaign.clicks || 0;
+    const impressions = views + clicks;
+    const spend = campaign.amountSpent || 0;
     const budget = campaign.budget || 50000;
-    const costPerClick = (spend / clicks).toFixed(2);
-    const costPerView = (spend / views).toFixed(2);
+    const walletBalance = wallet?.balanceDisplay || budget;
+    const costPerClick = clicks > 0 ? (spend / clicks).toFixed(2) : '0.00';
+    const costPerView = views > 0 ? (spend / views).toFixed(2) : '0.00';
     const vat = budget * 0.075;
     const totalWithVat = budget + vat;
-    const spendPercentage = (spend / budget) * 100;
+    const spendPercentage = budget > 0 ? Math.min(100, (spend / budget) * 100) : 0;
 
     const peopleChartOptions = {
         chart: {
@@ -183,6 +244,8 @@ export const AdCampaignView = () => {
         legend: { show: false },
     };
 
+    // TODO: Replace with real audience demographics from campaign analytics API
+    // Backend endpoint needed: GET /api/v1/ads/campaigns/{id}/audience-demographics
     const peopleChartSeries = [
         { name: 'Men', data: [75, 55, 25, 65, 25, 80, 68] },
         { name: 'Women', data: [40, 15, 38, 85, 23, 18, 32] }
@@ -446,7 +509,7 @@ export const AdCampaignView = () => {
                                         <Flex gap={4} align="center" mb={3}>
                                             <VStack align="start" gap={0}>
                                                 <Text fontSize="11px" color="#999" fontWeight="medium">Wallet Balance</Text>
-                                                <Text fontSize="11px" fontWeight="bold" color="black">NGN{budget.toLocaleString()}</Text>
+                                                <Text fontSize="11px" fontWeight="bold" color="black">NGN{walletBalance.toLocaleString()}</Text>
                                             </VStack>
                                             <Button
                                                 bg="#f94444"
@@ -519,6 +582,8 @@ export const AdCampaignView = () => {
 
                                                 )}
                                                 {activeChartTab === 'location' && (
+                                                    // TODO: Replace with real location data from campaign analytics API
+                                                    // Backend endpoint needed: GET /api/v1/ads/campaigns/{id}/location-analytics
                                                     <HorizontalStats
                                                         data={[
                                                             { label: 'Lagos State', value: 10243532 },

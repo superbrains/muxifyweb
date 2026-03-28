@@ -7,6 +7,7 @@ import { useAdsStore } from '../../../store/useAdsStore';
 import { MusicViewPhonePreview } from '../MusicViewPhonePreview';
 import { UploadSuccessPage } from '@upload/components';
 import { fileToBase64 } from '@shared/lib/fileUtils';
+import type { CreateCampaignRequest } from '../../../types';
 
 export const MusicAdsFlow3: React.FC<{
     onNext: () => void;
@@ -46,7 +47,7 @@ export const MusicAdsFlow3: React.FC<{
         musicBudgetReach,
         resetMusicAds,
     } = useAdsUploadStore();
-    const { addCampaign, updateCampaign } = useAdsStore();
+    const { addCampaign, updateCampaign, createCampaignApi, updateCampaignApi } = useAdsStore();
     const isEditMode = !!editCampaignId;
 
     const formatDate = (date: Date | null): string => {
@@ -122,19 +123,43 @@ export const MusicAdsFlow3: React.FC<{
                 mediaSize,
             };
 
-            // Add or update campaign in ads store
-            if (isEditMode && editCampaignId) {
-                updateCampaign(editCampaignId, campaign);
-            } else {
-                addCampaign(campaign);
-            }
+            // Try to create campaign via API first
+            const apiRequest: CreateCampaignRequest = {
+                name: musicAdInfo.title,
+                type: 'audio',
+                budget: musicBudgetReach.amount * 100, // Convert to smallest unit (kobo)
+                startDate: scheduleDate,
+                endDate: musicAdInfo.schedule.endTime || undefined,
+                creativeUrl: mediaData,
+                targetingSettings: JSON.stringify({
+                    location: {
+                        country: musicAdInfo.location.country,
+                        state: musicAdInfo.location.state,
+                    },
+                    target: {
+                        type: musicAdInfo.target.type,
+                        genre: musicAdInfo.target.genre,
+                        artists: musicAdInfo.target.artists,
+                    },
+                }),
+            };
 
-            // Simulate API call with async promise
-            await new Promise((resolve) => {
-                setTimeout(() => {
-                    resolve(true);
-                }, 2000); // 2 second delay to simulate API call
-            });
+            // Add or update campaign
+            if (isEditMode && editCampaignId) {
+                // Try API first for update
+                const apiSuccess = await updateCampaignApi(editCampaignId, apiRequest);
+                if (!apiSuccess) {
+                    // Fallback to local update
+                    updateCampaign(editCampaignId, campaign);
+                }
+            } else {
+                // Try API first for create
+                const campaignId = await createCampaignApi(apiRequest);
+                if (!campaignId) {
+                    // Fallback to local add
+                    addCampaign(campaign);
+                }
+            }
 
             // Show success page first
             setIsPublished(true);

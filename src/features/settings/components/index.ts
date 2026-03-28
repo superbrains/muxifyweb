@@ -2,6 +2,7 @@ export { ProfileTab } from "./ProfileTab";
 export { VerificationTab } from "./VerificationTab";
 export { PaymentTab } from "./PaymentTab";
 export { SecurityTab } from "./SecurityTab";
+export { NotificationsTab } from "./NotificationsTab";
 
 // Modals
 export { EmailVerificationModal } from "./EmailVerificationModal";

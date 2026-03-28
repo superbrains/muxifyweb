@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
     Box,
     Text,
@@ -7,15 +7,70 @@ import {
     Flex,
     Grid,
     Badge,
+    Spinner,
+    Center,
 } from '@chakra-ui/react';
 import { AnimatedTabs, Select } from '@shared/components';
 import { formatNaira } from '@shared/utils';
 import { LeaderboardCard } from './LeaderboardCard';
+import { leaderboardService } from '../services/leaderboardService';
+import { useUserStore } from '@/app/store/useUserStore';
+import type {
+    TopGifterDto,
+    MostGiftedArtistDto,
+    ArtistTopFanDto,
+    LeaderboardStatsDto,
+    MostWatchedVideoDto,
+    HighestUnlockedContentDto,
+    MostSharedContentDto,
+    LeaderboardPeriod,
+} from '../types';
+
+// Map UI time filter to API period
+const mapTimeFilterToPeriod = (filter: string): LeaderboardPeriod => {
+    switch (filter) {
+        case 'daily': return 'day';
+        case 'weekly': return 'week';
+        case 'monthly': return 'month';
+        case 'yearly': return 'all-time';
+        default: return 'all-time';
+    }
+};
+
+// Get period label for display
+const getPeriodLabel = (filter: string): string => {
+    switch (filter) {
+        case 'daily': return 'Today';
+        case 'weekly': return 'This Week';
+        case 'monthly': return 'This Month';
+        case 'yearly': return 'All Time';
+        default: return 'All Time';
+    }
+};
+
+// Map DTO to LeaderboardCard format
+interface LeaderboardItem {
+    rank: number;
+    name: string;
+    value: string;
+    avatarUrl?: string;
+}
 
 export const VideoLeaderboard: React.FC = () => {
+    const { user } = useUserStore();
     const [timeFilter, setTimeFilter] = useState<'daily' | 'weekly' | 'monthly' | 'yearly'>('daily');
     const [leaderboardFilter, setLeaderboardFilter] = useState<string>('all');
     const [sortFilter, setSortFilter] = useState<string>('latest');
+
+    // API data states
+    const [stats, setStats] = useState<LeaderboardStatsDto | null>(null);
+    const [topGifters, setTopGifters] = useState<TopGifterDto[]>([]);
+    const [mostGiftedArtists, setMostGiftedArtists] = useState<MostGiftedArtistDto[]>([]);
+    const [mostWatchedVideos, setMostWatchedVideos] = useState<MostWatchedVideoDto[]>([]);
+    const [artistTopFans, setArtistTopFans] = useState<ArtistTopFanDto[]>([]);
+    const [highestUnlocked, setHighestUnlocked] = useState<HighestUnlockedContentDto[]>([]);
+    const [mostShared, setMostShared] = useState<MostSharedContentDto[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
 
     const timeTabs = [
         { id: 'daily', label: 'Daily' },
@@ -36,82 +91,167 @@ export const VideoLeaderboard: React.FC = () => {
         { value: 'popular', label: 'Most Popular' },
     ];
 
-    // Sample data for leaderboard cards
+    // Fetch leaderboard data
+    const fetchLeaderboardData = useCallback(async () => {
+        setIsLoading(true);
+        const period = mapTimeFilterToPeriod(timeFilter);
+
+        try {
+            // Fetch all video-related data in parallel
+            const [
+                giftersRes,
+                artistsRes,
+                watchedRes,
+                statsRes,
+                unlockedRes,
+                sharedRes,
+            ] = await Promise.all([
+                leaderboardService.getTopGifters(5, period),
+                leaderboardService.getMostGiftedArtists(5, period),
+                leaderboardService.getMostWatchedVideos(5, period),
+                leaderboardService.getLeaderboardStats(period),
+                leaderboardService.getHighestUnlocked(5, period, 'video'),
+                leaderboardService.getMostShared(5, period, 'video'),
+            ]);
+
+            setTopGifters(giftersRes.entries);
+            setMostGiftedArtists(artistsRes.entries);
+            setMostWatchedVideos(watchedRes.entries);
+            setStats(statsRes);
+            setHighestUnlocked(unlockedRes.entries);
+            setMostShared(sharedRes.entries);
+
+            // Fetch artist top fans if user is a creator
+            if (user?.id && (user.role === 'creator' || user.role === 'record_label')) {
+                try {
+                    const fansRes = await leaderboardService.getArtistTopFans(user.id, 5, period);
+                    setArtistTopFans(fansRes.entries);
+                } catch {
+                    setArtistTopFans([]);
+                }
+            }
+        } catch (error) {
+            console.error('Failed to fetch leaderboard data:', error);
+        } finally {
+            setIsLoading(false);
+        }
+    }, [timeFilter, user?.id, user?.role]);
+
+    useEffect(() => {
+        void fetchLeaderboardData();
+    }, [fetchLeaderboardData]);
+
+    // Map API data to LeaderboardCard format
+    const mapTopGiftersToItems = (data: TopGifterDto[]): LeaderboardItem[] =>
+        data.map(g => ({
+            rank: g.rank,
+            name: g.displayName || g.username || 'Unknown',
+            value: g.totalGiftValue.toLocaleString(),
+            avatarUrl: g.avatarUrl,
+        }));
+
+    const mapMostGiftedArtistsToItems = (data: MostGiftedArtistDto[]): LeaderboardItem[] =>
+        data.map(a => ({
+            rank: a.rank,
+            name: a.artistName || 'Unknown Creator',
+            value: a.totalReceived.toLocaleString(),
+            avatarUrl: a.avatarUrl,
+        }));
+
+    const mapMostWatchedVideosToItems = (data: MostWatchedVideoDto[]): LeaderboardItem[] =>
+        data.map(v => ({
+            rank: v.rank,
+            name: v.title || 'Unknown Video',
+            value: v.viewCount.toLocaleString(),
+            avatarUrl: v.thumbnailUrl,
+        }));
+
+    const mapArtistTopFansToItems = (data: ArtistTopFanDto[]): LeaderboardItem[] =>
+        data.map(f => ({
+            rank: f.rank,
+            name: f.displayName || f.username || 'Unknown',
+            value: f.totalGiftValue.toLocaleString(),
+            avatarUrl: f.avatarUrl,
+        }));
+
+    const mapHighestUnlockedToItems = (data: HighestUnlockedContentDto[]): LeaderboardItem[] =>
+        data.map(c => ({
+            rank: c.rank,
+            name: c.title || 'Unknown Content',
+            value: c.unlockCount.toLocaleString(),
+            avatarUrl: c.coverUrl,
+        }));
+
+    const mapMostSharedToItems = (data: MostSharedContentDto[]): LeaderboardItem[] =>
+        data.map(c => ({
+            rank: c.rank,
+            name: c.title || 'Unknown Content',
+            value: c.shareCount.toLocaleString(),
+            avatarUrl: c.coverUrl,
+        }));
+
+    // Empty state for categories without data
+    const emptyState: LeaderboardItem[] = [
+        { rank: 1, name: 'No data available', value: '-' },
+    ];
+
+    // Build leaderboard data from API or empty state
     const leaderboardData = {
-        highestUnlocked: [
-            { rank: 1, name: 'Sabinus vs Food', value: '150,000,000', avatar: '🎬' },
-            { rank: 2, name: 'Where is Sabinus', value: '145,673,000', avatar: '🎬' },
-            { rank: 3, name: 'Professor Sabinus', value: '14,673,000', avatar: '🎬' },
-            { rank: 4, name: 'Driver Sabinus', value: '45,453', avatar: '🎬' },
-            { rank: 5, name: 'Banker Sabinus', value: '10,000', avatar: '🎬' },
-        ],
-        highestGifted: [
-            { rank: 1, name: 'Sabinus vs Food', value: '150,000,000', avatar: '🎬' },
-            { rank: 2, name: 'Where is Sabinus', value: '145,673,000', avatar: '🎬' },
-            { rank: 3, name: 'Professor Sabinus', value: '14,673,000', avatar: '🎬' },
-            { rank: 4, name: 'Driver Sabinus', value: '45,453', avatar: '🎬' },
-            { rank: 5, name: 'Banker Sabinus', value: '10,000', avatar: '🎬' },
-        ],
-        highestWatched: [
-            { rank: 1, name: 'Sabinus vs Food', value: '150,000,000', avatar: '🎬' },
-            { rank: 2, name: 'Where is Sabinus', value: '145,673,000', avatar: '🎬' },
-            { rank: 3, name: 'Professor Sabinus', value: '14,673,000', avatar: '🎬' },
-            { rank: 4, name: 'Driver Sabinus', value: '45,453', avatar: '🎬' },
-            { rank: 5, name: 'Banker Sabinus', value: '10,000', avatar: '🎬' },
-        ],
-        topWatchedVideos: [
-            { rank: 1, name: 'Sabinus vs Food', value: '150,000,000', avatar: '🎬' },
-            { rank: 2, name: 'Where is Sabinus', value: '145,673,000', avatar: '🎬' },
-            { rank: 3, name: 'Professor Sabinus', value: '14,673,000', avatar: '🎬' },
-            { rank: 4, name: 'Driver Sabinus', value: '45,453', avatar: '🎬' },
-            { rank: 5, name: 'Banker Sabinus', value: '10,000', avatar: '🎬' },
-        ],
-        topWatchedSingle: [
-            { rank: 1, name: 'big_josh', value: '150,000,000', avatar: '👤' },
-            { rank: 2, name: 'aku_baby', value: '145,673,000', avatar: '👤' },
-            { rank: 3, name: 'moving_man', value: '14,673,000', avatar: '👤' },
-            { rank: 4, name: 'nem_boy', value: '45,453', avatar: '👤' },
-            { rank: 5, name: 'webby_baby', value: '10,000', avatar: '👤' },
-        ],
-        highestGiven: [
-            { rank: 1, name: 'Sabinus vs Food', value: '150,000,000', avatar: '🎬' },
-            { rank: 2, name: 'Where is Sabinus', value: '145,673,000', avatar: '🎬' },
-            { rank: 3, name: 'Professor Sabinus', value: '14,673,000', avatar: '🎬' },
-            { rank: 4, name: 'Driver Sabinus', value: '45,453', avatar: '🎬' },
-            { rank: 5, name: 'Banker Sabinus', value: '10,000', avatar: '🎬' },
-        ],
-        topGiver: [
-            { rank: 1, name: 'big_josh', value: '150,000,000', avatar: '👤' },
-            { rank: 2, name: 'aku_baby', value: '145,673,000', avatar: '👤' },
-            { rank: 3, name: 'moving_man', value: '14,673,000', avatar: '👤' },
-            { rank: 4, name: 'nem_boy', value: '45,453', avatar: '👤' },
-            { rank: 5, name: 'webby_baby', value: '10,000', avatar: '👤' },
-        ],
-        topFans: [
-            { rank: 1, name: 'big_josh', value: '150,000,000', avatar: '👤' },
-            { rank: 2, name: 'aku_baby', value: '145,673,000', avatar: '👤' },
-            { rank: 3, name: 'moving_man', value: '14,673,000', avatar: '👤' },
-            { rank: 4, name: 'nem_boy', value: '45,453', avatar: '👤' },
-            { rank: 5, name: 'webby_baby', value: '10,000', avatar: '👤' },
-        ],
-        mostShared: [
-            { rank: 1, name: 'Sabinus vs Food', value: '150,000,000', avatar: '🎬' },
-            { rank: 2, name: 'Where is Sabinus', value: '145,673,000', avatar: '🎬' },
-            { rank: 3, name: 'Professor Sabinus', value: '14,673,000', avatar: '🎬' },
-            { rank: 4, name: 'Driver Sabinus', value: '45,453', avatar: '🎬' },
-            { rank: 5, name: 'Banker Sabinus', value: '10,000', avatar: '🎬' },
-        ],
+        highestUnlocked: highestUnlocked.length > 0
+            ? mapHighestUnlockedToItems(highestUnlocked)
+            : emptyState,
+        highestGifted: mostGiftedArtists.length > 0
+            ? mapMostGiftedArtistsToItems(mostGiftedArtists)
+            : emptyState,
+        highestWatched: mostWatchedVideos.length > 0
+            ? mapMostWatchedVideosToItems(mostWatchedVideos)
+            : emptyState,
+        topWatchedVideos: mostWatchedVideos.length > 0
+            ? mapMostWatchedVideosToItems(mostWatchedVideos)
+            : emptyState,
+        topWatchedSingle: mostWatchedVideos.length > 0
+            ? mapMostWatchedVideosToItems(mostWatchedVideos.slice(0, 1))
+            : emptyState,
+        highestGiven: mostGiftedArtists.length > 0
+            ? mapMostGiftedArtistsToItems(mostGiftedArtists)
+            : emptyState,
+        topGiver: topGifters.length > 0
+            ? mapTopGiftersToItems(topGifters)
+            : emptyState,
+        topFans: artistTopFans.length > 0
+            ? mapArtistTopFansToItems(artistTopFans)
+            : emptyState,
+        mostShared: mostShared.length > 0
+            ? mapMostSharedToItems(mostShared)
+            : emptyState,
     };
 
-    // Sample data for detailed table
-    const tableData = [
-        { no: 1, name: 'Sabinus vs Food', category: 'Views', totalCounts: '150,000,000', date: '26/8/2025', amount: formatNaira(50000) },
-        { no: 2, name: 'Where is Sabinus', category: 'Gifting', totalCounts: '145,673,000', date: '26/8/2025', amount: formatNaira(50000) },
-        { no: 3, name: 'Professor Sabinus', category: 'Unlocked', totalCounts: '14,673,000', date: '26/8/2025', amount: formatNaira(50000) },
-        { no: 4, name: 'Driver Sabinus', category: 'Gifting', totalCounts: '45,455', date: '26/8/2025', amount: formatNaira(50000) },
-        { no: 5, name: 'big_josh', category: 'Fans', totalCounts: '-', date: '26/8/2025', amount: '-' },
-        { no: 6, name: 'Banker Sabinus', category: 'Shares', totalCounts: '10,000', date: '26/8/2025', amount: formatNaira(50000) },
-        { no: 7, name: 'big_jash', category: 'Giver', totalCounts: '100', date: '26/8/2025', amount: formatNaira(50000) },
+    // Build table data from API responses
+    const tableData = isLoading ? [] : [
+        ...mostWatchedVideos.slice(0, 3).map((v, i) => ({
+            no: i + 1,
+            name: v.title || 'Unknown Video',
+            category: 'Views',
+            totalCounts: v.viewCount.toLocaleString(),
+            date: '-',
+            amount: '-',
+        })),
+        ...mostGiftedArtists.slice(0, 2).map((a, i) => ({
+            no: i + 4,
+            name: a.artistName || 'Unknown Creator',
+            category: 'Gifting',
+            totalCounts: a.giftCount.toLocaleString(),
+            date: '-',
+            amount: formatNaira(a.totalReceived / 100),
+        })),
+        ...topGifters.slice(0, 2).map((g, i) => ({
+            no: i + 6,
+            name: g.displayName || g.username || 'Unknown',
+            category: 'Giver',
+            totalCounts: g.giftCount.toLocaleString(),
+            date: '-',
+            amount: formatNaira(g.totalGiftValue / 100),
+        })),
     ];
 
 
@@ -129,40 +269,46 @@ export const VideoLeaderboard: React.FC = () => {
                 <HStack gap={6}>
                     <VStack align="end" gap={1}>
                         <Text fontSize="lg" color="red.500" fontWeight="bold">
-                            {formatNaira(25550000)}
+                            {formatNaira((stats?.totalEarningsToday ?? 0) / 100)}
                         </Text>
                         <Text fontSize="11px" color="gray.900">
-                            Total Earning Today
+                            Total Earnings Today
                         </Text>
                     </VStack>
                     <VStack align="end" gap={1}>
                         <Text fontSize="lg" color="red.500" fontWeight="bold">
-                            {formatNaira(100000000)}
+                            {formatNaira((stats?.totalEarningsThisPeriod ?? 0) / 100)}
                         </Text>
                         <Text fontSize="11px" color="gray.900">
-                            Total Earning Today
+                            Total Earnings ({getPeriodLabel(timeFilter)})
                         </Text>
                     </VStack>
                 </HStack>
             </Flex>
 
             {/* Leaderboard Cards Grid */}
-            <Grid
-                templateColumns={{ base: "1fr", md: "repeat(2, 1fr)", lg: "repeat(3, 1fr)" }}
-                gap={4}
-                maxW="100%"
-                overflow="hidden"
-            >
-                <LeaderboardCard title="Highest Unlocked" data={leaderboardData.highestUnlocked} />
-                <LeaderboardCard title="Highest Gifted" data={leaderboardData.highestGifted} />
-                <LeaderboardCard title="Highest Watched" data={leaderboardData.highestWatched} />
-                <LeaderboardCard title="Top Watched Videos" data={leaderboardData.topWatchedVideos} />
-                <LeaderboardCard title="Top Watched Single" data={leaderboardData.topWatchedSingle} />
-                <LeaderboardCard title="Highest Given" data={leaderboardData.highestGiven} />
-                <LeaderboardCard title="Top Giver" data={leaderboardData.topGiver} />
-                <LeaderboardCard title="Top Fans" data={leaderboardData.topFans} />
-                <LeaderboardCard title="Most Shared" data={leaderboardData.mostShared} />
-            </Grid>
+            {isLoading ? (
+                <Center py={12}>
+                    <Spinner size="lg" color="primary.500" />
+                </Center>
+            ) : (
+                <Grid
+                    templateColumns={{ base: "1fr", md: "repeat(2, 1fr)", lg: "repeat(3, 1fr)" }}
+                    gap={4}
+                    maxW="100%"
+                    overflow="hidden"
+                >
+                    <LeaderboardCard title="Highest Unlocked" data={leaderboardData.highestUnlocked} />
+                    <LeaderboardCard title="Highest Gifted" data={leaderboardData.highestGifted} />
+                    <LeaderboardCard title="Highest Watched" data={leaderboardData.highestWatched} />
+                    <LeaderboardCard title="Top Watched Videos" data={leaderboardData.topWatchedVideos} />
+                    <LeaderboardCard title="Top Watched Single" data={leaderboardData.topWatchedSingle} />
+                    <LeaderboardCard title="Highest Given" data={leaderboardData.highestGiven} />
+                    <LeaderboardCard title="Top Giver" data={leaderboardData.topGiver} />
+                    <LeaderboardCard title="Top Fans" data={leaderboardData.topFans} />
+                    <LeaderboardCard title="Most Shared" data={leaderboardData.mostShared} />
+                </Grid>
+            )}
 
             {/* Detailed Leaderboard Table */}
             <Box bg="white" borderRadius="xl" border="1px solid" borderColor="gray.200" overflow="hidden">

@@ -1,133 +1,150 @@
-import type { Notification } from "../types";
+import { axiosInstance } from '@app/lib/axiosInstance';
+import { getApiErrorMessage } from '@shared/lib/errorUtils';
+import type {
+  NotificationListDto,
+  UnreadCountDto,
+  MarkReadResponse,
+  UserNotificationPreferencesDto,
+  UpdateAllPreferencesRequest,
+  MarkNotificationsReadRequest,
+  RegisterDeviceTokenRequest,
+} from '../types';
 
-// Mock notification data
-const mockNotifications: Notification[] = [
-  {
-    id: '1',
-    title: 'Complete Verification',
-    message: 'Lorem ipsum dolor sit amet consectetur. Pharetra a vel duis sed rhoncus ac commodo amet ut.',
-    type: 'warning',
-    isRead: false,
-    createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
-    actionUrl: '/onboarding/artist/identity-verification',
-    actionLabel: 'Complete Now',
-  },
-  {
-    id: '2',
-    title: 'Complete Verification',
-    message: 'Lorem ipsum dolor sit amet consectetur. Pharetra a vel duis sed rhoncus ac commodo amet ut.',
-    type: 'warning',
-    isRead: false,
-    createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(), // 5 hours ago
-    actionUrl: '/onboarding/company/company-identity-verification',
-    actionLabel: 'Complete Now',
-  },
-  {
-    id: '3',
-    title: 'Fund wallet to publish ads',
-    message: 'Lorem ipsum dolor sit amet consectetur. Pharetra a vel duis sed rhoncus ac commodo amet ut.',
-    type: 'info',
-    isRead: false,
-    createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), // 1 day ago
-    actionUrl: '/payments',
-    actionLabel: 'Add Funds',
-  },
-  {
-    id: '4',
-    title: 'New fan subscription',
-    message: 'You have a new subscriber on your latest release.',
-    type: 'success',
-    isRead: true,
-    createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days ago
-    actionUrl: '/fans-subscribers',
-  },
-  {
-    id: '5',
-    title: 'Payment received',
-    message: 'Your payment of ₦50,000 has been processed successfully.',
-    type: 'success',
-    isRead: true,
-    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), // 3 days ago
-    actionUrl: '/payments',
-  },
-];
+const NOTIFICATIONS_BASE = '/notifications';
 
-class NotificationService {
-  private notifications: Notification[] = [...mockNotifications];
-
+/**
+ * Notification API service for REST endpoints
+ */
+export const notificationService = {
   /**
-   * Get all notifications
+   * GET /api/v1/notifications
+   * Fetches paginated notifications for the current user
    */
-  async getNotifications(): Promise<Notification[]> {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    // Sort by createdAt descending (newest first)
-    return [...this.notifications].sort((a, b) => 
-      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    );
-  }
-
-  /**
-   * Get unread notifications count
-   */
-  async getUnreadCount(): Promise<number> {
-    await new Promise(resolve => setTimeout(resolve, 200));
-    return this.notifications.filter(n => !n.isRead).length;
-  }
-
-  /**
-   * Mark notification as read
-   */
-  async markAsRead(notificationId: string): Promise<Notification> {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    
-    const notification = this.notifications.find(n => n.id === notificationId);
-    if (notification) {
-      notification.isRead = true;
-      notification.readAt = new Date().toISOString();
+  async getNotifications(
+    page = 1,
+    pageSize = 20
+  ): Promise<NotificationListDto> {
+    try {
+      const response = await axiosInstance.get<NotificationListDto>(
+        NOTIFICATIONS_BASE,
+        {
+          params: { page, pageSize },
+        }
+      );
+      return response.data;
+    } catch (error) {
+      throw new Error(getApiErrorMessage(error, 'Failed to fetch notifications'));
     }
-    
-    return notification!;
-  }
+  },
 
   /**
-   * Mark all notifications as read
+   * GET /api/v1/notifications/unread-count
+   * Gets the current unread notification count
    */
-  async markAllAsRead(): Promise<void> {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    
-    this.notifications.forEach(notification => {
-      notification.isRead = true;
-      notification.readAt = new Date().toISOString();
-    });
-  }
+  async getUnreadCount(): Promise<UnreadCountDto> {
+    try {
+      const response = await axiosInstance.get<UnreadCountDto>(
+        `${NOTIFICATIONS_BASE}/unread-count`
+      );
+      return response.data;
+    } catch (error) {
+      throw new Error(getApiErrorMessage(error, 'Failed to fetch unread count'));
+    }
+  },
 
   /**
-   * Delete a notification
+   * POST /api/v1/notifications/mark-read
+   * Marks specific notifications as read
    */
-  async deleteNotification(notificationId: string): Promise<void> {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    this.notifications = this.notifications.filter(n => n.id !== notificationId);
-  }
+  async markAsRead(notificationIds: string[]): Promise<MarkReadResponse> {
+    try {
+      const request: MarkNotificationsReadRequest = { notificationIds };
+      const response = await axiosInstance.post<MarkReadResponse>(
+        `${NOTIFICATIONS_BASE}/mark-read`,
+        request
+      );
+      return response.data;
+    } catch (error) {
+      throw new Error(getApiErrorMessage(error, 'Failed to mark notifications as read'));
+    }
+  },
 
   /**
-   * Create a new notification (for testing)
+   * POST /api/v1/notifications/mark-all-read
+   * Marks all notifications as read
    */
-  async createNotification(notification: Omit<Notification, 'id' | 'createdAt' | 'isRead'>): Promise<Notification> {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    
-    const newNotification: Notification = {
-      ...notification,
-      id: `notification_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      createdAt: new Date().toISOString(),
-      isRead: false,
-    };
-    
-    this.notifications.unshift(newNotification);
-    return newNotification;
-  }
-}
+  async markAllAsRead(): Promise<MarkReadResponse> {
+    try {
+      const response = await axiosInstance.post<MarkReadResponse>(
+        `${NOTIFICATIONS_BASE}/mark-all-read`
+      );
+      return response.data;
+    } catch (error) {
+      throw new Error(getApiErrorMessage(error, 'Failed to mark all notifications as read'));
+    }
+  },
 
-export const notificationService = new NotificationService();
+  /**
+   * GET /api/v1/notifications/preferences
+   * Gets user notification preferences
+   */
+  async getPreferences(): Promise<UserNotificationPreferencesDto> {
+    try {
+      const response = await axiosInstance.get<UserNotificationPreferencesDto>(
+        `${NOTIFICATIONS_BASE}/preferences`
+      );
+      return response.data;
+    } catch (error) {
+      throw new Error(getApiErrorMessage(error, 'Failed to fetch notification preferences'));
+    }
+  },
 
+  /**
+   * PUT /api/v1/notifications/preferences
+   * Updates user notification preferences
+   */
+  async updatePreferences(
+    request: UpdateAllPreferencesRequest
+  ): Promise<UserNotificationPreferencesDto> {
+    try {
+      const response = await axiosInstance.put<UserNotificationPreferencesDto>(
+        `${NOTIFICATIONS_BASE}/preferences`,
+        request
+      );
+      return response.data;
+    } catch (error) {
+      throw new Error(getApiErrorMessage(error, 'Failed to update notification preferences'));
+    }
+  },
+
+  /**
+   * POST /api/v1/notifications/device-token
+   * Registers a device token for push notifications
+   */
+  async registerDeviceToken(request: RegisterDeviceTokenRequest): Promise<boolean> {
+    try {
+      const response = await axiosInstance.post<boolean>(
+        `${NOTIFICATIONS_BASE}/device-token`,
+        request
+      );
+      return response.data;
+    } catch (error) {
+      throw new Error(getApiErrorMessage(error, 'Failed to register device token'));
+    }
+  },
+
+  /**
+   * DELETE /api/v1/notifications/device-token/{token}
+   * Unregisters a device token from push notifications
+   */
+  async unregisterDeviceToken(token: string): Promise<boolean> {
+    try {
+      const response = await axiosInstance.delete<boolean>(
+        `${NOTIFICATIONS_BASE}/device-token/${encodeURIComponent(token)}`
+      );
+      return response.data;
+    } catch (error) {
+      throw new Error(getApiErrorMessage(error, 'Failed to unregister device token'));
+    }
+  },
+};

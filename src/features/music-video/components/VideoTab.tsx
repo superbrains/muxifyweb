@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
     Box,
     Button,
@@ -8,6 +8,8 @@ import {
     Input,
     Text,
     VStack,
+    Spinner,
+    Alert,
 } from '@chakra-ui/react';
 import { FiSearch, FiFilter, FiPlus } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
@@ -16,7 +18,20 @@ import { useVideoStore } from '../store/useVideoStore';
 
 export const VideoTab: React.FC = () => {
     const navigate = useNavigate();
-    const { videoItems } = useVideoStore();
+    const {
+        videoItems,
+        isLoading,
+        isDeleting,
+        error,
+        fetchVideos,
+        deleteVideo,
+        clearError,
+    } = useVideoStore();
+
+    // Fetch videos on mount
+    useEffect(() => {
+        fetchVideos();
+    }, [fetchVideos]);
 
     return (
         <>
@@ -73,9 +88,27 @@ export const VideoTab: React.FC = () => {
                 </HStack>
             </Flex>
 
+            {/* Error Alert */}
+            {error && (
+                <Alert.Root status="error" mb={4} borderRadius="md">
+                    <Alert.Indicator />
+                    <Alert.Description flex={1}>{error}</Alert.Description>
+                    <Button size="sm" variant="ghost" onClick={clearError}>
+                        Dismiss
+                    </Button>
+                </Alert.Root>
+            )}
+
             {/* Video List */}
             <VStack align="stretch" gap={3}>
-                {videoItems.length === 0 ? (
+                {isLoading ? (
+                    <Box textAlign="center" py={12}>
+                        <Spinner size="lg" color="primary.500" />
+                        <Text mt={4} color="gray.500" fontSize="14px">
+                            Loading videos...
+                        </Text>
+                    </Box>
+                ) : videoItems.length === 0 ? (
                     <Box textAlign="center" py={12}>
                         <Text color="gray.500" fontSize="14px">
                             No videos found
@@ -104,10 +137,13 @@ export const VideoTab: React.FC = () => {
                             unlocks={item.unlocks}
                             gifts={item.gifts}
                             type="video"
+                            isDeleting={isDeleting === item.id}
                             onEdit={() => navigate(`/upload?videoId=${item.id}`)}
                             onView={() => console.log('View', item.id)}
                             onDownload={() => console.log('Download', item.id)}
-                            onDelete={() => console.log('Delete', item.id)}
+                            onDelete={async () => {
+                                await deleteVideo(item.id);
+                            }}
                         />
                     ))
                 )}

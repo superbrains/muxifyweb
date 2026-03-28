@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
     Box,
     Text,
@@ -7,16 +7,30 @@ import {
     Flex,
     Grid,
     Badge,
+    Spinner,
+    Alert,
 } from '@chakra-ui/react';
 import { AnimatedTabs, Select } from '@shared/components';
 import { formatNaira } from '@shared/utils';
 import { FansAndSubscribersCard } from './FansAndSubscribersCard';
+import { useUserStore } from '@/app/store/useUserStore';
+import { leaderboardService } from '@/features/leaderboard/services/leaderboardService';
+import type { ArtistTopFansLeaderboardDto, ArtistTopFanDto } from '@/features/leaderboard/types';
+import type { TimeFilter, FanLeaderboardItem } from '../types';
+import { mapTimeFilterToPeriod } from '../types';
 
 export const MusicTab: React.FC = () => {
-    const [timeFilter, setTimeFilter] = useState<'daily' | 'weekly' | 'monthly' | 'yearly'>('daily');
+    const { user } = useUserStore();
+    const [timeFilter, setTimeFilter] = useState<TimeFilter>('daily');
     const [continentFilter, setContinentFilter] = useState<string>('all');
     const [activityFilter, setActivityFilter] = useState<string>('all');
     const [sortFilter, setSortFilter] = useState<string>('latest');
+
+    // API state
+    const [topFansData, setTopFansData] = useState<ArtistTopFansLeaderboardDto | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [hasFetched, setHasFetched] = useState(false);
 
     const timeTabs = [
         { id: 'daily', label: 'Daily' },
@@ -33,70 +47,134 @@ export const MusicTab: React.FC = () => {
         { value: 'europe', label: 'Europe' },
     ];
 
-    const activityOptions = [
-        { id: 'all', label: 'All' },
-        { id: 'plays', label: 'Plays (250,000)' },
-        { id: 'gifts', label: 'Gifts (150,000)' },
-        { id: 'unlocked', label: 'Unlocked (10,000)' },
-        { id: 'shares', label: 'Shares (10,000)' },
-    ];
-
     const sortOptions = [
         { value: 'latest', label: 'Latest' },
         { value: 'oldest', label: 'Oldest' },
         { value: 'popular', label: 'Most Popular' },
     ];
 
-    // Sample data for leaderboard cards
-    const leaderboardData = {
-        topPlayByCountry: [
-            { rank: 1, name: 'Nigeria', value: '150,000,000', avatar: '🇳🇬', country: 'Africa' },
-            { rank: 2, name: 'United States', value: '145,673,000', avatar: '🇺🇸', country: 'America' },
-            { rank: 3, name: 'Japan', value: '14,673,000', avatar: '🇯🇵', country: 'Asia' },
-            { rank: 4, name: 'Poland', value: '45,453', avatar: '🇵🇱', country: 'Europe' },
-            { rank: 5, name: 'United Kingdom', value: '10,000', avatar: '🇬🇧', country: 'Europe' },
-        ],
-        topGiversByCountry: [
-            { rank: 1, name: 'Nigeria', value: '150,000,000', avatar: '🇳🇬', country: 'Africa' },
-            { rank: 2, name: 'United States', value: '145,673,000', avatar: '🇺🇸', country: 'America' },
-            { rank: 3, name: 'Japan', value: '14,673,000', avatar: '🇯🇵', country: 'Asia' },
-            { rank: 4, name: 'Poland', value: '45,453', avatar: '🇵🇱', country: 'Europe' },
-            { rank: 5, name: 'United Kingdom', value: '10,000', avatar: '🇬🇧', country: 'Europe' },
-        ],
-        topUnlockByCountry: [
-            { rank: 1, name: 'Nigeria', value: '150,000,000', avatar: '🇳🇬', country: 'Africa' },
-            { rank: 2, name: 'United States', value: '145,673,000', avatar: '🇺🇸', country: 'America' },
-            { rank: 3, name: 'Japan', value: '14,673,000', avatar: '🇯🇵', country: 'Asia' },
-            { rank: 4, name: 'Poland', value: '45,453', avatar: '🇵🇱', country: 'Europe' },
-            { rank: 5, name: 'United Kingdom', value: '10,000', avatar: '🇬🇧', country: 'Europe' },
-        ],
-        topGivers: [
-            { rank: 1, name: 'big_josh', value: '150,000,000', avatar: '👤', country: 'Nigeria' },
-            { rank: 2, name: 'aku_baby', value: '145,673,000', avatar: '👤', country: 'Ghana' },
-            { rank: 3, name: 'moving_man', value: '14,673,000', avatar: '👤', country: 'United Kingdom' },
-            { rank: 4, name: 'nero_boy', value: '45,453', avatar: '👤', country: 'United States' },
-            { rank: 5, name: 'webby_baby', value: '10,000', avatar: '👤', country: 'Rwanda' },
-        ],
-        topUnlocked: [
-            { rank: 1, name: 'big_josh', value: '150,000,000', avatar: '👤', country: 'Nigeria' },
-            { rank: 2, name: 'aku_baby', value: '145,673,000', avatar: '👤', country: 'Ghana' },
-            { rank: 3, name: 'moving_man', value: '14,673,000', avatar: '👤', country: 'United Kingdom' },
-            { rank: 4, name: 'nero_boy', value: '45,453', avatar: '👤', country: 'United States' },
-            { rank: 5, name: 'webby_baby', value: '10,000', avatar: '👤', country: 'Rwanda' },
-        ],
-    };
+    // Fetch top fans data
+    useEffect(() => {
+        const fetchTopFans = async () => {
+            if (!user?.id) {
+                return;
+            }
 
-    // Sample data for activity table
-    const tableData = [
-        { no: 1, name: 'big_josh', category: 'Gifting', totalCounts: '150,000,000', date: '26/8/2025', amount: formatNaira(50000) },
-        { no: 2, name: 'big_josh', category: 'Gifting', totalCounts: '145,673,000', date: '26/8/2025', amount: formatNaira(50000) },
-        { no: 3, name: 'nero_boy', category: 'Unlocked', totalCounts: '14,673,000', date: '26/8/2025', amount: formatNaira(50000) },
-        { no: 4, name: 'aku_baby', category: 'Gifting', totalCounts: '45,453', date: '26/8/2025', amount: formatNaira(50000) },
-        { no: 5, name: 'big_josh', category: 'Shares', totalCounts: '200', date: '26/8/2025', amount: '-' },
-        { no: 6, name: 'webby_baby', category: 'Unlocked', totalCounts: '10,000', date: '26/8/2025', amount: formatNaira(50000) },
-        { no: 7, name: 'big_josh', category: 'Gifting', totalCounts: '100', date: '26/8/2025', amount: formatNaira(50000) },
-    ];
+            setIsLoading(true);
+            setError(null);
 
+            try {
+                const period = mapTimeFilterToPeriod(timeFilter);
+                const data = await leaderboardService.getArtistTopFans(user.id, 10, period);
+                setTopFansData(data);
+            } catch (err) {
+                setError(err instanceof Error ? err.message : 'Failed to fetch top fans');
+            } finally {
+                setIsLoading(false);
+                setHasFetched(true);
+            }
+        };
+
+        fetchTopFans();
+    }, [user?.id, timeFilter]);
+
+    // Map API data to UI format
+    const topGivers: FanLeaderboardItem[] = useMemo(() => {
+        if (!topFansData?.entries) return [];
+        return topFansData.entries.map((fan: ArtistTopFanDto) => ({
+            rank: fan.rank,
+            name: fan.displayName || fan.username || 'Anonymous',
+            value: fan.totalGiftValue.toLocaleString(),
+            avatarUrl: fan.avatarUrl,
+            country: '', // Country not available in API response
+        }));
+    }, [topFansData]);
+
+    // Activity options with dynamic counts from API
+    const activityOptions = useMemo(() => {
+        const totalGifts = topFansData?.entries?.reduce((sum, fan) => sum + fan.giftCount, 0) || 0;
+        return [
+            { id: 'all', label: 'All' },
+            { id: 'plays', label: `Plays (${(0).toLocaleString()})` },
+            { id: 'gifts', label: `Gifts (${totalGifts.toLocaleString()})` },
+            { id: 'unlocked', label: `Unlocked (${(0).toLocaleString()})` },
+            { id: 'shares', label: `Shares (${(0).toLocaleString()})` },
+        ];
+    }, [topFansData]);
+
+    // Table data from top fans
+    const tableData = useMemo(() => {
+        if (!topFansData?.entries) return [];
+
+        let data = topFansData.entries.map((fan: ArtistTopFanDto, index: number) => ({
+            no: index + 1,
+            name: fan.displayName || fan.username || 'Anonymous',
+            category: 'Gifting',
+            totalCounts: fan.giftCount.toLocaleString(),
+            date: topFansData.lastUpdated
+                ? new Date(topFansData.lastUpdated).toLocaleDateString('en-GB')
+                : '-',
+            amount: formatNaira(fan.totalGiftValue),
+        }));
+
+        // Filter by activity type
+        if (activityFilter !== 'all') {
+            data = data.filter((row) => {
+                if (activityFilter === 'gifts') return row.category === 'Gifting';
+                return true;
+            });
+        }
+
+        // Sort data
+        if (sortFilter === 'oldest') {
+            data = [...data].reverse();
+        } else if (sortFilter === 'popular') {
+            data = [...data].sort((a, b) => {
+                const aVal = parseInt(a.totalCounts.replace(/,/g, '')) || 0;
+                const bVal = parseInt(b.totalCounts.replace(/,/g, '')) || 0;
+                return bVal - aVal;
+            });
+        }
+
+        return data;
+    }, [topFansData, activityFilter, sortFilter]);
+
+    // Calculate totals
+    const totalPlays = 0; // No plays endpoint available
+    const totalFollowers = topFansData?.entries?.length || 0;
+
+    // Placeholder data for country-based leaderboards (no backend endpoints yet)
+    const placeholderCountryData: FanLeaderboardItem[] = [];
+
+    // Show loading only when actually fetching
+    if (isLoading || (!hasFetched && user?.id)) {
+        return (
+            <VStack bg="white" borderTopRadius="xl" p={6} minH="400px" justify="center">
+                <Spinner size="xl" color="red.500" />
+                <Text color="gray.600">Loading fan data...</Text>
+            </VStack>
+        );
+    }
+
+    // Show message if user is not loaded yet
+    if (!user?.id) {
+        return (
+            <VStack bg="white" borderTopRadius="xl" p={6} minH="400px" justify="center">
+                <Text color="gray.600">Please log in to view your fans</Text>
+            </VStack>
+        );
+    }
+
+    if (error) {
+        return (
+            <VStack bg="white" borderTopRadius="xl" p={6}>
+                <Alert.Root status="error" borderRadius="md">
+                    <Alert.Indicator />
+                    <Alert.Description>{error}</Alert.Description>
+                </Alert.Root>
+            </VStack>
+        );
+    }
 
     return (
         <VStack bg="white" borderTopRadius="xl" p={6} overflow="hidden" align="stretch" gap={6}>
@@ -105,14 +183,14 @@ export const MusicTab: React.FC = () => {
                 <AnimatedTabs
                     tabs={timeTabs}
                     activeTab={timeFilter}
-                    onTabChange={(tabId) => setTimeFilter(tabId as 'daily' | 'weekly' | 'monthly' | 'yearly')}
+                    onTabChange={(tabId) => setTimeFilter(tabId as TimeFilter)}
                     selectedColor="red.500"
                     size="sm"
                 />
                 <HStack gap={6}>
                     <VStack align="end" gap={1}>
                         <Text fontSize="lg" color="red.500" fontWeight="bold">
-                            75,550,000
+                            {totalPlays.toLocaleString()}
                         </Text>
                         <Text fontSize="11px" color="gray.900">
                             Total Plays
@@ -120,16 +198,15 @@ export const MusicTab: React.FC = () => {
                     </VStack>
                     <VStack align="end" gap={1}>
                         <Text fontSize="lg" color="red.500" fontWeight="bold">
-                            75,550,000
+                            {totalFollowers.toLocaleString()}
                         </Text>
                         <Text fontSize="11px" color="gray.900">
                             Total Followers (Fans)
                         </Text>
                     </VStack>
-
                 </HStack>
             </Flex>
-            <Box className="" w="full" display="flex" justifyContent="end">
+            <Box w="full" display="flex" justifyContent="end">
                 <Select
                     options={continentOptions}
                     value={continentFilter}
@@ -149,11 +226,31 @@ export const MusicTab: React.FC = () => {
                 maxW="100%"
                 overflow="hidden"
             >
-                <FansAndSubscribersCard title="Top play by country" data={leaderboardData.topPlayByCountry} />
-                <FansAndSubscribersCard title="Top givers by country" data={leaderboardData.topGiversByCountry} />
-                <FansAndSubscribersCard title="Top unlock by country" data={leaderboardData.topUnlockByCountry} />
-                <FansAndSubscribersCard title="Top Givers" data={leaderboardData.topGivers} />
-                <FansAndSubscribersCard title="Top Unlocked" data={leaderboardData.topUnlocked} />
+                <FansAndSubscribersCard
+                    title="Top play by country"
+                    data={placeholderCountryData}
+                    emptyMessage="Country data coming soon"
+                />
+                <FansAndSubscribersCard
+                    title="Top givers by country"
+                    data={placeholderCountryData}
+                    emptyMessage="Country data coming soon"
+                />
+                <FansAndSubscribersCard
+                    title="Top unlock by country"
+                    data={placeholderCountryData}
+                    emptyMessage="Country data coming soon"
+                />
+                <FansAndSubscribersCard
+                    title="Top Givers"
+                    data={topGivers}
+                    emptyMessage="No top givers yet"
+                />
+                <FansAndSubscribersCard
+                    title="Top Unlocked"
+                    data={placeholderCountryData}
+                    emptyMessage="No unlock data yet"
+                />
             </Grid>
 
             {/* Activity Table */}
@@ -195,30 +292,38 @@ export const MusicTab: React.FC = () => {
                             </Box>
                         </Box>
                         <Box as="tbody">
-                            {tableData.map((row, index) => (
-                                <Box as="tr" key={index} _hover={{ bg: "gray.50" }} borderBottom="1px solid" borderColor="gray.100">
-                                    <Box as="td" fontSize="12px" fontWeight="semibold" py={4} px={4} color="red.500">
-                                        {row.no.toString().padStart(2, '0')}
-                                    </Box>
-                                    <Box as="td" fontSize="12px" py={4} px={4}>
-                                        {row.name}
-                                    </Box>
-                                    <Box as="td" fontSize="12px" py={4} px={4}>
-                                        <Badge colorScheme="blue" variant="subtle" fontSize="xs">
-                                            {row.category}
-                                        </Badge>
-                                    </Box>
-                                    <Box as="td" fontSize="12px" py={4} px={4}>
-                                        {row.totalCounts}
-                                    </Box>
-                                    <Box as="td" fontSize="12px" py={4} px={4} color="gray.600">
-                                        {row.date}
-                                    </Box>
-                                    <Box as="td" fontSize="12px" fontWeight="semibold" py={4} px={4} color="red.500">
-                                        {row.amount}
+                            {tableData.length === 0 ? (
+                                <Box as="tr">
+                                    <Box as="td" colSpan={6} textAlign="center" py={8} color="gray.500">
+                                        No fan activity data available
                                     </Box>
                                 </Box>
-                            ))}
+                            ) : (
+                                tableData.map((row, index) => (
+                                    <Box as="tr" key={index} _hover={{ bg: "gray.50" }} borderBottom="1px solid" borderColor="gray.100">
+                                        <Box as="td" fontSize="12px" fontWeight="semibold" py={4} px={4} color="red.500">
+                                            {row.no.toString().padStart(2, '0')}
+                                        </Box>
+                                        <Box as="td" fontSize="12px" py={4} px={4}>
+                                            {row.name}
+                                        </Box>
+                                        <Box as="td" fontSize="12px" py={4} px={4}>
+                                            <Badge colorScheme="blue" variant="subtle" fontSize="xs">
+                                                {row.category}
+                                            </Badge>
+                                        </Box>
+                                        <Box as="td" fontSize="12px" py={4} px={4}>
+                                            {row.totalCounts}
+                                        </Box>
+                                        <Box as="td" fontSize="12px" py={4} px={4} color="gray.600">
+                                            {row.date}
+                                        </Box>
+                                        <Box as="td" fontSize="12px" fontWeight="semibold" py={4} px={4} color="red.500">
+                                            {row.amount}
+                                        </Box>
+                                    </Box>
+                                ))
+                            )}
                         </Box>
                     </Box>
                 </VStack>

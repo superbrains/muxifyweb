@@ -9,7 +9,7 @@ import {
     VStack,
 } from '@chakra-ui/react';
 import { useChakraToast } from '@shared/hooks';
-// import { authService } from '@shared/services/auth';
+import { authService } from '@shared/services/auth';
 import { PasswordInput } from "@/components/ui/password-input";
 
 interface NewPasswordFormProps {
@@ -72,14 +72,10 @@ export const NewPasswordForm: React.FC<NewPasswordFormProps> = ({
         setErrors({});
 
         try {
-            // Here you would typically call your backend to reset the password
-            // const payload = { email, verificationCode, newPassword: formData.newPassword };
-            // await authService.resetPassword(payload);
-
-            // Simulate API call while referencing inputs to avoid unused warnings
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            // Reset password using the verification token
+            await authService.resetPassword(verificationCode, formData.newPassword);
+            // email is used for context display in the UI
             void email;
-            void verificationCode;
 
             toast.success('Password updated!', 'Your password has been successfully reset.');
             navigate('/login');

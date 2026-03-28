@@ -18,6 +18,9 @@ import 'react-international-phone/style.css';
 import { useChakraToast } from '@shared/hooks';
 import { PasswordInput } from "@/components/ui/password-input";
 import { useUserManagementStore } from '@/features/auth/store/useUserManagementStore';
+import { authService } from '@/features/auth/services/authService';
+import { useUserStore } from '@/app/store/useUserStore';
+import { getApiErrorMessage } from '@/shared/lib/errorUtils';
 
 // Collections for select options
 const companyTypes = createListCollection({
@@ -59,6 +62,7 @@ export const CompanyRegistrationForm: React.FC = () => {
     const toast = useChakraToast();
     const navigate = useNavigate();
     const { initializeUser } = useUserManagementStore();
+    const { login } = useUserStore();
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
@@ -109,20 +113,26 @@ export const CompanyRegistrationForm: React.FC = () => {
 
         setLoading(true);
         try {
-            // Initialize user in the store
-            const userId = initializeUser('company', formData.email, formData.phone, formData.userType);
+            // Register with the backend API (record_label role for companies)
+            const result = await authService.register({
+                email: formData.email,
+                password: formData.password,
+                phone: formData.phone,
+                role: 'record_label',
+            });
 
-            // Here you would typically register the company
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            // Store user in global state
+            login(result.user);
+
+            // Also initialize in user management store for onboarding flow
+            const userId = initializeUser('company', formData.email, formData.phone, formData.userType);
 
             toast.success('Registration successful!', 'Please verify your email to continue.');
             navigate('/onboarding/company/verify-email', {
-                state: { email: formData.email, userType: formData.userType, userId }
+                state: { email: formData.email, userType: formData.userType, userId: result.user.id || userId }
             });
         } catch (error: unknown) {
-            const errorMessage = error && typeof error === 'object' && 'response' in error
-                ? (error as { response?: { data?: { message?: string } } }).response?.data?.message || 'Something went wrong'
-                : 'Something went wrong';
+            const errorMessage = getApiErrorMessage(error, 'Registration failed. Please try again.');
             toast.error('Registration failed', errorMessage);
         } finally {
             setLoading(false);
@@ -322,6 +332,7 @@ export const CompanyRegistrationForm: React.FC = () => {
                     <Button
                         type="submit"
                         loading={loading}
+                        disabled={loading}
                         bg="primary.500"
                         color="white"
                         size="md"

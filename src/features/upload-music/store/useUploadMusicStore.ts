@@ -57,6 +57,7 @@ interface UploadMusicState {
   addTrack: (track: MusicTrack) => void;
   removeTrack: (id: string) => void;
   updateTrack: (id: string, updates: Partial<MusicTrack>) => void;
+  setTracks: (tracks: MusicTrack[]) => void;
   addUpload: (upload: UploadProgress) => void;
   removeUpload: (fileId: string) => void;
   updateUpload: (fileId: string, updates: Partial<UploadProgress>) => void;
@@ -122,6 +123,7 @@ export const useUploadMusicStore = create<UploadMusicState>((set) => ({
         track.id === id ? { ...track, ...updates } : track
       ),
     })),
+  setTracks: (tracks) => set({ tracks }),
   addUpload: (upload) =>
     set((state) => ({ uploads: [...state.uploads, upload] })),
   removeUpload: (fileId) =>
