@@ -12,6 +12,7 @@ import { useNavigate } from 'react-router-dom';
 import Chart from 'react-apexcharts';
 import { ComposableMap, Geographies, Geography } from 'react-simple-maps';
 import { CalendarIcon, UploadIcon, EyeIcon, FlashIcon, PodCastAdsIcon, EyeOpenIcon, ClickIcon } from '@/shared/icons/CustomIcons';
+import BackgroundBlueImg from '@/assets/images/Background-blue.png';
 import { useWindowWidth } from '@/shared/hooks/useWindowsWidth';
 import { formatNaira } from '@/shared/utils';
 
@@ -407,7 +408,7 @@ export const AdsDashboard: React.FC = () => {
 
                 <div
                     className="relative rounded-[15px] p-5 w-full lg:w-[250px] flex items-center justify-center h-[245px] bg-cover flex-col"
-                    style={{ backgroundImage: "url('https://res.cloudinary.com/dygrsvya5/image/upload/v1762113250/Background-blue_iekzdy.png')" }}
+                    style={{ backgroundImage: `url(${BackgroundBlueImg})` }}
                 >
                     <div className='flex flex-col w-full gap-3 items-center self-center'>
                         <Box bg="white" borderRadius="10px" p={1.5}>

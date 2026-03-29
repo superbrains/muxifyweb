@@ -7,6 +7,7 @@ import {
     Text,
 } from '@chakra-ui/react';
 import { FlashIcon } from '@/shared/icons/CustomIcons';
+import BackgroundBlueImg from '@/assets/images/Background-blue.png';
 
 export const AdsEmptyState: React.FC = () => {
     const navigate = useNavigate();
@@ -26,7 +27,7 @@ export const AdsEmptyState: React.FC = () => {
                 flexDirection="column"
                 justifyContent="center"
                 alignItems="center"
-                style={{ backgroundImage: "url('https://res.cloudinary.com/dygrsvya5/image/upload/v1762113250/Background-blue_iekzdy.png')" }}
+                style={{ backgroundImage: `url(${BackgroundBlueImg})` }}
                 px={6}
                 py={8}
                 width="100%"

@@ -6,6 +6,7 @@ import { FiHeart, FiPlus, FiShare2, FiShuffle, FiRepeat, FiSkipBack, FiSkipForwa
 import { MdMusicNote, MdMoreVert } from 'react-icons/md';
 import { IoGift } from 'react-icons/io5';
 import { UploadImageIcon } from '@/shared/icons/CustomIcons';
+import FreePlayImg from '@/assets/images/Free Play.png';
 
 export const PhotoAdsPhonePreview: React.FC = memo(() => {
     // Only subscribe to photoFile changes, not the entire store
@@ -30,7 +31,7 @@ export const PhotoAdsPhonePreview: React.FC = memo(() => {
                 position="relative"
                 h="650px"
                 w="full"
-                style={{ backgroundImage: "url('https://res.cloudinary.com/dygrsvya5/image/upload/v1762125926/Free_Play_alsxkl.png')" }}
+                style={{ backgroundImage: `url(${FreePlayImg})` }}
                 backgroundSize="cover"
                 backgroundPosition="center"
                 backgroundRepeat="no-repeat"
