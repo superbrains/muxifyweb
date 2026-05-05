@@ -1,28 +1,39 @@
 import type {
-  CountriesResponse,
-  StatesResponse,
   CountryOption,
   StateOption,
+  Country,
+  State,
 } from "../types/location";
-import { axiosInstance } from "@app/lib/axiosInstance";
 
-const API_BASE_URL = "https://csc.sidsworld.co.in/api";
+const API_BASE_URL = "https://api.countrystatecity.in/v1";
+const API_KEY = import.meta.env.VITE_LOCATION_API_KEY;
 
 export class LocationService {
+  /**
+   * Helper to perform fetch with API key
+   */
+  private static async fetchCSCAPI<T>(endpoint: string): Promise<T> {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      headers: {
+        "X-CSCAPI-KEY": API_KEY,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Location API error: ${response.statusText}`);
+    }
+
+    return response.json();
+  }
+
   /**
    * Fetch all countries from the API
    */
   static async getCountries(): Promise<CountryOption[]> {
     try {
-      const response = await axiosInstance.get<CountriesResponse>(
-        `${API_BASE_URL}/countries`
-      );
+      const countries = await this.fetchCSCAPI<Country[]>("/countries");
 
-      if (response.data.status !== 200) {
-        throw new Error("Failed to fetch countries");
-      }
-
-      return response.data.countries.map(
+      return countries.map(
         (country): CountryOption => ({
           label: country.name,
           value: country.iso2.toLowerCase(),
@@ -38,53 +49,50 @@ export class LocationService {
   }
 
   /**
-   * Fetch states for a specific country by country ID
-   */
-  static async getStatesByCountryId(countryId: number): Promise<StateOption[]> {
-    try {
-      const response = await axiosInstance.get<StatesResponse>(
-        `${API_BASE_URL}/states/${countryId}`
-      );
-
-      if (response.data.status !== 200) {
-        throw new Error("Failed to fetch states");
-      }
-
-      return response.data.states.map(
-        (state): StateOption => ({
-          label: state.name,
-          value: state.name.toLowerCase().replace(/\s+/g, "-"),
-          id: state.id,
-          country_id: state.country_id,
-          type: state.type,
-        })
-      );
-    } catch (error) {
-      console.error("Error fetching states:", error);
-      throw new Error("Failed to fetch states. Please try again.");
-    }
-  }
-
-  /**
    * Fetch states for a specific country by country ISO2 code
    */
   static async getStatesByCountryCode(
     countryCode: string
   ): Promise<StateOption[]> {
     try {
-      // First, we need to find the country ID from the country code
-      const countries = await this.getCountries();
-      const country = countries.find(
-        (c) => c.iso2.toLowerCase() === countryCode.toLowerCase()
+      const states = await this.fetchCSCAPI<State[]>(
+        `/countries/${countryCode.toUpperCase()}/states`
       );
+
+      return states.map(
+        (state): StateOption => ({
+          label: state.name,
+          value: state.iso2 ? state.iso2.toLowerCase() : state.name.toLowerCase().replace(/\s+/g, "-"),
+          id: state.id,
+          // New API doesn't provide country_id or type in the states list, 
+          // passing 0 and "state" respectively as placeholders if required by types
+          country_id: 0, 
+          type: "state",
+        })
+      );
+    } catch (error) {
+      console.error("Error fetching states by country code:", error);
+      throw new Error("Failed to fetch states. Please try again.");
+    }
+  }
+
+  /**
+   * Fetch states for a specific country by country ID
+   * @deprecated The new API primarily uses country codes for state fetching.
+   */
+  static async getStatesByCountryId(countryId: number): Promise<StateOption[]> {
+    try {
+      // Find the country by ID first to get its ISO2 code
+      const countries = await this.getCountries();
+      const country = countries.find((c) => c.id === countryId);
 
       if (!country) {
         throw new Error("Country not found");
       }
 
-      return this.getStatesByCountryId(country.id);
+      return this.getStatesByCountryCode(country.iso2);
     } catch (error) {
-      console.error("Error fetching states by country code:", error);
+      console.error("Error fetching states by country ID:", error);
       throw new Error("Failed to fetch states. Please try again.");
     }
   }

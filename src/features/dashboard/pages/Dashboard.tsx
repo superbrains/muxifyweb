@@ -15,6 +15,7 @@ import { useNavigate } from 'react-router-dom';
 import Chart from 'react-apexcharts';
 import { ComposableMap, Geographies, Geography } from 'react-simple-maps';
 import { AddUserIcon, CalendarIcon, GiftIcon, MusicFilledIcon, MusicIconOutlinedIcon, PlayerIcon, SalesDashboardIcon, UploadIcon } from '@/shared/icons/CustomIcons';
+import BackgroundImg from '@/assets/images/Background.png';
 import { useWindowWidth } from '@/shared/hooks/useWindowsWidth';
 import { useDashboard } from '../hooks/useDashboard';
 import { formatCurrency } from '@shared/lib';
@@ -570,7 +571,7 @@ export const Dashboard: React.FC = () => {
 
                 <div
                     className="relative rounded-[15px] p-5 w-full lg:w-[250px] flex items-center justify-center h-[245px] bg-cover flex-col"
-                    style={{ backgroundImage: "url('https://res.cloudinary.com/dygrsvya5/image/upload/v1760220150/Background_f12lwa.png')" }}
+                    style={{ backgroundImage: `url(${BackgroundImg})` }}
                 >
                     <div className='flex flex-col w-full gap-3 items-center self-center'>
                         <Box bg="white" borderRadius="10px" p={1.5}>
@@ -578,7 +579,7 @@ export const Dashboard: React.FC = () => {
                         </Box>
                         <VStack align="center" gap={1}>
                             <Text fontSize="sm" color="white">
-                                Publish Songs
+                                Publish Songs 
                             </Text>
                             <Text textAlign="center" w="90%" color="white" fontSize="9px">
                                 Upload your songs for the world to reward you
