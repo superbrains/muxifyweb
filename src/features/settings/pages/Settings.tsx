@@ -6,7 +6,7 @@ import {
     HStack,
 } from '@chakra-ui/react';
 import { AnimatedTabs } from '@/shared/components/AnimatedTabs';
-import { ProfileTab, VerificationTab, PaymentTab, SecurityTab } from '../components';
+import { ProfileTab, VerificationTab, PaymentTab, SecurityTab, NotificationsTab } from '../components';
 import { useUserManagementStore } from '@/features/auth/store/useUserManagementStore';
 import { useUserType } from '@/features/auth/hooks/useUserType';
 import { ArtistDropdown } from '@/shared/components/ArtistDropdown';
@@ -67,6 +67,7 @@ export const Settings: React.FC = () => {
         { id: 'verification', label: 'Verification' },
         { id: 'payment', label: 'Payment' },
         { id: 'security', label: 'Security' },
+        { id: 'notifications', label: 'Notifications' },
     ];
 
 
@@ -80,6 +81,8 @@ export const Settings: React.FC = () => {
                 return <PaymentTab />;
             case 'security':
                 return <SecurityTab />;
+            case 'notifications':
+                return <NotificationsTab />;
             default:
                 return <ProfileTab />;
         }

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Box,
     Button,
@@ -8,6 +8,7 @@ import {
     Input,
     Text,
     VStack,
+    Spinner,
 } from '@chakra-ui/react';
 import { EmptyWalletIcon, Receipt2Icon } from '@/shared/icons/CustomIcons';
 import { usePayoutStore } from '../store/usePayoutStore';
@@ -20,6 +21,7 @@ import { FaCheck } from "react-icons/fa6";
 import { IoClose } from "react-icons/io5";
 import { useUserType } from '@/features/auth/hooks/useUserType';
 import { ArtistDropdown } from '@/shared/components/ArtistDropdown';
+import { earningsService } from '@/features/earnings-and-royalty/services/earningsService';
 
 export const Payments: React.FC = () => {
     const { isRecordLabel } = useUserType();
@@ -29,7 +31,31 @@ export const Payments: React.FC = () => {
         earningBalance,
         initiatePayout,
         isLoading,
+        fetchPayoutMethods,
+        setEarningBalance,
     } = usePayoutStore();
+
+    const [isInitialLoading, setIsInitialLoading] = useState(true);
+
+    // Fetch payout methods and earnings balance on mount
+    useEffect(() => {
+        const loadData = async () => {
+            setIsInitialLoading(true);
+            try {
+                await fetchPayoutMethods();
+                // Also fetch earnings balance
+                const summaryResponse = await earningsService.getSummary();
+                if (summaryResponse.data) {
+                    setEarningBalance(summaryResponse.data.availableBalance);
+                }
+            } catch (error) {
+                console.error('Failed to load payment data:', error);
+            } finally {
+                setIsInitialLoading(false);
+            }
+        };
+        loadData();
+    }, [fetchPayoutMethods, setEarningBalance]);
 
     const [showAddAccount, setShowAddAccount] = useState(false);
     const [showAccountAuth, setShowAccountAuth] = useState(false);
@@ -117,6 +143,15 @@ export const Payments: React.FC = () => {
         const formattedDate = date.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
         return `${time} - ${formattedDate}`;
     };
+
+    // Show loading spinner during initial load
+    if (isInitialLoading) {
+        return (
+            <Box display="flex" justifyContent="center" alignItems="center" minH="50vh">
+                <Spinner size="xl" color="primary.500" />
+            </Box>
+        );
+    }
 
     return (
         <Box>

@@ -27,13 +27,15 @@ export const AddArtistIdentityVerificationPrompt: React.FC = () => {
                 throw new Error('Artist ID missing. Please restart the process.');
             }
 
-            // Mark artist as verified
+            // Mark artist as verified in local store
             updateArtist(artistId, {
                 // Add verification status if needed
             });
 
-            // Here you would typically start the identity verification process
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            // TODO: Backend endpoint needed for artist identity verification
+            // No dedicated record label management endpoints exist yet.
+            // When available, replace with: await artistService.verifyArtist(artistId)
+            await new Promise(resolve => setTimeout(resolve, 500));
 
             toast.success('Artist added successfully!', 'The artist has been added to your record label.');
             // Navigate to dashboard

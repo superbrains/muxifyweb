@@ -11,6 +11,9 @@ import {
 import { useChakraToast } from '@shared/hooks';
 import { CountryStateSelect } from '@shared/components/CountryStateSelect';
 import { useUserManagementStore } from '@/features/auth/store/useUserManagementStore';
+import { profileService } from '../services/profileService';
+import { useUserStore } from '@/app/store/useUserStore';
+import { getApiErrorMessage } from '@/shared/lib/errorUtils';
 
 
 interface CompleteInformationData {
@@ -38,7 +41,8 @@ export const CompleteInformationForm: React.FC = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const { saveArtistInformation, setCurrentUser } = useUserManagementStore();
-    
+    const { updateUser } = useUserStore();
+
     // Get userId from location state or use current user
     const userId = (location.state as { userId?: string })?.userId;
 
@@ -84,7 +88,20 @@ export const CompleteInformationForm: React.FC = () => {
 
         setLoading(true);
         try {
-            // Save information to store
+            // Complete artist profile via API
+            const updatedProfile = await profileService.completeArtistProfile({
+                performingName: formData.performingName,
+                bio: formData.recordLabel ? `Signed to ${formData.recordLabel}` : undefined,
+                country: formData.country,
+                state: formData.state,
+            });
+
+            // Update user in global store
+            updateUser({
+                name: formData.fullName,
+            });
+
+            // Save information to local onboarding store for flow tracking
             if (userId) {
                 setCurrentUser(userId);
                 saveArtistInformation(userId, {
@@ -97,17 +114,12 @@ export const CompleteInformationForm: React.FC = () => {
                 });
             }
 
-            // Here you would typically save the information
-            await new Promise(resolve => setTimeout(resolve, 1000));
-
             toast.success('Information saved!', 'Your profile information has been updated.');
             navigate('/onboarding/artist/display-picture', {
                 state: { userId }
             });
         } catch (error: unknown) {
-            const errorMessage = error && typeof error === 'object' && 'response' in error
-                ? (error as { response?: { data?: { message?: string } } }).response?.data?.message || 'Please try again.'
-                : 'Please try again.';
+            const errorMessage = getApiErrorMessage(error, 'Failed to save profile information.');
             toast.error('Failed to save information', errorMessage);
         } finally {
             setLoading(false);

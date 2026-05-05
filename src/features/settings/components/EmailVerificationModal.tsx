@@ -39,7 +39,7 @@ export const EmailVerificationModal: React.FC<EmailVerificationModalProps> = ({
             setVerificationCode(updatedCode);
 
             // Auto-focus next input
-            if (value && index < 4) {
+            if (value && index < 5) {
                 const nextInput = document.querySelector(`input[data-index="${index + 1}"]`) as HTMLInputElement;
                 nextInput?.focus();
             }
@@ -55,10 +55,10 @@ export const EmailVerificationModal: React.FC<EmailVerificationModalProps> = ({
     };
 
     const handleSubmit = async () => {
-        if (verificationCode.length !== 5) {
+        if (verificationCode.length !== 6) {
             toaster.create({
                 title: 'Invalid Code',
-                description: 'Please enter a complete 5-digit verification code',
+                description: 'Please enter a complete 6-digit verification code',
                 type: 'error',
                 duration: 3000,
             });
@@ -67,8 +67,9 @@ export const EmailVerificationModal: React.FC<EmailVerificationModalProps> = ({
 
         setLoading(true);
         try {
-            // Simulate API call
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            // Call the actual verification API
+            const { authService } = await import('@/features/auth/services/authService');
+            await authService.verifyEmail(verificationCode);
 
             toaster.create({
                 title: 'Email Verified',
@@ -153,7 +154,7 @@ export const EmailVerificationModal: React.FC<EmailVerificationModalProps> = ({
                     <VStack gap={4} w="full">
                         <Box w="full">
                             <HStack justify="center" gap={2} mb={3}>
-                                {[0, 1, 2, 3, 4].map((index) => (
+                                {[0, 1, 2, 3, 4, 5].map((index) => (
                                     <Input
                                         key={index}
                                         value={verificationCode[index] || ''}
@@ -206,7 +207,7 @@ export const EmailVerificationModal: React.FC<EmailVerificationModalProps> = ({
                             fontWeight="medium"
                             borderRadius="md"
                             _hover={{ bg: 'primary.600' }}
-                            disabled={verificationCode.length !== 5}
+                            disabled={verificationCode.length !== 6}
                         >
                             Verify Now
                         </Button>

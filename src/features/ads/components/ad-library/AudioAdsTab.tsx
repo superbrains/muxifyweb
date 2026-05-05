@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Box, Text, VStack, HStack, Input, Button, Icon, Flex } from '@chakra-ui/react';
+import React, { useState, useEffect } from 'react';
+import { Box, Text, VStack, HStack, Input, Button, Icon, Flex, Spinner } from '@chakra-ui/react';
 import { FiSearch, FiFilter, FiPlus } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
 import { useAdsStore } from '../../store/useAdsStore';
@@ -10,8 +10,13 @@ export const AudioAdsTab: React.FC = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [deleteCampaignId, setDeleteCampaignId] = useState<string | null>(null);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-    const { getCampaignsByType, deleteCampaign } = useAdsStore();
+    const { getCampaignsByType, deleteCampaign, fetchCampaigns, isLoading } = useAdsStore();
     const navigate = useNavigate();
+
+    // Fetch campaigns on mount
+    useEffect(() => {
+        fetchCampaigns();
+    }, [fetchCampaigns]);
 
     const audioCampaigns = getCampaignsByType('audio');
 
@@ -48,6 +53,17 @@ export const AudioAdsTab: React.FC = () => {
         // TODO: Implement filters modal
         console.log('Open filters');
     };
+
+    if (isLoading) {
+        return (
+            <Box bg="white" borderRadius="lg" p={8} textAlign="center">
+                <VStack gap={4}>
+                    <Spinner size="lg" color="primary.500" />
+                    <Text fontSize="sm" color="gray.500">Loading campaigns...</Text>
+                </VStack>
+            </Box>
+        );
+    }
 
     if (audioCampaigns.length === 0) {
         return (

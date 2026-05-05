@@ -13,6 +13,8 @@ import { GalleryAddIcon } from '@/shared/icons/CustomIcons';
 import { useUserManagementStore, type CompanyOnboardingData } from '@/features/auth/store/useUserManagementStore';
 import { useArtistStore } from '@/features/artists/store/useArtistStore';
 import { compressImage } from '@/shared/lib/fileUtils';
+import { userService } from '@/shared/services/userService';
+import { useUserStore } from '@/app/store/useUserStore';
 
 interface ReusableImageUploadProps {
     title: string;
@@ -28,6 +30,7 @@ export const ReusableImageUpload: React.FC<ReusableImageUploadProps> = ({
     uploadType = 'display-picture'
 }) => {
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [loading, setLoading] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -36,6 +39,7 @@ export const ReusableImageUpload: React.FC<ReusableImageUploadProps> = ({
     const location = useLocation();
     const { saveDisplayPicture, saveLabelLogo, saveCompanyLogo, setCurrentUser, getCurrentUserType, completeOnboarding } = useUserManagementStore();
     const { updateArtist } = useArtistStore();
+    const { updateUser } = useUserStore();
 
     const userId = (location.state as { userId?: string })?.userId;
     const artistId = (location.state as { artistId?: string })?.artistId;
@@ -57,7 +61,10 @@ export const ReusableImageUpload: React.FC<ReusableImageUploadProps> = ({
                 return;
             }
 
-            // Compress and display the image
+            // Store the original file for API upload
+            setSelectedFile(file);
+
+            // Compress and display the image preview
             try {
                 const compressedImage = await compressImage(file, 800, 800, 0.7);
                 setSelectedImage(compressedImage);
@@ -73,7 +80,7 @@ export const ReusableImageUpload: React.FC<ReusableImageUploadProps> = ({
     };
 
     const handleSubmit = async () => {
-        if (!selectedImage) {
+        if (!selectedImage || !selectedFile) {
             toast.error('No image selected', `Please select a ${uploadType === 'logo' ? 'logo' : 'display picture'}.`);
             return;
         }
@@ -93,6 +100,7 @@ export const ReusableImageUpload: React.FC<ReusableImageUploadProps> = ({
         try {
             // Save image to store based on upload type and user type
             let saved = false;
+            let avatarUrl: string | undefined;
 
             // Handle artist display picture upload (for add artist flow)
             if (isAddArtistFlow && uploadType === 'display-picture' && artistId) {
@@ -119,9 +127,24 @@ export const ReusableImageUpload: React.FC<ReusableImageUploadProps> = ({
                 }
 
                 if (uploadType === 'display-picture' && userType === 'artist') {
+                    // Upload avatar to backend API
+                    const result = await userService.uploadAvatar(selectedFile);
+                    avatarUrl = result.avatarUrl;
+
+                    // Update global user store with new avatar
+                    updateUser({ avatar: avatarUrl });
+
+                    // Save to local onboarding store
                     saveDisplayPicture(userId, selectedImage);
                     saved = true;
                 } else if (uploadType === 'logo' && userType === 'company') {
+                    // Upload avatar/logo to backend API
+                    const result = await userService.uploadAvatar(selectedFile);
+                    avatarUrl = result.avatarUrl;
+
+                    // Update global user store
+                    updateUser({ avatar: avatarUrl });
+
                     saveLabelLogo(userId, selectedImage);
                     // Verify the save was successful
                     const updatedUserData = getUserData(userId);
@@ -131,6 +154,13 @@ export const ReusableImageUpload: React.FC<ReusableImageUploadProps> = ({
                     }
                     saved = true;
                 } else if (uploadType === 'logo' && userType === 'ad-manager') {
+                    // Upload avatar/logo to backend API
+                    const result = await userService.uploadAvatar(selectedFile);
+                    avatarUrl = result.avatarUrl;
+
+                    // Update global user store
+                    updateUser({ avatar: avatarUrl });
+
                     saveCompanyLogo(userId, selectedImage);
                     // Verify the save was successful
                     const updatedUserData = getUserData(userId);
@@ -164,9 +194,6 @@ export const ReusableImageUpload: React.FC<ReusableImageUploadProps> = ({
             if (!saved) {
                 throw new Error(`Cannot save ${uploadType === 'logo' ? 'logo' : 'display picture'} for user type: ${userType}`);
             }
-
-            // Here you would typically upload the image to your server
-            await new Promise(resolve => setTimeout(resolve, 1000));
 
             toast.success(`${uploadType === 'logo' ? 'Logo' : 'Display picture'} uploaded!`, `Your ${uploadType === 'logo' ? 'logo' : 'profile picture'} has been updated.`);
             navigate(nextRoute, {

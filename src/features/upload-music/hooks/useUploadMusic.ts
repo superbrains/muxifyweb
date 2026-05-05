@@ -1,114 +1,167 @@
-import { useState } from "react";
-import { useUploadMusicStore } from "../store/useUploadMusicStore";
-import { uploadMusicService } from "../services/uploadMusicService";
-import type { UploadMusicData } from "../services/uploadMusicService";
-import { useChakraToast } from "@shared/hooks";
+import { useState, useCallback } from 'react';
+import { useUploadMusicStore } from '../store/useUploadMusicStore';
+import {
+  uploadMusicService,
+  validateUploadData,
+  type UploadMusicData,
+} from '../services/uploadMusicService';
+import { useChakraToast } from '@shared/hooks';
+import { getApiErrorMessage } from '@shared/lib/errorUtils';
+import type { TrackDto, TrackListDto } from '../types';
 
-const extractErrorMessage = (error: unknown, fallback: string) => {
-  if (
-    typeof error === "object" &&
-    error !== null &&
-    "response" in error &&
-    typeof (error as { response?: unknown }).response === "object" &&
-    (error as { response?: { data?: unknown } }).response !== null
-  ) {
-    const data = (error as { response?: { data?: unknown } }).response?.data;
-    if (typeof data === "object" && data && "message" in data) {
-      const message = (data as { message?: string }).message;
-      if (typeof message === "string") {
-        return message;
-      }
-    }
-  }
+interface UseUploadMusicReturn {
+  uploadMusic: (data: UploadMusicData) => Promise<TrackDto | null>;
+  deleteTrack: (id: string) => Promise<void>;
+  loadTracks: (page?: number, pageSize?: number) => Promise<TrackListDto | null>;
+  updateTrack: (id: string, data: Partial<TrackDto>) => Promise<TrackDto | null>;
+  loading: boolean;
+}
 
-  return fallback;
-};
-
-export const useUploadMusic = () => {
+export const useUploadMusic = (): UseUploadMusicReturn => {
   const [loading, setLoading] = useState(false);
-  const { addTrack, removeTrack, addUpload, removeUpload, updateUpload } =
-    useUploadMusicStore();
+  const {
+    addTrack,
+    removeTrack,
+    addUpload,
+    removeUpload,
+    updateUpload,
+    setTracks,
+    updateTrack: updateTrackInStore,
+  } = useUploadMusicStore();
   const toast = useChakraToast();
 
-  const uploadMusic = async (data: UploadMusicData) => {
-    setLoading(true);
-    const uploadId = Math.random().toString(36).substr(2, 9);
+  const uploadMusic = useCallback(
+    async (data: UploadMusicData): Promise<TrackDto | null> => {
+      // Validate upload data before submitting
+      const validationErrors = validateUploadData(data);
+      if (validationErrors.length > 0) {
+        toast.error('Validation Error', validationErrors[0]);
+        return null;
+      }
 
-    try {
-      // Add upload progress
-      addUpload({
-        fileId: uploadId,
-        progress: 0,
-        status: "uploading",
-      });
+      setLoading(true);
+      const uploadId = crypto.randomUUID();
 
-      // Simulate upload progress
-      const progressInterval = setInterval(() => {
-        updateUpload(uploadId, { progress: Math.min(90, Math.random() * 100) });
-      }, 500);
+      try {
+        // Add upload progress entry
+        addUpload({
+          fileId: uploadId,
+          progress: 0,
+          status: 'uploading',
+        });
 
-      const response = await uploadMusicService.uploadTrack(data);
+        // Upload with real progress tracking
+        const track = await uploadMusicService.uploadTrack(data, (progress) => {
+          updateUpload(uploadId, { progress });
+        });
 
-      clearInterval(progressInterval);
-      updateUpload(uploadId, { progress: 100, status: "completed" });
+        // Mark as completed
+        updateUpload(uploadId, { progress: 100, status: 'completed' });
 
-      // Add the new track
-      addTrack(response.data);
+        // Add the new track to store (cast to MusicTrack type)
+        addTrack(track as unknown as Parameters<typeof addTrack>[0]);
 
-      toast.success(
-        "Upload successful!",
-        "Your track has been uploaded successfully."
-      );
+        toast.success(
+          'Upload successful!',
+          'Your track has been uploaded successfully.'
+        );
 
-      // Remove upload progress after a delay
-      setTimeout(() => {
-        removeUpload(uploadId);
-      }, 2000);
-    } catch (error: unknown) {
-      const errorMessage = extractErrorMessage(error, "Upload failed");
-      updateUpload(uploadId, {
-        status: "failed",
-        error: errorMessage,
-      });
-      toast.error("Upload failed", errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  };
+        // Remove upload progress after a delay
+        setTimeout(() => {
+          removeUpload(uploadId);
+        }, 2000);
 
-  const deleteTrack = async (id: string) => {
-    try {
-      await uploadMusicService.deleteTrack(id);
-      removeTrack(id);
-      toast.success(
-        "Track deleted",
-        "The track has been deleted successfully."
-      );
-    } catch (error: unknown) {
-      const errorMessage = extractErrorMessage(error, "Something went wrong");
-      toast.error("Delete failed", errorMessage);
-    }
-  };
+        return track;
+      } catch (error: unknown) {
+        const errorMessage = getApiErrorMessage(error, 'Upload failed');
+        updateUpload(uploadId, {
+          status: 'failed',
+          error: errorMessage,
+        });
+        toast.error('Upload failed', errorMessage);
+        return null;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [addTrack, addUpload, removeUpload, updateUpload, toast]
+  );
 
-  const loadTracks = async () => {
-    try {
-      await uploadMusicService.getTracks();
-      // This would typically update the store with all tracks
-      // For now, we'll just show a success message
-      toast.success(
-        "Tracks loaded",
-        "Your tracks have been loaded successfully."
-      );
-    } catch (error: unknown) {
-      const errorMessage = extractErrorMessage(error, "Something went wrong");
-      toast.error("Failed to load tracks", errorMessage);
-    }
-  };
+  const deleteTrack = useCallback(
+    async (id: string): Promise<void> => {
+      try {
+        await uploadMusicService.deleteTrack(id);
+        removeTrack(id);
+        toast.success(
+          'Track deleted',
+          'The track has been deleted successfully.'
+        );
+      } catch (error: unknown) {
+        const errorMessage = getApiErrorMessage(error, 'Something went wrong');
+        toast.error('Delete failed', errorMessage);
+        throw error;
+      }
+    },
+    [removeTrack, toast]
+  );
+
+  const loadTracks = useCallback(
+    async (page = 1, pageSize = 20): Promise<TrackListDto | null> => {
+      try {
+        setLoading(true);
+        const result = await uploadMusicService.getTracks({ page, pageSize });
+
+        // Update store with loaded tracks (cast to MusicTrack array)
+        setTracks(result.items as unknown as Parameters<typeof setTracks>[0]);
+
+        return result;
+      } catch (error: unknown) {
+        const errorMessage = getApiErrorMessage(error, 'Failed to load tracks');
+        toast.error('Failed to load tracks', errorMessage);
+        return null;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [setTracks, toast]
+  );
+
+  const updateTrack = useCallback(
+    async (id: string, data: Partial<TrackDto>): Promise<TrackDto | null> => {
+      try {
+        const updatedTrack = await uploadMusicService.updateTrack(id, {
+          title: data.title,
+          description: data.description,
+          genre: data.genre,
+          releaseDate: data.releaseDate,
+          isrc: data.isrc,
+          bpm: data.bpm,
+          key: data.key,
+        });
+
+        // Update track in store
+        updateTrackInStore(id, updatedTrack as unknown as Parameters<typeof updateTrackInStore>[1]);
+
+        toast.success(
+          'Track updated',
+          'The track has been updated successfully.'
+        );
+
+        return updatedTrack;
+      } catch (error: unknown) {
+        const errorMessage = getApiErrorMessage(error, 'Update failed');
+        toast.error('Update failed', errorMessage);
+        return null;
+      }
+    },
+    [updateTrackInStore, toast]
+  );
 
   return {
     uploadMusic,
     deleteTrack,
     loadTracks,
+    updateTrack,
     loading,
   };
 };

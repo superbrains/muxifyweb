@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useMemo } from 'react';
 import {
     Box,
     Grid,
@@ -7,6 +7,7 @@ import {
     HStack,
     VStack,
     Flex,
+    Skeleton,
 } from '@chakra-ui/react';
 import { useNavigate } from 'react-router-dom';
 import Chart from 'react-apexcharts';
@@ -15,10 +16,54 @@ import { CalendarIcon, UploadIcon, EyeIcon, FlashIcon, PodCastAdsIcon, EyeOpenIc
 import BackgroundBlueImg from '@/assets/images/Background-blue.png';
 import { useWindowWidth } from '@/shared/hooks/useWindowsWidth';
 import { formatNaira } from '@/shared/utils';
+import { useAdsStore } from '../store/useAdsStore';
 
 export const AdsDashboard: React.FC = () => {
     const navigate = useNavigate();
     const { windowWidth } = useWindowWidth();
+    const {
+        wallet,
+        campaigns,
+        isLoadingWallet,
+        isLoading,
+        fetchWallet,
+        fetchCampaigns,
+    } = useAdsStore();
+
+    // Fetch wallet and campaigns data on mount
+    useEffect(() => {
+        fetchWallet();
+        fetchCampaigns();
+    }, [fetchWallet, fetchCampaigns]);
+
+    // Calculate metrics from campaigns and wallet
+    const metrics = useMemo(() => {
+        const totalImpressions = campaigns.reduce((sum, c) => sum + (c.impressions || 0), 0);
+        const totalClicks = campaigns.reduce((sum, c) => sum + (c.clicks || 0), 0);
+        const totalSpent = wallet?.totalSpent || 0;
+        const ctr = totalImpressions > 0 ? (totalClicks / totalImpressions) * 100 : 0;
+        const visibilityScore = totalImpressions > 0 ? Math.min(10, (totalImpressions / 100000)) : 0;
+        const presenceScore = campaigns.length > 0 ? Math.min(100, campaigns.filter(c => c.status === 'active').length / campaigns.length * 100) : 0;
+
+        // Campaign breakdown by type
+        const photoCampaigns = campaigns.filter(c => c.type === 'photo');
+        const videoCampaigns = campaigns.filter(c => c.type === 'video');
+        const audioCampaigns = campaigns.filter(c => c.type === 'audio');
+
+        return {
+            totalImpressions,
+            totalClicks,
+            totalSpent,
+            ctr: ctr.toFixed(1),
+            visibilityScore: visibilityScore.toFixed(1),
+            presenceScore: presenceScore.toFixed(0),
+            photoCampaignCount: photoCampaigns.length,
+            videoCampaignCount: videoCampaigns.length,
+            audioCampaignCount: audioCampaigns.length,
+        };
+    }, [campaigns, wallet]);
+
+    const isMetricsLoading = isLoadingWallet || isLoading;
     
     // Activity Insights Chart Data
     const activityChartOptions = {
@@ -335,14 +380,18 @@ export const AdsDashboard: React.FC = () => {
                             <VStack align="start" gap={3}>
                                 <EyeIcon boxSize={6} />
                                 <VStack align="start" gap={1}>
-                                    <Text fontSize="md" fontWeight="bold" color="gray.900">
-                                        7.5
-                                    </Text>
+                                    {isMetricsLoading ? (
+                                        <Skeleton height="20px" width="60px" />
+                                    ) : (
+                                        <Text fontSize="md" fontWeight="bold" color="gray.900">
+                                            {metrics.visibilityScore}
+                                        </Text>
+                                    )}
                                     <Text fontSize="9px" color="gray.600">
                                         Visibility Score
                                     </Text>
                                     <Text fontSize="8px" color="green.500">
-                                        +8% from yesterday
+                                        Based on impressions
                                     </Text>
                                 </VStack>
                             </VStack>
@@ -353,14 +402,18 @@ export const AdsDashboard: React.FC = () => {
                             <VStack align="start" gap={3}>
                                 <PodCastAdsIcon boxSize={6} />
                                 <VStack align="start" gap={1}>
-                                    <Text fontSize="md" fontWeight="bold" color="gray.900">
-                                        85%
-                                    </Text>
+                                    {isMetricsLoading ? (
+                                        <Skeleton height="20px" width="60px" />
+                                    ) : (
+                                        <Text fontSize="md" fontWeight="bold" color="gray.900">
+                                            {metrics.presenceScore}%
+                                        </Text>
+                                    )}
                                     <Text fontSize="9px" color="gray.600">
                                         Presence Score
                                     </Text>
                                     <Text fontSize="8px" color="green.500">
-                                        +1.2% from yesterday
+                                        Active campaigns ratio
                                     </Text>
                                 </VStack>
                             </VStack>
@@ -371,14 +424,18 @@ export const AdsDashboard: React.FC = () => {
                             <VStack align="start" gap={3}>
                                 <EyeOpenIcon boxSize={6} />
                                 <VStack align="start" gap={1}>
-                                    <Text fontSize="md" fontWeight="bold" color="gray.900">
-                                        1,112,000
-                                    </Text>
+                                    {isMetricsLoading ? (
+                                        <Skeleton height="20px" width="80px" />
+                                    ) : (
+                                        <Text fontSize="md" fontWeight="bold" color="gray.900">
+                                            {metrics.totalImpressions.toLocaleString()}
+                                        </Text>
+                                    )}
                                     <Text fontSize="9px" color="gray.600">
-                                        Total Visibility
+                                        Total Impressions
                                     </Text>
                                     <Text fontSize="8px" color="green.500">
-                                        +1.2% from yesterday
+                                        All campaigns
                                     </Text>
                                 </VStack>
                             </VStack>
@@ -389,14 +446,18 @@ export const AdsDashboard: React.FC = () => {
                             <VStack align="start" gap={3}>
                                 <ClickIcon boxSize={6} />
                                 <VStack align="start" gap={1}>
-                                    <Text fontSize="md" fontWeight="bold" color="gray.900">
-                                        100,000
-                                    </Text>
+                                    {isMetricsLoading ? (
+                                        <Skeleton height="20px" width="80px" />
+                                    ) : (
+                                        <Text fontSize="md" fontWeight="bold" color="gray.900">
+                                            {metrics.totalClicks.toLocaleString()}
+                                        </Text>
+                                    )}
                                     <Text fontSize="9px" color="gray.600">
                                         Clicks
                                     </Text>
-                                    <Text fontSize="8px" color="red.500">
-                                        0.5% from yesterday
+                                    <Text fontSize="8px" color="gray.500">
+                                        CTR: {metrics.ctr}%
                                     </Text>
                                 </VStack>
                             </VStack>
@@ -563,7 +624,9 @@ export const AdsDashboard: React.FC = () => {
                                     <Box w={2.5} h={2.5} bg="#F97316" borderRadius="full" />
                                     <Text fontSize="8px" color="#7B91B0">Photo Ads</Text>
                                 </HStack>
-                                <Text fontSize="8px" fontWeight="semibold" color="gray.900" ml={4}>1,135</Text>
+                                <Text fontSize="8px" fontWeight="semibold" color="gray.900" ml={4}>
+                                    {isMetricsLoading ? '-' : metrics.photoCampaignCount.toLocaleString()}
+                                </Text>
                             </VStack>
                             <Box
                                 h="32px"
@@ -576,7 +639,9 @@ export const AdsDashboard: React.FC = () => {
                                     <Box w={2.5} h={2.5} bg="#3B82F6" borderRadius="full" />
                                     <Text fontSize="8px" color="#7B91B0">Video Ads</Text>
                                 </HStack>
-                                <Text fontSize="8px" fontWeight="semibold" color="gray.900" ml={4}>635</Text>
+                                <Text fontSize="8px" fontWeight="semibold" color="gray.900" ml={4}>
+                                    {isMetricsLoading ? '-' : metrics.videoCampaignCount.toLocaleString()}
+                                </Text>
                             </VStack>
                             <Box
                                 h="32px"
@@ -587,9 +652,11 @@ export const AdsDashboard: React.FC = () => {
                             <VStack align="start" gap={0}>
                                 <HStack gap={1.5}>
                                     <Box w={2.5} h={2.5} bg="#10B981" borderRadius="full" />
-                                    <Text fontSize="8px" color="#7B91B0">Music Ads</Text>
+                                    <Text fontSize="8px" color="#7B91B0">Audio Ads</Text>
                                 </HStack>
-                                <Text fontSize="8px" fontWeight="semibold" color="gray.900" ml={4}>635</Text>
+                                <Text fontSize="8px" fontWeight="semibold" color="gray.900" ml={4}>
+                                    {isMetricsLoading ? '-' : metrics.audioCampaignCount.toLocaleString()}
+                                </Text>
                             </VStack>
                         </HStack>
                     </Box>

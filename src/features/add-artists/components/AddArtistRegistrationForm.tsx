@@ -136,14 +136,16 @@ export const AddArtistRegistrationForm: React.FC = () => {
 
         setLoading(true);
         try {
-            // Add artist to store
+            // Add artist to local store
+            // Note: Record label artist management endpoints are not yet available on the backend
+            // This uses local state until those endpoints are created:
+            // - POST /api/v1/record-labels/{id}/artists
+            // - GET /api/v1/record-labels/{id}/artists
             const newArtist = addArtist({
                 name: formData.performingName,
                 genre: formData.musicGenre,
                 userType: 'Artist/Musician',
             });
-
-            await new Promise(resolve => setTimeout(resolve, 1000));
 
             toast.success('Artist added successfully!', 'Please continue with the onboarding process.');
             navigate('/add-artist/display-picture', {

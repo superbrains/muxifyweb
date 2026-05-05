@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Box,
     Button,
@@ -8,6 +8,8 @@ import {
     Input,
     Text,
     VStack,
+    Spinner,
+    Alert,
 } from '@chakra-ui/react';
 import { FiSearch, FiFilter, FiPlus } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
@@ -19,7 +21,21 @@ import { useUserType } from '@/features/auth/hooks/useUserType';
 
 export const MusicTab: React.FC = () => {
     const navigate = useNavigate();
-    const { singles, albums } = useMusicStore();
+    const {
+        singles,
+        albums,
+        isLoading,
+        isDeleting,
+        error,
+        fetchTracks,
+        deleteTrack,
+        clearError,
+    } = useMusicStore();
+
+    // Fetch tracks on mount
+    useEffect(() => {
+        fetchTracks();
+    }, [fetchTracks]);
     const { isPodcaster, isDJ, isMusician } = useUserType();
     type SubTabId = 'single' | 'album' | 'mix' | 'episode' | 'topic';
     type InternalTab = 'single' | 'album';
@@ -156,9 +172,27 @@ export const MusicTab: React.FC = () => {
                 </HStack>
             </Flex>
 
+            {/* Error Alert */}
+            {error && (
+                <Alert.Root status="error" mb={4} borderRadius="md">
+                    <Alert.Indicator />
+                    <Alert.Description flex={1}>{error}</Alert.Description>
+                    <Button size="sm" variant="ghost" onClick={clearError}>
+                        Dismiss
+                    </Button>
+                </Alert.Root>
+            )}
+
             {/* Music/Album List */}
             <VStack align="stretch" gap={3}>
-                {filteredItems.length === 0 ? (
+                {isLoading ? (
+                    <Box textAlign="center" py={12}>
+                        <Spinner size="lg" color="primary.500" />
+                        <Text mt={4} color="gray.500" fontSize="14px">
+                            Loading {isSingleTab(activeTab) ? singleLabelPlural : albumLabelPlural}...
+                        </Text>
+                    </Box>
+                ) : filteredItems.length === 0 ? (
                     <Box textAlign="center" py={12}>
                         <Text color="gray.500" fontSize="14px">
                             No {isSingleTab(activeTab) ? singleLabelPlural : albumLabelPlural} found
@@ -190,13 +224,18 @@ export const MusicTab: React.FC = () => {
                             unlocks={item.unlocks}
                             gifts={item.gifts}
                             type={isSingleTab(activeTab) ? 'single' : 'album'}
+                            isDeleting={isDeleting === item.id}
                             onEdit={() => {
                                 const isSingle = isSingleTab(activeTab);
                                 navigate(isSingle ? `/upload?mixId=${item.id}` : `/upload?albumId=${item.id}`);
                             }}
                             onView={() => console.log('View', item.id)}
                             onDownload={() => console.log('Download', item.id)}
-                            onDelete={() => console.log('Delete', item.id)}
+                            onDelete={async () => {
+                                if (isSingleTab(activeTab)) {
+                                    await deleteTrack(item.id);
+                                }
+                            }}
                         />
                     ))
                 )}

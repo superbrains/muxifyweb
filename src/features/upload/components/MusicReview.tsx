@@ -12,13 +12,15 @@ import { useUserType } from '@/features/auth/hooks/useUserType';
 interface MusicReviewProps {
     albumTab: 'mix' | 'album';
     setAlbumTab: (tab: 'mix' | 'album') => void;
-    onPublish: () => void;
+    onPublish: () => Promise<void>;
     isDisabled?: boolean;
+    isPublishing?: boolean;
 }
 
-export const MusicReview: React.FC<MusicReviewProps> = ({ albumTab, setAlbumTab, onPublish, isDisabled = false }) => {
+export const MusicReview: React.FC<MusicReviewProps> = ({ albumTab, setAlbumTab, onPublish, isDisabled = false, isPublishing: externalIsPublishing = false }) => {
     const [isPublished, setIsPublished] = useState(false);
     const [isPublishing, setIsPublishing] = useState(false);
+    const isCurrentlyPublishing = isPublishing || externalIsPublishing;
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const { resetMix, resetAlbum } = useUploadMusicStore();
@@ -80,15 +82,8 @@ export const MusicReview: React.FC<MusicReviewProps> = ({ albumTab, setAlbumTab,
         setIsPublishing(true);
 
         try {
-            // Simulate API call with async promise
-            await new Promise((resolve) => {
-                setTimeout(() => {
-                    resolve(true);
-                }, 2000); // 2 second delay to simulate API call
-            });
-
-            // Call the original onPublish function
-            onPublish();
+            // Call the parent's publish function which makes the real API call
+            await onPublish();
 
             // Clear the store state based on current tab
             if (albumTab === 'mix') {
@@ -101,7 +96,7 @@ export const MusicReview: React.FC<MusicReviewProps> = ({ albumTab, setAlbumTab,
             setIsPublished(true);
         } catch (error) {
             console.error('Publish failed:', error);
-            // Handle error if needed
+            // Error toast is already shown by the parent's useUploadMusic hook
         } finally {
             setIsPublishing(false);
         }
@@ -180,11 +175,11 @@ export const MusicReview: React.FC<MusicReviewProps> = ({ albumTab, setAlbumTab,
                     borderRadius="md"
                     _hover={{ bg: 'primary.600' }}
                     onClick={handlePublish}
-                    loading={isPublishing}
+                    loading={isCurrentlyPublishing}
                     loadingText="Publishing..."
-                    disabled={isPublishing}
+                    disabled={isCurrentlyPublishing}
                 >
-                    {!isPublishing && (
+                    {!isCurrentlyPublishing && (
                         <>
                             Publish
                             <Icon as={FiArrowRight} boxSize={4} ml={2} />

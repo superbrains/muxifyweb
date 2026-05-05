@@ -34,4 +34,7 @@ export const authService = {
 
   resetPassword: (token: string, password: string) =>
     api.post("/auth/reset-password", { token, password }),
+
+  verifyEmail: (code: string) =>
+    api.post("/auth/verify-email", { code }),
 };

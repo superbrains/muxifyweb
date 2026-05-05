@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Button, Flex, HStack, Icon, Image, Text, VStack } from '@chakra-ui/react';
+import { Box, Button, Flex, HStack, Icon, Image, Text, VStack, Spinner } from '@chakra-ui/react';
 import { Edit2Icon } from '@shared/icons/CustomIcons';
 import { CustomMenu } from '@/shared/components/CustomMenu';
 
@@ -18,6 +18,7 @@ interface MediaItemCardProps {
     onDownload?: () => void;
     onDelete?: () => void;
     type: 'single' | 'album' | 'video';
+    isDeleting?: boolean;
 }
 
 export const MediaItemCard: React.FC<MediaItemCardProps> = ({
@@ -31,7 +32,9 @@ export const MediaItemCard: React.FC<MediaItemCardProps> = ({
     unlocks,
     gifts,
     onEdit,
+    onDelete,
     type,
+    isDeleting = false,
 }) => {
     const handleShare = () => {
         if (navigator.share) {
@@ -54,17 +57,16 @@ export const MediaItemCard: React.FC<MediaItemCardProps> = ({
         });
     };
 
-    const handleSuspend = () => {
-        if (window.confirm(`Are you sure you want to suspend "${title}"?`)) {
-            console.log('Suspend', id);
-            // Add suspend logic here
+    const handleDelete = () => {
+        if (window.confirm(`Are you sure you want to delete "${title}"? This action cannot be undone.`)) {
+            onDelete?.();
         }
     };
 
     const menuOptions = [
         { label: 'Share', value: 'share', onClick: handleShare },
         { label: 'Copy Link', value: 'copy-link', onClick: handleCopyLink },
-        { label: 'Suspend', value: 'suspend', color: 'red.500', onClick: handleSuspend },
+        { label: 'Delete', value: 'delete', color: 'red.500', onClick: handleDelete },
     ];
 
     return (
@@ -76,7 +78,26 @@ export const MediaItemCard: React.FC<MediaItemCardProps> = ({
             p={4}
             _hover={{ shadow: 'sm', borderColor: 'gray.300' }}
             transition="all 0.2s"
+            position="relative"
+            opacity={isDeleting ? 0.6 : 1}
+            pointerEvents={isDeleting ? 'none' : 'auto'}
         >
+            {isDeleting && (
+                <Flex
+                    position="absolute"
+                    top={0}
+                    left={0}
+                    right={0}
+                    bottom={0}
+                    bg="whiteAlpha.800"
+                    borderRadius="lg"
+                    align="center"
+                    justify="center"
+                    zIndex={1}
+                >
+                    <Spinner size="md" color="red.500" />
+                </Flex>
+            )}
             <Flex gap={4} align="start">
                 {/* Thumbnail */}
                 <Image

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Box,
     VStack,
@@ -9,9 +9,11 @@ import {
     Grid,
     Icon,
     Image,
+    Skeleton,
 } from '@chakra-ui/react';
 import { FiCheck, FiX } from 'react-icons/fi';
 import { TopUpModal } from '../components/TopUpModal';
+import { useAdsStore } from '../store/useAdsStore';
 
 interface WalletTransaction {
     id: string;
@@ -23,12 +25,20 @@ interface WalletTransaction {
 }
 
 export const AdsWallet: React.FC = () => {
-    const [walletBalance] = useState(75550000);
+    const { wallet, isLoadingWallet, fetchWallet } = useAdsStore();
     const [amount, setAmount] = useState('');
     const [selectedMethod, setSelectedMethod] = useState<string>('paystack');
     const [isTopUpModalOpen, setIsTopUpModalOpen] = useState(false);
 
-    // Mock transaction history
+    // Fetch wallet data on mount
+    useEffect(() => {
+        fetchWallet();
+    }, [fetchWallet]);
+
+    // Use wallet balance from API or fallback to 0
+    const walletBalance = wallet?.balanceDisplay || 0;
+
+    // TODO: Replace with real transaction history from API when endpoint is available
     const [transactions] = useState<WalletTransaction[]>([
         { id: '1', type: 'Top Up', method: 'Paystack', amount: 10000000, status: 'success', date: '11:23PM - 12/02/2025' },
         { id: '2', type: 'Top Up', method: 'Flutterwave', amount: 10000000, status: 'success', date: '10:15PM - 12/02/2025' },
@@ -81,9 +91,13 @@ export const AdsWallet: React.FC = () => {
                                 <Text fontSize="sm" fontWeight="medium" color="gray.600">
                                     Wallet Balance
                                 </Text>
-                                <Text fontSize="3xl" fontWeight="bold" color="#f94444">
-                                    {formatCurrency(walletBalance)}
-                                </Text>
+                                {isLoadingWallet ? (
+                                    <Skeleton height="36px" width="180px" />
+                                ) : (
+                                    <Text fontSize="3xl" fontWeight="bold" color="#f94444">
+                                        {formatCurrency(walletBalance)}
+                                    </Text>
+                                )}
                             </VStack>
 
                             {/* Amount Input */}

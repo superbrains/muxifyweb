@@ -1,26 +1,20 @@
-export interface DashboardStats {
-  totalEarnings: number;
-  totalPlays: number;
-  totalFollowers: number;
-  totalUploads: number;
-  earningsChange: number;
-  playsChange: number;
-  followersChange: number;
-  uploadsChange: number;
-}
-
-export interface RecentSale {
-  id: string;
-  track: string;
-  platform: string;
-  amount: number;
-  date: string;
-  status: "completed" | "pending" | "failed";
-}
-
-export interface PerformanceData {
-  date: string;
-  streams: number;
-  followers: number;
-  revenue: number;
-}
+// Re-export all types from the service for convenience
+export type {
+  // New API DTOs
+  DashboardStatDto,
+  DashboardStatsDto,
+  RecentSaleDto,
+  RecentSalesDto,
+  ChartDataPointDto,
+  ChartSeriesDto,
+  DashboardAnalyticsDto,
+  TopTrackDto,
+  TopTracksDto,
+  // Period types
+  AnalyticsPeriod,
+  TopTracksPeriod,
+  // Legacy types (for backward compatibility)
+  DashboardStats,
+  RecentSale,
+  PerformanceData,
+} from "../services/dashboardService";

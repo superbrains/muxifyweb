@@ -7,14 +7,16 @@ import { VideoPlayer } from '../../upload-video/components';
 import { UploadSuccessPage, ReleaseScheduler } from './';
 
 interface VideoReviewProps {
-    onPublish: () => void;
+    onPublish: () => Promise<void>;
+    isPublishing?: boolean;
 }
 
-export const VideoReview: React.FC<VideoReviewProps> = ({ onPublish }) => {
+export const VideoReview: React.FC<VideoReviewProps> = ({ onPublish, isPublishing: externalIsPublishing = false }) => {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const [isPublished, setIsPublished] = useState(false);
     const [isPublishing, setIsPublishing] = useState(false);
+    const isCurrentlyPublishing = isPublishing || externalIsPublishing;
 
     const {
         videoFile,
@@ -38,18 +40,13 @@ export const VideoReview: React.FC<VideoReviewProps> = ({ onPublish }) => {
         setIsPublishing(true);
 
         try {
-            // Simulate API call
-            await new Promise((resolve) => {
-                setTimeout(() => {
-                    resolve(true);
-                }, 2000);
-            });
-
-            onPublish();
+            // Call the parent's publish function which makes the API call
+            await onPublish();
             resetVideoUpload();
             setIsPublished(true);
         } catch (error) {
             console.error('Publish failed:', error);
+            // Error toast is already shown by the parent
         } finally {
             setIsPublishing(false);
         }
@@ -102,9 +99,10 @@ export const VideoReview: React.FC<VideoReviewProps> = ({ onPublish }) => {
                     _hover={{ bg: 'primary.600' }}
                     onClick={handlePublish}
                     loadingText="Publishing..."
-                    loading={isPublishing}
+                    loading={isCurrentlyPublishing}
+                    disabled={isCurrentlyPublishing}
                 >
-                    {isPublishing ? <Spinner size="sm" color="white" /> : (
+                    {isCurrentlyPublishing ? <Spinner size="sm" color="white" /> : (
                         <>
                             Publish
                             <Icon as={FiArrowRight} boxSize={4} ml={2} />

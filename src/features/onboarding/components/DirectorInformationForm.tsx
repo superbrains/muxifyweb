@@ -16,6 +16,8 @@ import {
 import { HiOutlineTrash } from 'react-icons/hi';
 import { useChakraToast } from '@shared/hooks';
 import { useUserManagementStore } from '@/features/auth/store/useUserManagementStore';
+import { profileService } from '../services/profileService';
+import { getApiErrorMessage } from '@/shared/lib/errorUtils';
 
 // Collection for ID types
 const idTypes = createListCollection({
@@ -147,23 +149,31 @@ export const DirectorInformationForm: React.FC<DirectorInformationFormProps> = (
 
         setLoading(true);
         try {
-            // Save directors info to store
+            // Add directors via API
+            // Note: The current form collects ID info but backend expects email/position.
+            // For now, we use name as fullName and ID type as position placeholder.
+            for (let i = 0; i < formData.directors.length; i++) {
+                const director = formData.directors[i];
+                await profileService.addDirector({
+                    fullName: director.name,
+                    email: '', // Form needs update to collect email
+                    position: director.meansOfIdentification || 'Director',
+                    isPrimaryContact: i === 0, // First director is primary
+                });
+            }
+
+            // Save directors info to local store
             if (userId) {
                 setCurrentUser(userId);
                 saveDirectorsInfo(userId, formData.directors);
             }
-
-            // Here you would typically save the director information
-            await new Promise(resolve => setTimeout(resolve, 1000));
 
             toast.success('Director information saved!', 'Director details have been updated.');
             navigate(nextRoute, {
                 state: { userId }
             });
         } catch (error: unknown) {
-            const errorMessage = error && typeof error === 'object' && 'response' in error
-                ? (error as { response?: { data?: { message?: string } } }).response?.data?.message || 'Please try again.'
-                : 'Please try again.';
+            const errorMessage = getApiErrorMessage(error, 'Failed to save director information.');
             toast.error('Failed to save information', errorMessage);
         } finally {
             setLoading(false);

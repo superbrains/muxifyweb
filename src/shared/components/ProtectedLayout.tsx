@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { Navbar } from './Navbar';
+import { ErrorBoundary } from './ErrorBoundary';
 import { useSidebarStore } from '@/shared/store/useSidebarStore';
 import { useWindowWidth } from '../hooks/useWindowsWidth';
 import { useUserType } from '@/features/auth/hooks/useUserType';
@@ -150,7 +151,9 @@ export const ProtectedLayout: React.FC<ProtectedLayoutProps> = ({ children }) =>
                     bg="gray.blue.100"
                     position="relative"
                 >
-                    {children}
+                    <ErrorBoundary>
+                        {children}
+                    </ErrorBoundary>
                 </Box>
             </motion.div>
         </Box>

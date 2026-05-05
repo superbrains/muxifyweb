@@ -1,11 +1,11 @@
 import React from 'react';
-import { Box, Text, VStack, HStack } from '@chakra-ui/react';
+import { Box, Text, VStack, HStack, Image } from '@chakra-ui/react';
 
 interface LeaderboardItem {
     rank: number;
     name: string;
     value: string;
-    avatar: string;
+    avatarUrl?: string;
 }
 
 interface LeaderboardCardProps {
@@ -36,9 +36,31 @@ export const LeaderboardCard: React.FC<LeaderboardCardProps> = ({ title, data })
                         >
                             {item.rank}
                         </Box>
-                        <Box w={10} h={10} borderRadius="full" bg="gray.200" display="flex" alignItems="center" justifyContent="center">
-                            {/* Empty circle - no emoji */}
-                        </Box>
+                        {item.avatarUrl ? (
+                            <Image
+                                src={item.avatarUrl}
+                                alt={item.name}
+                                w={10}
+                                h={10}
+                                borderRadius="full"
+                                objectFit="cover"
+                                fallback={
+                                    <Box
+                                        w={10}
+                                        h={10}
+                                        borderRadius="full"
+                                        bg="gray.200"
+                                    />
+                                }
+                            />
+                        ) : (
+                            <Box
+                                w={10}
+                                h={10}
+                                borderRadius="full"
+                                bg="gray.200"
+                            />
+                        )}
                         <VStack align="start" gap={0}>
                             <Text fontSize="xs" color="gray.800" fontWeight="medium" overflow="hidden" textOverflow="ellipsis" whiteSpace="nowrap" maxW="140px">
                                 {item.name}

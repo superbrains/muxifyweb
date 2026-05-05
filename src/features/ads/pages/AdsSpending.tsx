@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
     Box,
     VStack,
@@ -8,6 +8,7 @@ import {
     Flex,
     Grid,
     Icon,
+    Skeleton,
 } from '@chakra-ui/react';
 import { FiFilter } from 'react-icons/fi';
 import { AnimatedTabs } from '@shared/components';
@@ -18,26 +19,36 @@ import { ClickFilledIcon, EyeFilledIcon, GalleryIcon, MusicFilledIcon, VideoPlay
 
 export const AdsSpending: React.FC = () => {
     const [timeFilter, setTimeFilter] = useState<'daily' | 'weekly' | 'monthly' | 'yearly'>('daily');
-    const { campaigns } = useAdsStore();
+    const { campaigns, wallet, isLoading, isLoadingWallet, fetchCampaigns, fetchWallet } = useAdsStore();
 
-    // Calculate spending data from campaigns
-    const calculateSpending = () => {
+    // Fetch data on mount
+    useEffect(() => {
+        fetchCampaigns();
+        fetchWallet();
+    }, [fetchCampaigns, fetchWallet]);
+
+    // Calculate spending data from campaigns (using actual spent amounts)
+    const spendingData = useMemo(() => {
         const audioSpending = campaigns
             .filter(c => c.type === 'audio')
-            .reduce((sum, c) => sum + (c.budget || 0), 0);
+            .reduce((sum, c) => sum + (c.amountSpent || 0), 0);
         const photoSpending = campaigns
             .filter(c => c.type === 'photo')
-            .reduce((sum, c) => sum + (c.budget || 0), 0);
+            .reduce((sum, c) => sum + (c.amountSpent || 0), 0);
         const videoSpending = campaigns
             .filter(c => c.type === 'video')
-            .reduce((sum, c) => sum + (c.budget || 0), 0);
+            .reduce((sum, c) => sum + (c.amountSpent || 0), 0);
 
-        return { audioSpending, photoSpending, videoSpending };
-    };
+        const totalImpressions = campaigns.reduce((sum, c) => sum + (c.impressions || 0), 0);
+        const totalClicks = campaigns.reduce((sum, c) => sum + (c.clicks || 0), 0);
 
-    const { audioSpending, photoSpending, videoSpending } = calculateSpending();
-    const totalSpending = audioSpending + photoSpending + videoSpending;
-    const dailySpend = totalSpending / 7; // Mock daily calculation
+        return { audioSpending, photoSpending, videoSpending, totalImpressions, totalClicks };
+    }, [campaigns]);
+
+    const { audioSpending, photoSpending, videoSpending, totalImpressions, totalClicks } = spendingData;
+    const totalSpending = wallet?.totalSpent || (audioSpending + photoSpending + videoSpending);
+    const dailySpend = totalSpending / 7; // Average daily calculation
+    const isDataLoading = isLoading || isLoadingWallet;
 
     // Mock data for charts
     const spendingChartOptions = {
@@ -145,11 +156,11 @@ export const AdsSpending: React.FC = () => {
         { id: 'yearly', label: 'Yearly' },
     ];
 
-    // Mock spending actions data
-    const clicks = 25000;
-    const views = 100000;
-    const clicksCost = 35000;
-    const viewsCost = 75000;
+    // Spending actions data from campaigns
+    const clicks = totalClicks;
+    const views = totalImpressions;
+    const clicksCost = totalClicks > 0 ? Math.round(totalSpending * 0.35) : 0; // Approximate click cost
+    const viewsCost = totalImpressions > 0 ? Math.round(totalSpending * 0.65) : 0; // Approximate view cost
     const totalActions = clicksCost + viewsCost;
 
     return (
@@ -196,17 +207,25 @@ export const AdsSpending: React.FC = () => {
 
                         <HStack gap={6}>
                             <VStack align="end" gap={1}>
-                                <Text fontSize="lg" color="red.500" fontWeight="bold">
-                                    {formatCurrency(dailySpend)}
-                                </Text>
+                                {isDataLoading ? (
+                                    <Skeleton height="24px" width="100px" />
+                                ) : (
+                                    <Text fontSize="lg" color="red.500" fontWeight="bold">
+                                        {formatCurrency(dailySpend)}
+                                    </Text>
+                                )}
                                 <Text fontSize="11px" color="gray.900">
                                     Daily Spend
                                 </Text>
                             </VStack>
                             <VStack align="end" gap={1}>
-                                <Text fontSize="lg" color="red.500" fontWeight="bold">
-                                    {formatCurrency(totalSpending)}
-                                </Text>
+                                {isDataLoading ? (
+                                    <Skeleton height="24px" width="120px" />
+                                ) : (
+                                    <Text fontSize="lg" color="red.500" fontWeight="bold">
+                                        {formatCurrency(totalSpending)}
+                                    </Text>
+                                )}
                                 <Text fontSize="11px" color="gray.900">
                                     Total Expenditure
                                 </Text>

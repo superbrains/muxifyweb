@@ -11,6 +11,8 @@ import { VerifyIcon } from '@/shared/icons/CustomIcons';
 import { useUserManagementStore } from '@/features/auth/store/useUserManagementStore';
 import { useUserType } from '@/features/auth/hooks/useUserType';
 import { useArtistStore } from '@/features/artists/store/useArtistStore';
+import { profileService } from '../services/profileService';
+import { getApiErrorMessage } from '@/shared/lib/errorUtils';
 
 export const IdentityVerificationPrompt: React.FC = () => {
     const [loading, setLoading] = useState(false);
@@ -27,7 +29,10 @@ export const IdentityVerificationPrompt: React.FC = () => {
     const handleStartVerification = async () => {
         setLoading(true);
         try {
-            // Mark identity as verified and complete onboarding
+            // Complete profile onboarding via API
+            await profileService.completeProfileOnboarding();
+
+            // Mark identity as verified and complete onboarding in local store
             if (userId) {
                 setCurrentUser(userId);
                 markIdentityVerified(userId);
@@ -60,9 +65,6 @@ export const IdentityVerificationPrompt: React.FC = () => {
                 console.log('===========================');
             }
 
-            // Here you would typically start the identity verification process
-            await new Promise(resolve => setTimeout(resolve, 1000));
-
             toast.success('Verification started!', 'Please follow the instructions to complete verification.');
             // Navigate based on user type - record labels without artists go to add artist page
             if (isRecordLabel && artists.length === 0) {
@@ -72,7 +74,8 @@ export const IdentityVerificationPrompt: React.FC = () => {
             }
         } catch (error) {
             console.error('Verification error:', error);
-            toast.error('Verification failed', 'Please try again.');
+            const errorMessage = getApiErrorMessage(error, 'Verification failed. Please try again.');
+            toast.error('Verification failed', errorMessage);
         } finally {
             setLoading(false);
         }
