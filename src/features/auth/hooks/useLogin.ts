@@ -14,8 +14,8 @@ export const useLogin = () => {
   const handleLogin = async (credentials: LoginCredentials) => {
     setLoading(true);
     try {
-      const response = await authService.login(credentials);
-      const { user, token } = response.data;
+      const result = await authService.login(credentials);
+      const { user, token } = result;
 
       localStorage.setItem("auth_token", token);
       login(user);

@@ -44,14 +44,6 @@ export const LeaderboardCard: React.FC<LeaderboardCardProps> = ({ title, data })
                                 h={10}
                                 borderRadius="full"
                                 objectFit="cover"
-                                fallback={
-                                    <Box
-                                        w={10}
-                                        h={10}
-                                        borderRadius="full"
-                                        bg="gray.200"
-                                    />
-                                }
                             />
                         ) : (
                             <Box

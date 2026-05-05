@@ -89,7 +89,7 @@ export const CompleteInformationForm: React.FC = () => {
         setLoading(true);
         try {
             // Complete artist profile via API
-            const updatedProfile = await profileService.completeArtistProfile({
+            await profileService.completeArtistProfile({
                 performingName: formData.performingName,
                 bio: formData.recordLabel ? `Signed to ${formData.recordLabel}` : undefined,
                 country: formData.country,

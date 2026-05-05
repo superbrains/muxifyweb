@@ -98,7 +98,7 @@ export const Review: React.FC = () => {
                     const trackResult = await uploadMusic({
                         title: mix.trackTitle || mix.tracks[0]?.name?.split('.')[0] || 'Untitled',
                         artist: mix.selectedArtists.join(', ') || currentArtistName,
-                        genre: mix.genre,
+                        genre: mix.genre.join(', '),
                         releaseDate,
                         file: audioFile,
                         coverArt: mix.coverArt?.file,
@@ -118,13 +118,13 @@ export const Review: React.FC = () => {
                             plays: 0,
                             unlocks: 0,
                             gifts: 0,
-                            coverArt: trackResult.coverArtUrl || (mix.coverArt ? URL.createObjectURL(mix.coverArt.file) : ''),
+                            coverArt: trackResult.thumbnail || (mix.coverArt ? URL.createObjectURL(mix.coverArt.file) : ''),
                             coverArtData,
                             coverArtName: mix.coverArt?.name,
                             audioFile: audioFile,
                             audioData,
                             audioName: mix.tracks[0]?.name,
-                            genre: trackResult.genre || mix.genre,
+                            genre: trackResult.genre ? [trackResult.genre] : mix.genre,
                             releaseType: mix.releaseType,
                             unlockCost: mix.unlockCost,
                             allowSponsorship: mix.allowSponsorship,
@@ -148,7 +148,7 @@ export const Review: React.FC = () => {
 
                 // Publish Album - upload each track to backend
                 if (album.tracks.length > 0 || album.coverArt) {
-                    const uploadedTracks = [];
+                    const uploadedTracks: Array<{ id: string; name?: string; file: File; backendId?: string; backendUrl?: string }> = [];
 
                     // Upload each track in the album to the backend
                     for (let i = 0; i < album.tracks.length; i++) {
@@ -160,7 +160,7 @@ export const Review: React.FC = () => {
                             title: trackTitle,
                             artist: trackArtists.join(', ') || currentArtistName,
                             album: album.selectedArtists[0]?.name || 'Untitled Album',
-                            genre: album.genre,
+                            genre: album.genre.join(', '),
                             releaseDate,
                             file: track.file,
                             coverArt: i === 0 ? album.coverArt?.file : undefined, // Only send cover art with first track
@@ -168,9 +168,11 @@ export const Review: React.FC = () => {
 
                         if (trackResult) {
                             uploadedTracks.push({
-                                ...track,
+                                id: track.id,
+                                name: track.name,
+                                file: track.file,
                                 backendId: trackResult.id,
-                                backendUrl: trackResult.audioUrl,
+                                backendUrl: trackResult.thumbnail,
                             });
                         } else {
                             toast.error('Album Upload Error', `Failed to upload track: ${trackTitle}`);

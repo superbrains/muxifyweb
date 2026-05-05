@@ -95,6 +95,7 @@ axiosInstance.interceptors.response.use(
         failedQueue.push({ resolve, reject });
       })
         .then((token) => {
+          originalRequest.headers = originalRequest.headers ?? {};
           originalRequest.headers.Authorization = `Bearer ${token}`;
           return axiosInstance(originalRequest);
         })
@@ -123,6 +124,7 @@ axiosInstance.interceptors.response.use(
       tokenStorage.setTokens(token, newRefreshToken);
 
       // Update the failed request with new token
+      originalRequest.headers = originalRequest.headers ?? {};
       originalRequest.headers.Authorization = `Bearer ${token}`;
 
       // Process queued requests

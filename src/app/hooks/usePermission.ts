@@ -1,6 +1,9 @@
 import { useMemo } from "react";
+import type { UserRole } from "@shared/types/user";
 
-export type UserRole = "artist" | "dj" | "creator" | "record_label";
+export type { UserRole };
+
+type CreatorRole = Extract<UserRole, "artist" | "dj" | "creator" | "record_label">;
 
 interface Permission {
   canUploadMusic: boolean;
@@ -14,7 +17,19 @@ interface Permission {
   canViewSettings: boolean;
 }
 
-const rolePermissions: Record<UserRole, Permission> = {
+const emptyPermissions: Permission = {
+  canUploadMusic: false,
+  canUploadVideo: false,
+  canViewEarnings: false,
+  canViewLeaderboard: false,
+  canViewFans: false,
+  canViewSales: false,
+  canViewPayments: false,
+  canAddArtists: false,
+  canViewSettings: false,
+};
+
+const rolePermissions: Record<CreatorRole, Permission> = {
   artist: {
     canUploadMusic: true,
     canUploadVideo: true,
@@ -64,7 +79,10 @@ const rolePermissions: Record<UserRole, Permission> = {
 export const usePermission = (role?: UserRole) => {
   const permissions = useMemo(() => {
     if (!role) return null;
-    return rolePermissions[role];
+    if (role in rolePermissions) {
+      return rolePermissions[role as CreatorRole];
+    }
+    return emptyPermissions;
   }, [role]);
 
   const hasPermission = (permission: keyof Permission) => {

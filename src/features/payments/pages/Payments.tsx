@@ -46,7 +46,7 @@ export const Payments: React.FC = () => {
                 // Also fetch earnings balance
                 const summaryResponse = await earningsService.getSummary();
                 if (summaryResponse.data) {
-                    setEarningBalance(summaryResponse.data.availableBalance);
+                    setEarningBalance(summaryResponse.data.availableForWithdrawalDisplay);
                 }
             } catch (error) {
                 console.error('Failed to load payment data:', error);

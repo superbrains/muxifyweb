@@ -9,6 +9,7 @@ import {
     Badge,
     Spinner,
     Alert,
+    chakra,
 } from '@chakra-ui/react';
 import { AnimatedTabs, Select } from '@shared/components';
 import { formatNaira } from '@shared/utils';
@@ -294,9 +295,9 @@ export const MusicTab: React.FC = () => {
                         <Box as="tbody">
                             {tableData.length === 0 ? (
                                 <Box as="tr">
-                                    <Box as="td" colSpan={6} textAlign="center" py={8} color="gray.500">
+                                    <chakra.td colSpan={6} textAlign="center" py={8} color="gray.500">
                                         No fan activity data available
-                                    </Box>
+                                    </chakra.td>
                                 </Box>
                             ) : (
                                 tableData.map((row, index) => (

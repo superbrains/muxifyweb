@@ -202,7 +202,6 @@ export function mapArtistTopFanToEntry(fan: ArtistTopFanDto): LeaderboardEntry {
     name: fan.displayName || fan.username || 'Unknown Fan',
     value: fan.totalGiftValue.toLocaleString(),
     avatarUrl: fan.avatarUrl,
-    previousRank: fan.previousRank,
   };
 }
 

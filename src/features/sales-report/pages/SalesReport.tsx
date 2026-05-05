@@ -9,6 +9,7 @@ import {
     Button,
     Icon,
     Spinner,
+    chakra,
 } from '@chakra-ui/react';
 import { AnimatedTabs } from '@shared/components';
 import Chart from 'react-apexcharts';
@@ -270,7 +271,7 @@ export const SalesReport: React.FC = () => {
     if (isLoading) {
         return (
             <VStack minH="90vh" align="center" justify="center">
-                <Spinner size="xl" color="red.500" thickness="4px" />
+                <Spinner size="xl" color="red.500" borderWidth="4px" />
                 <Text color="gray.600">Loading sales report...</Text>
             </VStack>
         );
@@ -680,9 +681,9 @@ export const SalesReport: React.FC = () => {
                                 })
                             ) : (
                                 <Box as="tr">
-                                    <Box as="td" colSpan={4} textAlign="center" py={4} fontSize="xs" color="gray.500">
+                                    <chakra.td colSpan={4} textAlign="center" py={4} fontSize="xs" color="gray.500">
                                         No top tracks data available
-                                    </Box>
+                                    </chakra.td>
                                 </Box>
                             )}
                         </Box>

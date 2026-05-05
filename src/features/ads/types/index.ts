@@ -206,7 +206,7 @@ export interface AdCampaign {
     state: string;
   };
   target: {
-    type: 'music' | 'video' | 'audio';
+    type: 'music' | 'video' | 'audio' | 'photo';
     genre?: string;
     artists?: string[];
   };

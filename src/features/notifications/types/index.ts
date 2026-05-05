@@ -1,22 +1,23 @@
 /**
  * Notification type enum matching backend NotificationType
  */
-export enum NotificationType {
-  System = 0,
-  NewFollower = 1,
-  GiftReceived = 2,
-  NewContent = 3,
-  Comment = 4,
-  Like = 5,
-  Achievement = 6,
-  BadgeEarned = 7,
-  MedalEarned = 8,
-  WithdrawalProcessed = 9,
-  WithdrawalFailed = 10,
-  ContentUnlocked = 11,
-  Milestone = 12,
-  Promotion = 13,
-}
+export const NotificationType = {
+  System: 0,
+  NewFollower: 1,
+  GiftReceived: 2,
+  NewContent: 3,
+  Comment: 4,
+  Like: 5,
+  Achievement: 6,
+  BadgeEarned: 7,
+  MedalEarned: 8,
+  WithdrawalProcessed: 9,
+  WithdrawalFailed: 10,
+  ContentUnlocked: 11,
+  Milestone: 12,
+  Promotion: 13,
+} as const;
+export type NotificationType = typeof NotificationType[keyof typeof NotificationType];
 
 /**
  * Single notification DTO from backend

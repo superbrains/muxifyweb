@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Text, VStack, HStack } from '@chakra-ui/react';
+import { Box, Text, VStack, HStack, chakra } from '@chakra-ui/react';
 
 interface FansAndSubscribersItem {
     rank: number;
@@ -57,8 +57,7 @@ export const FansAndSubscribersCard: React.FC<FansAndSubscribersCardProps> = ({ 
                                 overflow="hidden"
                             >
                                 {item.avatarUrl ? (
-                                    <Box
-                                        as="img"
+                                    <chakra.img
                                         src={item.avatarUrl}
                                         alt={item.name}
                                         w="full"

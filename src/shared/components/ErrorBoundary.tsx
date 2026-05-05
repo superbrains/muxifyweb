@@ -1,4 +1,5 @@
-import React, { Component, ErrorInfo, ReactNode } from 'react';
+import { Component } from 'react';
+import type { ErrorInfo, ReactNode } from 'react';
 import { Box, Button, Heading, Text, VStack, Icon } from '@chakra-ui/react';
 import { FiAlertTriangle, FiRefreshCw } from 'react-icons/fi';
 
@@ -79,7 +80,7 @@ export class ErrorBoundary extends Component<Props, State> {
               <Text color="gray.600" fontSize="sm">
                 An unexpected error occurred. Please try again or refresh the page.
               </Text>
-              {process.env.NODE_ENV === 'development' && this.state.error && (
+              {import.meta.env.DEV && this.state.error && (
                 <Box
                   mt={4}
                   p={4}
@@ -106,8 +107,8 @@ export class ErrorBoundary extends Component<Props, State> {
                 onClick={this.handleReset}
                 colorScheme="red"
                 size="md"
-                leftIcon={<FiRefreshCw />}
               >
+                <Icon as={FiRefreshCw} mr={2} />
                 Try Again
               </Button>
               <Button

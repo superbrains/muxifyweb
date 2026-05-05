@@ -9,6 +9,7 @@ import {
     Flex,
     Spinner,
     Center,
+    chakra,
 } from '@chakra-ui/react';
 import { FaGift } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
@@ -376,7 +377,7 @@ export const Dashboard: React.FC = () => {
         return (
             <Center minH="100vh" bg="gray.50">
                 <VStack gap={4}>
-                    <Spinner size="xl" color="primary.500" thickness="4px" />
+                    <Spinner size="xl" color="primary.500" borderWidth="4px" />
                     <Text color="gray.600">Loading dashboard...</Text>
                 </VStack>
             </Center>
@@ -720,9 +721,9 @@ export const Dashboard: React.FC = () => {
                             })}
                             {(!topTracksDto?.tracks || topTracksDto.tracks.length === 0) && (
                                 <Box as="tr">
-                                    <Box as="td" colSpan={4} textAlign="center" py={8} color="gray.500" fontSize="sm">
+                                    <chakra.td colSpan={4} textAlign="center" py={8} color="gray.500" fontSize="sm">
                                         No tracks data available
-                                    </Box>
+                                    </chakra.td>
                                 </Box>
                             )}
                         </Box>
@@ -797,7 +798,7 @@ export const Dashboard: React.FC = () => {
                                                 borderRadius="full"
                                                 bgImage={`url(${giver.avatarUrl})`}
                                                 bgSize="cover"
-                                                bgPosition="center"
+                                                backgroundPosition="center"
                                             />
                                         ) : (
                                             <Box

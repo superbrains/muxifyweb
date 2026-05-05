@@ -68,13 +68,18 @@ const PreferenceSection: React.FC<PreferenceSectionProps> = ({
               {isUpdating === setting.key && (
                 <Spinner size="sm" color="primary.500" />
               )}
-              <Switch
-                colorScheme="primary"
+              <Switch.Root
+                colorPalette="primary"
                 size="md"
-                isChecked={preferences[setting.key]}
-                onChange={(e) => onToggle(setting.key, e.target.checked)}
-                isDisabled={isUpdating === setting.key}
-              />
+                checked={preferences[setting.key]}
+                onCheckedChange={(details) => onToggle(setting.key, details.checked)}
+                disabled={isUpdating === setting.key}
+              >
+                <Switch.HiddenInput />
+                <Switch.Control>
+                  <Switch.Thumb />
+                </Switch.Control>
+              </Switch.Root>
             </HStack>
           </HStack>
         ))}

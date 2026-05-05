@@ -400,7 +400,7 @@ export const MusicTab: React.FC = () => {
         return (
             <Center py={20} bg="white" borderBottomRadius="xl">
                 <VStack gap={4}>
-                    <Spinner size="xl" color="red.500" thickness="4px" />
+                    <Spinner size="xl" color="red.500" borderWidth="4px" />
                     <Text color="gray.600">Loading earnings data...</Text>
                 </VStack>
             </Center>
