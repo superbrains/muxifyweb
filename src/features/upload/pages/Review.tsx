@@ -18,6 +18,7 @@ import { useUserType } from '@/features/auth/hooks/useUserType';
 import { ArtistDropdown } from '@/shared/components/ArtistDropdown';
 import type { ArtistOnboardingData } from '@/features/auth/store/useUserManagementStore';
 import { useUploadMusic } from '@uploadMusic/hooks/useUploadMusic';
+import { useUploadVideo } from '@/features/upload-video/hooks/useUploadVideo';
 import { useChakraToast } from '@shared/hooks';
 
 const isArtistData = (data: unknown): data is ArtistOnboardingData =>
@@ -34,6 +35,7 @@ export const Review: React.FC = () => {
     const navigate = useNavigate();
     const { isPodcaster, isCreator, isRecordLabel } = useUserType();
     const { uploadMusic, loading: uploadLoading } = useUploadMusic();
+    const { uploadVideo, loading: videoUploadLoading } = useUploadVideo();
     const toast = useChakraToast();
     const [isPublishing, setIsPublishing] = useState(false);
 
@@ -226,33 +228,55 @@ export const Review: React.FC = () => {
                     }
                 }
             } else {
-                // Publish video (local only for now - no backend endpoint yet)
-                // TODO: Add video upload API endpoint
-                const videoData = videoUpload.videoFile?.file ? await fileToBase64(videoUpload.videoFile.file) : undefined;
+                // Publish video — upload to backend, then mirror to local store
+                if (!videoUpload.videoFile?.file) {
+                    toast.error('Upload Error', 'No video file selected');
+                    setIsPublishing(false);
+                    return;
+                }
+
+                const videoFile = videoUpload.videoFile.file;
+                const thumbnailFile = videoUpload.thumbnails[0]?.file;
+                const titleFromFilename = videoUpload.videoFile.name.replace(/\.[^/.]+$/, '') || 'Untitled Video';
+
+                const videoResult = await uploadVideo({
+                    title: titleFromFilename,
+                    file: videoFile,
+                    thumbnail: thumbnailFile,
+                });
+
+                if (!videoResult) {
+                    setIsPublishing(false);
+                    return;
+                }
+
+                const videoData = await fileToBase64(videoFile);
                 const thumbnailData = await Promise.all(
                     videoUpload.thumbnails.map(t => fileToBase64(t.file))
                 );
 
+                const currentArtistName = (() => {
+                    const { getCurrentUserData, getCurrentUserType } = useUserManagementStore.getState();
+                    const currentUserData = getCurrentUserData();
+                    const currentUserType = getCurrentUserType();
+                    if (currentUserType === 'artist' && isArtistData(currentUserData)) {
+                        return currentUserData.performingName || currentUserData.fullName || 'Artist';
+                    }
+                    return 'Artist';
+                })();
+
                 const videoItem: VideoItem = {
-                    id: isEditingVideo ? videoId! : Date.now().toString(),
-                    title: videoUpload.videoFile?.name.replace(/\.[^/.]+$/, '') || 'Untitled Video',
-                    artist: (() => {
-                        const { getCurrentUserData, getCurrentUserType } = useUserManagementStore.getState();
-                        const currentUserData = getCurrentUserData();
-                        const currentUserType = getCurrentUserType();
-                        if (currentUserType === 'artist' && isArtistData(currentUserData)) {
-                            return currentUserData.performingName || currentUserData.fullName || 'Artist';
-                        }
-                        return 'Artist';
-                    })(),
-                    releaseDate,
+                    id: videoResult.id || (isEditingVideo ? videoId! : Date.now().toString()),
+                    title: videoResult.title || titleFromFilename,
+                    artist: videoResult.artist || currentArtistName,
+                    releaseDate: videoResult.createdAt || releaseDate,
                     plays: 0,
                     unlocks: 0,
                     gifts: 0,
-                    thumbnail: videoUpload.thumbnails[0]?.url || '',
-                    videoFile: videoUpload.videoFile?.file as File,
+                    thumbnail: videoResult.thumbnail || videoUpload.thumbnails[0]?.url || '',
+                    videoFile,
                     videoData,
-                    videoName: videoUpload.videoFile?.name,
+                    videoName: videoUpload.videoFile.name,
                     thumbnails: videoUpload.thumbnails.map(t => t.url || '').filter(Boolean),
                     thumbnailData,
                     thumbnailNames: videoUpload.thumbnails.map(t => t.name),
@@ -260,18 +284,14 @@ export const Review: React.FC = () => {
                     releaseType: videoUpload.releaseType,
                     unlockCost: videoUpload.unlockCost,
                     allowSponsorship: videoUpload.allowSponsorship,
-                    createdAt: new Date().toISOString(),
+                    createdAt: videoResult.createdAt || new Date().toISOString(),
                 };
 
                 if (isEditingVideo) {
                     updateVideoItem(videoId!, videoItem);
-                    console.log('Video updated:', videoItem);
                 } else {
                     addVideoItem(videoItem);
-                    console.log('Video published:', videoItem);
                 }
-
-                toast.info('Video Upload', 'Video saved locally. Backend video upload coming soon.');
             }
 
             // Clear upload storage after publishing
@@ -362,7 +382,7 @@ export const Review: React.FC = () => {
                     isPublishing={isPublishing || uploadLoading}
                 />
             ) : (
-                <VideoReview onPublish={handlePublish} isPublishing={isPublishing} />
+                <VideoReview onPublish={handlePublish} isPublishing={isPublishing || videoUploadLoading} />
             )}
         </Box>
     );
