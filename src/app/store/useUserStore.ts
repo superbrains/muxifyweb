@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { indexedDbStorage } from "@/shared/lib/indexedDbStorage";
@@ -41,3 +42,19 @@ export const useUserStore = create<UserState>()(
     }
   )
 );
+
+export const useUserStoreHydrated = (): boolean => {
+  const [hydrated, setHydrated] = useState(useUserStore.persist.hasHydrated());
+
+  useEffect(() => {
+    const unsubFinish = useUserStore.persist.onFinishHydration(() =>
+      setHydrated(true)
+    );
+    if (useUserStore.persist.hasHydrated()) setHydrated(true);
+    return () => {
+      unsubFinish();
+    };
+  }, []);
+
+  return hydrated;
+};

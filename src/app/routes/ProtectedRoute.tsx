@@ -1,13 +1,17 @@
 import { Navigate, Outlet } from "react-router-dom";
-import { useUserStore } from "@app/store/useUserStore";
+import { useUserStore, useUserStoreHydrated } from "@app/store/useUserStore";
 import { tokenStorage } from "@app/lib/axiosInstance";
-import { ProtectedLayout } from "@shared/components";
+import { LoadingScreen, ProtectedLayout } from "@shared/components";
 
 const ProtectedRoute = () => {
+  const hydrated = useUserStoreHydrated();
   const { user, isAuthenticated } = useUserStore();
   const hasToken = !!tokenStorage.getAccessToken();
 
-  // User must have both a valid token and user data to access protected routes
+  if (!hydrated) {
+    return <LoadingScreen />;
+  }
+
   if (!hasToken || !isAuthenticated || !user) {
     return <Navigate to="/login" replace />;
   }
