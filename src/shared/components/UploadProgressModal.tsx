@@ -115,18 +115,16 @@ export const UploadProgressModal: React.FC<UploadProgressModalProps> = ({
           boxShadow="0 24px 60px rgba(249, 68, 68, 0.18), 0 8px 24px rgba(20, 20, 20, 0.08)"
         >
           {/* Top accent strip — branded red gradient */}
-          <Box
-            h="4px"
-            w="full"
-            bgGradient="linear(to right, #f94444, #ff7a55, #f94444)"
-            bgSize="200% 100%"
-          >
+          <Box h="4px" w="full" overflow="hidden" bg="#f94444">
             {isActive && (
               <MotionBox
                 h="full"
                 w="full"
-                bgGradient="linear(to right, #f94444, #ff7a55, #f94444)"
-                bgSize="200% 100%"
+                style={{
+                  backgroundImage:
+                    'linear-gradient(to right, #f94444, #ff7a55, #f94444)',
+                  backgroundSize: '200% 100%',
+                }}
                 animate={{ backgroundPosition: ['0% 0%', '200% 0%'] }}
                 transition={{
                   duration: 2.4,
@@ -423,8 +421,11 @@ export const UploadProgressModal: React.FC<UploadProgressModalProps> = ({
                     >
                       <MotionBox
                         h="full"
-                        bgGradient="linear(to right, #f94444, #ff6b4a)"
                         borderRadius="full"
+                        style={{
+                          backgroundImage:
+                            'linear-gradient(to right, #f94444, #ff6b4a)',
+                        }}
                         initial={false}
                         animate={{ width: `${Math.max(2, displayedProgress)}%` }}
                         transition={{ duration: 0.35, ease: 'easeOut' }}
@@ -435,7 +436,10 @@ export const UploadProgressModal: React.FC<UploadProgressModalProps> = ({
                           top={0}
                           bottom={0}
                           w="40%"
-                          bgGradient="linear(to right, transparent, rgba(255,255,255,0.65), transparent)"
+                          style={{
+                            backgroundImage:
+                              'linear-gradient(to right, transparent, rgba(255,255,255,0.65), transparent)',
+                          }}
                           animate={{ left: ['-40%', '120%'] }}
                           transition={{
                             duration: 1.4,
