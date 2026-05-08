@@ -37,6 +37,9 @@ const AddArtistDisplayPicture = lazy(() => import('@addArtist/pages/AddArtistDis
 const AddArtistIdentityVerification = lazy(() => import('@addArtist/pages/AddArtistIdentityVerification'));
 const Settings = lazy(() => import('@settings/pages/Settings'));
 const MusicVideos = lazy(() => import('@musicVideo/pages/MusicVideos'));
+const SingleDetail = lazy(() => import('@musicVideo/pages/SingleDetail'));
+const AlbumDetail = lazy(() => import('@musicVideo/pages/AlbumDetail'));
+const VideoDetail = lazy(() => import('@musicVideo/pages/VideoDetail'));
 const AdsDashboard = lazy(() => import('@ads/pages/AdsDashboard'));
 const AdsEmptyState = lazy(() => import('@ads/pages/AdsEmptyState'));
 const CreateCampaign = lazy(() => import('@ads/pages/CreateCampaign'));
@@ -84,6 +87,9 @@ export const appRoutes: RouteObject[] = [
             { path: '/add-artist/identity-verification', element: <AddArtistIdentityVerification /> },
             { path: '/settings', element: <Settings /> },
             { path: '/music-videos', element: <MusicVideos /> },
+            { path: '/music-videos/single/:id', element: <SingleDetail /> },
+            { path: '/music-videos/album/:id', element: <AlbumDetail /> },
+            { path: '/music-videos/video/:id', element: <VideoDetail /> },
             // Ad Manager routes
             { path: '/', element: <AdsDashboard /> },
             { path: '/ads/create-campaign', element: <CreateCampaign /> },

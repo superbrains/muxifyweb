@@ -51,7 +51,7 @@ export const MediaItemCard: React.FC<MediaItemCardProps> = ({
     };
 
     const handleCopyLink = () => {
-        const link = `${window.location.origin}/view/${type}/${id}`;
+        const link = `${window.location.origin}/music-videos/${type}/${id}`;
         navigator.clipboard.writeText(link).then(() => {
             // You might want to show a toast here
             console.log('Link copied to clipboard');

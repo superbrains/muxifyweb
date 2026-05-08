@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Box, HStack } from '@chakra-ui/react';
+import { Box, Heading, HStack, Text, VStack } from '@chakra-ui/react';
 import { FiMusic, FiVideo } from 'react-icons/fi';
 import { AnimatedTabs } from '@shared/components';
 import { MusicTab } from '../components/MusicTab';
@@ -41,23 +41,38 @@ export const MusicVideos: React.FC = () => {
     }, [isCreator, activeTab]);
 
     return (
-        <Box bg="white" minH="100vh" p={{ base: 4, md: 6 }}>
+        <Box p={{ base: 4, md: 8, lg: 10 }} maxW="1440px" mx="auto">
+            {/* Page heading */}
+            <VStack align="stretch" gap={1} mb={8}>
+                <Heading
+                    as="h1"
+                    fontSize={{ base: '24px', md: '30px' }}
+                    fontWeight="700"
+                    letterSpacing="-0.02em"
+                    color="gray.blue.800"
+                    lineHeight="1.1"
+                >
+                    Music & Videos
+                </Heading>
+                <Text fontSize="13px" color="gray.blue.700">
+                    Manage and preview everything you've published.
+                </Text>
+            </VStack>
+
             {/* Main Tabs */}
             <Box mb={6}>
-                <HStack justify="space-between" align="center">
-                    <Box flex={1}>
-                <AnimatedTabs
-                            tabs={mainTabs}
-                            activeTab={isPodcaster && activeTab === 'music' ? 'audio' : activeTab}
-                            onTabChange={(tab) => {
-                                const actualTab = isPodcaster && tab === 'audio' ? 'music' : tab;
-                                setActiveTab(actualTab as 'music' | 'video');
-                            }}
-                    size="lg"
-                />
-                    </Box>
+                <HStack justify="space-between" align="center" gap={4} flexWrap="wrap">
+                    <AnimatedTabs
+                        tabs={mainTabs}
+                        activeTab={isPodcaster && activeTab === 'music' ? 'audio' : activeTab}
+                        onTabChange={(tab) => {
+                            const actualTab = isPodcaster && tab === 'audio' ? 'music' : tab;
+                            setActiveTab(actualTab as 'music' | 'video');
+                        }}
+                        size="lg"
+                    />
                     {isRecordLabel && (
-                        <Box ml={4}>
+                        <Box>
                             <ArtistDropdown />
                         </Box>
                     )}

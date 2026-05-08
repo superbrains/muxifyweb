@@ -6,6 +6,7 @@ import {
     HStack,
     Icon,
     Input,
+    SimpleGrid,
     Text,
     VStack,
     Spinner,
@@ -14,13 +15,20 @@ import {
 import { FiSearch, FiFilter, FiPlus } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
 import { AnimatedTabs } from '@shared/components';
-import { MediaItemCard } from './MediaItemCard';
+import { MediaGridCard } from './MediaGridCard';
+import { MediaTable } from './MediaTable';
+import { MediaTableRow } from './MediaTableRow';
+import { ViewToggle } from './ViewToggle';
 import { useMusicStore } from '../store/useMusicStore';
+import { useViewModeStore } from '../store/useViewModeStore';
+import { usePlayerStore } from '@/features/player/store/usePlayerStore';
 import type { SingleItem, AlbumItem } from '../types';
 import { useUserType } from '@/features/auth/hooks/useUserType';
 
 export const MusicTab: React.FC = () => {
     const navigate = useNavigate();
+    const viewMode = useViewModeStore((s) => s.mode);
+    const playTrack = usePlayerStore((s) => s.play);
     const {
         singles,
         albums,
@@ -32,10 +40,10 @@ export const MusicTab: React.FC = () => {
         clearError,
     } = useMusicStore();
 
-    // Fetch tracks on mount
     useEffect(() => {
         fetchTracks();
     }, [fetchTracks]);
+
     const { isPodcaster, isDJ, isMusician } = useUserType();
     type SubTabId = 'single' | 'album' | 'mix' | 'episode' | 'topic';
     type InternalTab = 'single' | 'album';
@@ -43,8 +51,8 @@ export const MusicTab: React.FC = () => {
     const [activeTab, setActiveTab] = useState<SubTabId>(
         isPodcaster ? 'episode' : isDJ ? 'mix' : 'single'
     );
+    const [search, setSearch] = useState('');
 
-    // Get tabs based on user type
     const getSubTabs = (): Array<{ id: SubTabId; label: string }> => {
         if (isPodcaster) {
             return [
@@ -72,34 +80,30 @@ export const MusicTab: React.FC = () => {
 
     const subTabs = getSubTabs();
 
-    // Map display tabs to internal state
     const mapToInternalTab = (tab: SubTabId): InternalTab => {
-        if (tab === 'episode' || tab === 'mix' || tab === 'single') {
-            return 'single';
-        }
+        if (tab === 'episode' || tab === 'mix' || tab === 'single') return 'single';
         return 'album';
     };
-
     const mapToDisplayTab = (tab: InternalTab): SubTabId => {
-        if (isPodcaster) {
-            return tab === 'single' ? 'episode' : 'topic';
-        }
-        if (isDJ) {
-            return tab === 'single' ? 'mix' : 'album';
-        }
+        if (isPodcaster) return tab === 'single' ? 'episode' : 'topic';
+        if (isDJ) return tab === 'single' ? 'mix' : 'album';
         return tab;
     };
 
     const isSingleTab = (tab: SubTabId) => tab === 'single' || tab === 'mix' || tab === 'episode';
-    const filteredItems: (SingleItem | AlbumItem)[] = isSingleTab(activeTab)
-        ? singles
-        : albums;
+
+    const baseItems: (SingleItem | AlbumItem)[] = isSingleTab(activeTab) ? singles : albums;
+    const filteredItems = search
+        ? baseItems.filter(
+              (it) =>
+                  it.title.toLowerCase().includes(search.toLowerCase()) ||
+                  it.artist.toLowerCase().includes(search.toLowerCase())
+          )
+        : baseItems;
 
     const handleSubTabChange = (tabId: string) => {
         const nextTab = subTabs.find((tab) => tab.id === tabId);
-        if (nextTab) {
-            setActiveTab(nextTab.id);
-        }
+        if (nextTab) setActiveTab(nextTab.id);
     };
 
     const currentDisplayTab = mapToDisplayTab(mapToInternalTab(activeTab));
@@ -109,11 +113,42 @@ export const MusicTab: React.FC = () => {
     const albumLabel = isPodcaster ? 'Topic' : 'Album';
     const albumLabelPlural = isPodcaster ? 'topics' : 'albums';
 
+    const onItemEdit = (item: SingleItem | AlbumItem) => {
+        navigate(isSingleTab(activeTab) ? `/upload?mixId=${item.id}` : `/upload?albumId=${item.id}`);
+    };
+    const onItemOpen = (item: SingleItem | AlbumItem) => {
+        navigate(`/music-videos/${isSingleTab(activeTab) ? 'single' : 'album'}/${item.id}`);
+    };
+    const onItemDelete = async (item: SingleItem | AlbumItem) => {
+        if (isSingleTab(activeTab)) await deleteTrack(item.id);
+    };
+    const onItemPlay = (item: SingleItem | AlbumItem) => {
+        if (isSingleTab(activeTab)) {
+            playTrack(
+                {
+                    id: item.id,
+                    title: item.title,
+                    artist: item.artist,
+                    coverArtUrl: item.coverArt,
+                    durationSeconds: 0,
+                },
+                []
+            );
+        } else {
+            navigate(`/music-videos/album/${item.id}`);
+        }
+    };
+
+    const formatRelease = (raw: string) => {
+        if (!raw) return '—';
+        const d = new Date(raw);
+        return Number.isNaN(d.getTime()) ? raw : d.toLocaleDateString();
+    };
+
     return (
         <>
             {/* Sub Tabs and Actions */}
             <Flex justify="space-between" align="center" mb={6} flexWrap="wrap" gap={4}>
-                {/* Single/Album Tabs */}
                 <AnimatedTabs
                     tabs={subTabs}
                     activeTab={currentDisplayTab}
@@ -121,16 +156,16 @@ export const MusicTab: React.FC = () => {
                     size="sm"
                 />
 
-                {/* Search and Actions */}
-                <HStack gap={3}>
+                <HStack gap={3} flexWrap="wrap">
                     <HStack
                         bg="white"
                         border="1px solid"
-                        borderColor="gray.200"
-                        borderRadius="md"
+                        borderColor="gray.100"
+                        borderRadius="lg"
                         px={3}
                         h="40px"
-                        w="250px"
+                        w={{ base: 'full', md: '260px' }}
+                        shadow="sm"
                     >
                         <Icon as={FiSearch} color="gray.400" boxSize={4} />
                         <Input
@@ -138,29 +173,35 @@ export const MusicTab: React.FC = () => {
                             border="none"
                             p={0}
                             h="auto"
-                            fontSize="12px"
+                            fontSize="13px"
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
                             _placeholder={{ color: 'gray.400' }}
                             _focus={{ boxShadow: 'none' }}
                         />
                     </HStack>
                     <Button
                         variant="outline"
-                        borderColor="gray.200"
-                        color="gray.600"
-                        fontSize="12px"
+                        borderColor="gray.100"
+                        color="gray.blue.700"
+                        bg="white"
+                        fontSize="13px"
                         h="40px"
                         px={4}
+                        shadow="sm"
                         _hover={{ bg: 'gray.50' }}
                     >
                         <Icon as={FiFilter} boxSize={4} mr={2} />
                         Filters
                     </Button>
+                    <ViewToggle />
                     <Button
                         bg="primary.500"
                         color="white"
-                        fontSize="12px"
+                        fontSize="13px"
                         h="40px"
                         px={4}
+                        shadow="sm"
                         _hover={{ bg: 'primary.600' }}
                         onClick={() => {
                             navigate(`/upload?tab=music&albumTab=${albumTabValue}`);
@@ -183,64 +224,92 @@ export const MusicTab: React.FC = () => {
                 </Alert.Root>
             )}
 
-            {/* Music/Album List */}
-            <VStack align="stretch" gap={3}>
-                {isLoading ? (
-                    <Box textAlign="center" py={12}>
-                        <Spinner size="lg" color="primary.500" />
-                        <Text mt={4} color="gray.500" fontSize="14px">
-                            Loading {isSingleTab(activeTab) ? singleLabelPlural : albumLabelPlural}...
-                        </Text>
-                    </Box>
-                ) : filteredItems.length === 0 ? (
-                    <Box textAlign="center" py={12}>
-                        <Text color="gray.500" fontSize="14px">
-                            No {isSingleTab(activeTab) ? singleLabelPlural : albumLabelPlural} found
+            {/* List */}
+            {isLoading ? (
+                <Flex direction="column" align="center" py={20} gap={3}>
+                    <Spinner size="lg" color="primary.500" />
+                    <Text color="gray.blue.700" fontSize="13px">
+                        Loading {isSingleTab(activeTab) ? singleLabelPlural : albumLabelPlural}…
+                    </Text>
+                </Flex>
+            ) : filteredItems.length === 0 ? (
+                <Box
+                    bg="white"
+                    borderWidth="1px"
+                    borderColor="gray.100"
+                    borderRadius="xl"
+                    shadow="sm"
+                    py={16}
+                    textAlign="center"
+                >
+                    <VStack gap={3}>
+                        <Text color="gray.blue.700" fontSize="14px" fontWeight="medium">
+                            No {isSingleTab(activeTab) ? singleLabelPlural : albumLabelPlural} yet
                         </Text>
                         <Button
-                            mt={4}
                             bg="primary.500"
                             color="white"
-                            fontSize="12px"
+                            fontSize="13px"
                             onClick={() => {
                                 navigate(`/upload?tab=music&albumTab=${albumTabValue}`);
                             }}
                             _hover={{ bg: 'primary.600' }}
                         >
-                            Upload Your First {isSingleTab(activeTab) ? singleLabel : albumLabel}
+                            Upload your first {isSingleTab(activeTab) ? singleLabel : albumLabel}
                         </Button>
-                    </Box>
-                ) : (
-                    filteredItems.map((item) => (
-                        <MediaItemCard
+                    </VStack>
+                </Box>
+            ) : viewMode === 'grid' ? (
+                <SimpleGrid
+                    columns={{ base: 2, md: 3, lg: 4, xl: 5 }}
+                    gap={5}
+                >
+                    {filteredItems.map((item) => {
+                        const album = 'album' in item ? item.album : undefined;
+                        return (
+                            <MediaGridCard
+                                key={item.id}
+                                id={item.id}
+                                thumbnail={item.coverArt}
+                                title={item.title}
+                                artist={item.artist}
+                                album={album}
+                                releaseDate={formatRelease(item.releaseDate)}
+                                plays={item.plays}
+                                kind={isSingleTab(activeTab) ? 'single' : 'album'}
+                                isDeleting={isDeleting === item.id}
+                                onEdit={() => onItemEdit(item)}
+                                onOpen={() => onItemOpen(item)}
+                                onPlay={() => onItemPlay(item)}
+                                onDelete={() => onItemDelete(item)}
+                            />
+                        );
+                    })}
+                </SimpleGrid>
+            ) : (
+                <MediaTable showAlbumColumn={false}>
+                    {filteredItems.map((item) => (
+                        <MediaTableRow
                             key={item.id}
                             id={item.id}
                             thumbnail={item.coverArt}
                             title={item.title}
                             artist={item.artist}
-                            album={'album' in item ? item.album : undefined}
-                            releaseDate={item.releaseDate}
+                            releaseDate={formatRelease(item.releaseDate)}
                             plays={item.plays}
                             unlocks={item.unlocks}
                             gifts={item.gifts}
-                            type={isSingleTab(activeTab) ? 'single' : 'album'}
+                            kind={isSingleTab(activeTab) ? 'single' : 'album'}
+                            showAlbumColumn={false}
                             isDeleting={isDeleting === item.id}
-                            onEdit={() => {
-                                const isSingle = isSingleTab(activeTab);
-                                navigate(isSingle ? `/upload?mixId=${item.id}` : `/upload?albumId=${item.id}`);
-                            }}
-                            onView={() => console.log('View', item.id)}
-                            onDownload={() => console.log('Download', item.id)}
-                            onDelete={async () => {
-                                if (isSingleTab(activeTab)) {
-                                    await deleteTrack(item.id);
-                                }
-                            }}
+                            onEdit={() => onItemEdit(item)}
+                            onOpen={() => onItemOpen(item)}
+                            onPlay={() => onItemPlay(item)}
+                            onDelete={() => onItemDelete(item)}
                         />
-                    ))
-                )}
-            </VStack>
+                    ))}
+                </MediaTable>
+            )}
         </>
     );
 };
-

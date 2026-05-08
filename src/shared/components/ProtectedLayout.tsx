@@ -10,6 +10,8 @@ import { useWindowWidth } from '../hooks/useWindowsWidth';
 import { useUserType } from '@/features/auth/hooks/useUserType';
 import { useArtistStore } from '@/features/artists/store/useArtistStore';
 import { useAdsStore } from '@/features/ads/store/useAdsStore';
+import { MiniPlayer } from '@/features/player/components/MiniPlayer';
+import { usePlayerStore } from '@/features/player/store/usePlayerStore';
 
 interface ProtectedLayoutProps {
     children: React.ReactNode;
@@ -28,6 +30,7 @@ export const ProtectedLayout: React.FC<ProtectedLayoutProps> = ({ children }) =>
     const { isRecordLabel, isAdManager } = useUserType();
     const { artists } = useArtistStore();
     const { campaigns } = useAdsStore();
+    const playerVisible = usePlayerStore((s) => s.currentTrack !== null);
 
     // Auto-collapse sidebar on mobile and close mobile menu when screen changes
     useEffect(() => {
@@ -147,6 +150,7 @@ export const ProtectedLayout: React.FC<ProtectedLayoutProps> = ({ children }) =>
                 <Box
                     mt="70px"
                     p={{ base: 2, md: 6, lg: 6 }}
+                    pb={playerVisible ? '96px' : { base: 2, md: 6, lg: 6 }}
                     minHeight="calc(100vh - 70px)"
                     bg="gray.blue.100"
                     position="relative"
@@ -156,6 +160,9 @@ export const ProtectedLayout: React.FC<ProtectedLayoutProps> = ({ children }) =>
                     </ErrorBoundary>
                 </Box>
             </motion.div>
+
+            {/* Persistent audio mini-player */}
+            <MiniPlayer />
         </Box>
     );
 };
