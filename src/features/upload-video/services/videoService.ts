@@ -4,6 +4,7 @@
  * Note: Backend uses /api/v1/video (singular), not /api/v1/videos (plural)
  */
 
+import axios from 'axios';
 import { axiosInstance } from '@app/lib/axiosInstance';
 import type { AxiosProgressEvent } from 'axios';
 import type {
@@ -14,6 +15,39 @@ import type {
   UploadProgressCallback,
   VideoType,
 } from '../types';
+
+// =============================================================================
+// Chunked-upload DTOs (mirror backend BeginUploadResultDto / CompleteUploadResultDto)
+// =============================================================================
+
+interface BeginUploadRequest {
+  mediaType: 'Audio' | 'Video';
+  fileName: string;
+  contentType: string;
+  sizeBytes: number;
+}
+
+interface BeginUploadResult {
+  sessionId: string;
+  uploadUri: string;
+  expiresAt: string;
+  recommendedBlockSize: number;
+}
+
+interface CompleteUploadRequest {
+  artistName?: string;
+  title: string;
+  description?: string;
+  genre?: string;
+  videoType?: VideoType;
+  trackId?: string;
+  thumbnailUrl?: string;
+}
+
+interface CompleteUploadResult {
+  mediaType: string;
+  video?: VideoDto;
+}
 
 // =============================================================================
 // Service Types
@@ -42,38 +76,75 @@ export interface UploadProgress {
 
 export const videoService = {
   /**
-   * Upload a new video with progress tracking
-   * POST /api/v1/video/upload
+   * Upload a new video using direct-to-blob (chunked) upload.
+   *   1. POST /api/v1/uploads/begin             → SAS URL for the staging blob
+   *   2. PUT  <sasUri>                          → file goes straight to Azure Blob
+   *   3. POST /api/v1/uploads/{id}/complete     → backend moves staging → final and creates the Video row
+   *   4. POST /api/v1/video/{id}/thumbnail      → optional thumbnail attach
+   *
+   * The bare `axios.put` in step 2 deliberately bypasses `axiosInstance` — the SAS is the
+   * credential for Azure Blob, and adding our `Authorization: Bearer ...` header would
+   * cause Azure to reject the PUT.
    */
   uploadVideo: async (
     data: UploadVideoData,
     onProgress?: UploadProgressCallback
   ): Promise<VideoDto> => {
-    const formData = new FormData();
-    formData.append('file', data.file);
-    formData.append('title', data.title);
+    // Step 1 — begin
+    const begin = await axiosInstance.post<BeginUploadResult>('/uploads/begin', {
+      mediaType: 'Video',
+      fileName: data.file.name,
+      contentType: data.file.type || 'application/octet-stream',
+      sizeBytes: data.file.size,
+    } as BeginUploadRequest);
 
-    if (data.description) formData.append('description', data.description);
-    if (data.videoType) formData.append('videoType', data.videoType);
-    if (data.genre) formData.append('genre', data.genre);
-    if (data.trackId) formData.append('trackId', data.trackId);
-    if (data.thumbnail) formData.append('thumbnail', data.thumbnail);
-
-    const response = await axiosInstance.post<VideoDto>('/video/upload', formData, {
+    // Step 2 — PUT directly to Azure Blob via SAS
+    await axios.put(begin.data.uploadUri, data.file, {
       headers: {
-        'Content-Type': 'multipart/form-data',
+        'x-ms-blob-type': 'BlockBlob',
+        'Content-Type': data.file.type || 'application/octet-stream',
       },
+      timeout: 0, // no timeout — large uploads can take a while
       onUploadProgress: (progressEvent: AxiosProgressEvent) => {
         if (progressEvent.total && onProgress) {
-          const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+          // Cap at 95% so the UI doesn't sit at 100% while /complete is still running
+          const progress = Math.min(95, Math.round((progressEvent.loaded * 95) / progressEvent.total));
           onProgress(progress);
         }
       },
-      // Increase timeout for large video uploads (2GB max)
-      timeout: 600000, // 10 minutes
+      transformRequest: [(d) => d], // prevent axios from JSON-stringifying the File
     });
 
-    return response.data;
+    // Step 3 — complete
+    const complete = await axiosInstance.post<CompleteUploadResult>(
+      `/uploads/${begin.data.sessionId}/complete`,
+      {
+        title: data.title,
+        description: data.description,
+        genre: data.genre,
+        videoType: data.videoType,
+        trackId: data.trackId,
+      } as CompleteUploadRequest
+    );
+
+    if (!complete.data.video) {
+      throw new Error('Upload completed but server returned no video record.');
+    }
+
+    let video = complete.data.video;
+
+    // Step 4 — attach thumbnail if provided. Failure here is non-fatal: the video
+    // exists, ProcessVideoJob will auto-generate a thumbnail at the 10% timestamp.
+    if (data.thumbnail) {
+      try {
+        video = await videoService.uploadThumbnail(video.id, data.thumbnail);
+      } catch (err) {
+        console.warn('Thumbnail attach failed; backend will auto-generate one.', err);
+      }
+    }
+
+    onProgress?.(100);
+    return video;
   },
 
   /**
