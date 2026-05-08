@@ -250,11 +250,6 @@ export const Review: React.FC = () => {
                     return;
                 }
 
-                const videoData = await fileToBase64(videoFile);
-                const thumbnailData = await Promise.all(
-                    videoUpload.thumbnails.map(t => fileToBase64(t.file))
-                );
-
                 const currentArtistName = (() => {
                     const { getCurrentUserData, getCurrentUserType } = useUserManagementStore.getState();
                     const currentUserData = getCurrentUserData();
@@ -265,6 +260,8 @@ export const Review: React.FC = () => {
                     return 'Artist';
                 })();
 
+                // Backend now hosts the file — store metadata only. Persisting base64
+                // video data here previously caused OOM crashes on /music-videos hydration.
                 const videoItem: VideoItem = {
                     id: videoResult.id || (isEditingVideo ? videoId! : Date.now().toString()),
                     title: videoResult.title || titleFromFilename,
@@ -274,11 +271,9 @@ export const Review: React.FC = () => {
                     unlocks: 0,
                     gifts: 0,
                     thumbnail: videoResult.thumbnail || videoUpload.thumbnails[0]?.url || '',
-                    videoFile,
-                    videoData,
+                    videoFile: undefined as unknown as File,
                     videoName: videoUpload.videoFile.name,
                     thumbnails: videoUpload.thumbnails.map(t => t.url || '').filter(Boolean),
-                    thumbnailData,
                     thumbnailNames: videoUpload.thumbnails.map(t => t.name),
                     trackLinks: videoUpload.trackLinks,
                     releaseType: videoUpload.releaseType,

@@ -207,11 +207,16 @@ export const useVideoStore = create<VideoStoreState>()(
       },
     }),
     {
-      name: "muxify-video-storage",
+      // v2: strips base64 video/thumbnail blobs that previously OOM'd the browser
+      // on hydration. The old "muxify-video-storage" key may still exist in
+      // IndexedDB for existing users; it is intentionally orphaned and unread.
+      name: "muxify-video-storage-v2",
       storage: indexedDbStorage,
-      // Only persist essential data, not loading states
       partialize: (state) => ({
-        videoItems: state.videoItems,
+        videoItems: state.videoItems.map((item) => {
+          const { videoData: _vd, thumbnailData: _td, videoFile: _vf, ...rest } = item;
+          return rest as VideoItem;
+        }),
         totalCount: state.totalCount,
         currentPage: state.currentPage,
         pageSize: state.pageSize,
