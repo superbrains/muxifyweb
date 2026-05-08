@@ -1,5 +1,6 @@
 import React from 'react';
-import { Box, Text, VStack, HStack, Image } from '@chakra-ui/react';
+import { Box, Text, VStack, HStack } from '@chakra-ui/react';
+import { AuthedImage } from '../../../shared/components/AuthedImage';
 
 interface LeaderboardItem {
     rank: number;
@@ -12,6 +13,15 @@ interface LeaderboardCardProps {
     title: string;
     data: LeaderboardItem[];
 }
+
+const AvatarFallback = (
+    <Box
+        w={10}
+        h={10}
+        borderRadius="full"
+        bg="gray.200"
+    />
+);
 
 export const LeaderboardCard: React.FC<LeaderboardCardProps> = ({ title, data }) => (
     <Box display="flex" flexDirection="column" gap={4} bg="white" borderRadius="lg" border="1px solid" borderColor="#FFCEBF" p={3} minH="200px">
@@ -36,23 +46,15 @@ export const LeaderboardCard: React.FC<LeaderboardCardProps> = ({ title, data })
                         >
                             {item.rank}
                         </Box>
-                        {item.avatarUrl ? (
-                            <Image
-                                src={item.avatarUrl}
-                                alt={item.name}
-                                w={10}
-                                h={10}
-                                borderRadius="full"
-                                objectFit="cover"
-                            />
-                        ) : (
-                            <Box
-                                w={10}
-                                h={10}
-                                borderRadius="full"
-                                bg="gray.200"
-                            />
-                        )}
+                        <AuthedImage
+                            src={item.avatarUrl}
+                            alt={item.name}
+                            w={10}
+                            h={10}
+                            borderRadius="full"
+                            objectFit="cover"
+                            fallback={AvatarFallback}
+                        />
                         <VStack align="start" gap={0}>
                             <Text fontSize="xs" color="gray.800" fontWeight="medium" overflow="hidden" textOverflow="ellipsis" whiteSpace="nowrap" maxW="140px">
                                 {item.name}

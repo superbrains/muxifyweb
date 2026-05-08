@@ -1,5 +1,6 @@
 import React from 'react';
-import { Box, Text, VStack, HStack, chakra } from '@chakra-ui/react';
+import { Box, Text, VStack, HStack } from '@chakra-ui/react';
+import { AuthedImage } from '../../../shared/components/AuthedImage';
 
 interface FansAndSubscribersItem {
     rank: number;
@@ -56,15 +57,13 @@ export const FansAndSubscribersCard: React.FC<FansAndSubscribersCardProps> = ({ 
                                 justifyContent="center"
                                 overflow="hidden"
                             >
-                                {item.avatarUrl ? (
-                                    <chakra.img
-                                        src={item.avatarUrl}
-                                        alt={item.name}
-                                        w="full"
-                                        h="full"
-                                        objectFit="cover"
-                                    />
-                                ) : null}
+                                <AuthedImage
+                                    src={item.avatarUrl}
+                                    alt={item.name}
+                                    w="full"
+                                    h="full"
+                                    objectFit="cover"
+                                />
                             </Box>
                             <VStack align="start" gap={0}>
                                 <Text fontSize="xs" color="gray.800" fontWeight="medium" overflow="hidden" textOverflow="ellipsis" whiteSpace="nowrap" maxW="140px">

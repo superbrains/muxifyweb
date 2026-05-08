@@ -17,6 +17,7 @@ import Chart from 'react-apexcharts';
 import { ComposableMap, Geographies, Geography } from 'react-simple-maps';
 import { AddUserIcon, CalendarIcon, GiftIcon, MusicFilledIcon, MusicIconOutlinedIcon, PlayerIcon, SalesDashboardIcon, UploadIcon } from '@/shared/icons/CustomIcons';
 import BackgroundImg from '@/assets/images/Background.png';
+import { AuthedImage } from '@/shared/components/AuthedImage';
 import { useWindowWidth } from '@/shared/hooks/useWindowsWidth';
 import { useDashboard } from '../hooks/useDashboard';
 import { formatCurrency } from '@shared/lib';
@@ -791,31 +792,30 @@ export const Dashboard: React.FC = () => {
                             {topGifters.map((giver, index) => (
                                 <HStack key={giver.userId} justify="space-between" align="center" py={2}>
                                     <HStack gap={3}>
-                                        {giver.avatarUrl ? (
-                                            <Box
-                                                w={6}
-                                                h={6}
-                                                borderRadius="full"
-                                                bgImage={`url(${giver.avatarUrl})`}
-                                                bgSize="cover"
-                                                backgroundPosition="center"
-                                            />
-                                        ) : (
-                                            <Box
-                                                w={6}
-                                                h={6}
-                                                borderRadius="full"
-                                                bg={getAvatarBgColor(index)}
-                                                color="white"
-                                                display="flex"
-                                                alignItems="center"
-                                                justifyContent="center"
-                                                fontSize="8px"
-                                                fontWeight="bold"
-                                            >
-                                                {(giver.displayName || giver.username || 'U').charAt(0).toUpperCase()}
-                                            </Box>
-                                        )}
+                                        <AuthedImage
+                                            src={giver.avatarUrl}
+                                            alt={giver.displayName || giver.username || 'Top giver'}
+                                            w={6}
+                                            h={6}
+                                            borderRadius="full"
+                                            objectFit="cover"
+                                            fallback={
+                                                <Box
+                                                    w={6}
+                                                    h={6}
+                                                    borderRadius="full"
+                                                    bg={getAvatarBgColor(index)}
+                                                    color="white"
+                                                    display="flex"
+                                                    alignItems="center"
+                                                    justifyContent="center"
+                                                    fontSize="8px"
+                                                    fontWeight="bold"
+                                                >
+                                                    {(giver.displayName || giver.username || 'U').charAt(0).toUpperCase()}
+                                                </Box>
+                                            }
+                                        />
                                         <VStack align="start" gap={0}>
                                             <HStack gap={1}>
                                                 <Text fontSize="10px" fontWeight="semibold" color="gray.900">

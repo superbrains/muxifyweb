@@ -7,9 +7,9 @@ import {
     Text,
     Icon,
     Menu,
-    Image,
 } from '@chakra-ui/react';
 import { useArtistStore } from '@/features/artists/store/useArtistStore';
+import { AuthedImage } from '@/shared/components/AuthedImage';
 
 interface ArtistDropdownProps {
     isCollapsed?: boolean;
@@ -47,7 +47,7 @@ export const ArtistDropdown: React.FC<ArtistDropdownProps> = ({ isCollapsed = fa
                     <HStack gap={2} w="full" justify="space-between">
                         <HStack gap={2} flex={1}>
                             {selectedArtist?.avatar && (
-                                <Image
+                                <AuthedImage
                                     src={selectedArtist.avatar}
                                     alt={selectedArtist.name}
                                     boxSize={4}
@@ -109,29 +109,28 @@ export const ArtistDropdown: React.FC<ArtistDropdownProps> = ({ isCollapsed = fa
                                 py={2}
                             >
                                 <HStack gap={2} w="full">
-                                    {artist.avatar ? (
-                                        <Image
-                                            src={artist.avatar}
-                                            alt={artist.name}
-                                            boxSize={8}
-                                            borderRadius="full"
-                                            objectFit="cover"
-                                        />
-                                    ) : (
-                                        <Box
-                                            boxSize={8}
-                                            borderRadius="full"
-                                            bg="primary.100"
-                                            display="flex"
-                                            alignItems="center"
-                                            justifyContent="center"
-                                            color="primary.500"
-                                            fontWeight="semibold"
-                                            fontSize="xs"
-                                        >
-                                            {artist.name.charAt(0).toUpperCase()}
-                                        </Box>
-                                    )}
+                                    <AuthedImage
+                                        src={artist.avatar}
+                                        alt={artist.name}
+                                        boxSize={8}
+                                        borderRadius="full"
+                                        objectFit="cover"
+                                        fallback={
+                                            <Box
+                                                boxSize={8}
+                                                borderRadius="full"
+                                                bg="primary.100"
+                                                display="flex"
+                                                alignItems="center"
+                                                justifyContent="center"
+                                                color="primary.500"
+                                                fontWeight="semibold"
+                                                fontSize="xs"
+                                            >
+                                                {artist.name.charAt(0).toUpperCase()}
+                                            </Box>
+                                        }
+                                    />
                                     <VStack align="start" gap={0} flex={1}>
                                         <Text fontSize="sm" fontWeight="medium" color="gray.900">
                                             {artist.name}

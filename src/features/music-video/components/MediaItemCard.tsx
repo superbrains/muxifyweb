@@ -1,7 +1,8 @@
 import React from 'react';
-import { Box, Button, Flex, HStack, Icon, Image, Text, VStack, Spinner } from '@chakra-ui/react';
+import { Box, Button, Flex, HStack, Icon, Text, VStack, Spinner } from '@chakra-ui/react';
 import { Edit2Icon } from '@shared/icons/CustomIcons';
 import { CustomMenu } from '@/shared/components/CustomMenu';
+import { AuthedImage } from '@/shared/components/AuthedImage';
 
 interface MediaItemCardProps {
     id: string;
@@ -100,7 +101,7 @@ export const MediaItemCard: React.FC<MediaItemCardProps> = ({
             )}
             <Flex gap={4} align="start">
                 {/* Thumbnail */}
-                <Image
+                <AuthedImage
                     src={thumbnail}
                     alt={title}
                     w={'170px'}
@@ -112,6 +113,9 @@ export const MediaItemCard: React.FC<MediaItemCardProps> = ({
                     objectFit="cover"
                     borderRadius="md"
                     flexShrink={0}
+                    fallback={
+                        <Box w={'170px'} h={'170px'} borderRadius="md" bg="gray.100" flexShrink={0} />
+                    }
                 />
 
                 {/* Content */}
