@@ -5,13 +5,22 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useUploadVideoStore } from '../../upload-video/store/useUploadVideoStore';
 import { VideoPlayer } from '../../upload-video/components';
 import { UploadSuccessPage, ReleaseScheduler } from './';
+import { UploadProgressModal } from '@shared/components';
+import type { UploadProgressDetail } from '@shared/types/upload';
 
 interface VideoReviewProps {
     onPublish: () => Promise<void>;
     isPublishing?: boolean;
+    uploadProgress?: UploadProgressDetail | null;
+    onResetUploadProgress?: () => void;
 }
 
-export const VideoReview: React.FC<VideoReviewProps> = ({ onPublish, isPublishing: externalIsPublishing = false }) => {
+export const VideoReview: React.FC<VideoReviewProps> = ({
+    onPublish,
+    isPublishing: externalIsPublishing = false,
+    uploadProgress = null,
+    onResetUploadProgress,
+}) => {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const [isPublished, setIsPublished] = useState(false);
@@ -70,8 +79,26 @@ export const VideoReview: React.FC<VideoReviewProps> = ({ onPublish, isPublishin
         return <UploadSuccessPage onUnderstand={handleDone} onUploadMore={handleUploadMore} />;
     }
 
+    const stage = uploadProgress?.stage ?? null;
+    const showProgressModal = isCurrentlyPublishing || stage === 'failed' || stage === 'completed';
+    const videoTitle = videoFile?.name.replace(/\.[^/.]+$/, '') || 'Untitled Video';
+
     return (
         <>
+            <UploadProgressModal
+                isOpen={showProgressModal}
+                title={videoTitle}
+                thumbnailUrl={selectedThumbnail?.url}
+                fileSize={videoFile?.file?.size ?? 0}
+                progress={uploadProgress ?? null}
+                onRetry={() => {
+                    onResetUploadProgress?.();
+                    void handlePublish();
+                }}
+                onClose={() => {
+                    onResetUploadProgress?.();
+                }}
+            />
             {/* Header with Back and Publish buttons */}
             <Flex justify="space-between" align="center" mb={6}>
                 <Button

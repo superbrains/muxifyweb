@@ -34,10 +34,21 @@ export const Review: React.FC = () => {
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
     const { isPodcaster, isCreator, isRecordLabel } = useUserType();
-    const { uploadMusic, loading: uploadLoading } = useUploadMusic();
-    const { uploadVideo, loading: videoUploadLoading } = useUploadVideo();
+    const {
+        uploadMusic,
+        loading: uploadLoading,
+        uploadProgress: musicUploadProgress,
+        resetUploadProgress: resetMusicUploadProgress,
+    } = useUploadMusic();
+    const {
+        uploadVideo,
+        loading: videoUploadLoading,
+        uploadProgress: videoUploadProgress,
+        resetUploadProgress: resetVideoUploadProgress,
+    } = useUploadVideo();
     const toast = useChakraToast();
     const [isPublishing, setIsPublishing] = useState(false);
+    const [albumProgress, setAlbumProgress] = useState<{ current: number; total: number } | undefined>(undefined);
 
     // Get editing params
     const mixId = searchParams.get('mixId');
@@ -158,6 +169,8 @@ export const Review: React.FC = () => {
                         const trackTitle = album.trackTitles[track.id] || track.name?.split('.')[0] || `Track ${i + 1}`;
                         const trackArtists = album.trackArtists[track.id] || album.selectedArtists.map(a => a.name);
 
+                        setAlbumProgress({ current: i + 1, total: album.tracks.length });
+
                         const trackResult = await uploadMusic({
                             title: trackTitle,
                             artist: trackArtists.join(', ') || currentArtistName,
@@ -239,17 +252,6 @@ export const Review: React.FC = () => {
                 const thumbnailFile = videoUpload.thumbnails[0]?.file;
                 const titleFromFilename = videoUpload.videoFile.name.replace(/\.[^/.]+$/, '') || 'Untitled Video';
 
-                const videoResult = await uploadVideo({
-                    title: titleFromFilename,
-                    file: videoFile,
-                    thumbnail: thumbnailFile,
-                });
-
-                if (!videoResult) {
-                    setIsPublishing(false);
-                    return;
-                }
-
                 const currentArtistName = (() => {
                     const { getCurrentUserData, getCurrentUserType } = useUserManagementStore.getState();
                     const currentUserData = getCurrentUserData();
@@ -259,6 +261,18 @@ export const Review: React.FC = () => {
                     }
                     return 'Artist';
                 })();
+
+                const videoResult = await uploadVideo({
+                    title: titleFromFilename,
+                    file: videoFile,
+                    thumbnail: thumbnailFile,
+                    artistName: currentArtistName,
+                });
+
+                if (!videoResult) {
+                    setIsPublishing(false);
+                    return;
+                }
 
                 // Backend now hosts the file — store metadata only. Persisting base64
                 // video data here previously caused OOM crashes on /music-videos hydration.
@@ -308,6 +322,7 @@ export const Review: React.FC = () => {
             toast.error('Publish Error', 'An unexpected error occurred while publishing.');
         } finally {
             setIsPublishing(false);
+            setAlbumProgress(undefined);
         }
     };
 
@@ -375,9 +390,17 @@ export const Review: React.FC = () => {
                     onPublish={handlePublish}
                     isDisabled={isEditingMode}
                     isPublishing={isPublishing || uploadLoading}
+                    uploadProgress={musicUploadProgress}
+                    albumProgress={albumProgress}
+                    onResetUploadProgress={resetMusicUploadProgress}
                 />
             ) : (
-                <VideoReview onPublish={handlePublish} isPublishing={isPublishing || videoUploadLoading} />
+                <VideoReview
+                    onPublish={handlePublish}
+                    isPublishing={isPublishing || videoUploadLoading}
+                    uploadProgress={videoUploadProgress}
+                    onResetUploadProgress={resetVideoUploadProgress}
+                />
             )}
         </Box>
     );

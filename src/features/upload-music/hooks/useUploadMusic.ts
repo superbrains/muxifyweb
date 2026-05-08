@@ -7,6 +7,8 @@ import {
 } from '../services/uploadMusicService';
 import { useChakraToast } from '@shared/hooks';
 import { getApiErrorMessage } from '@shared/lib/errorUtils';
+import { useUploadProgressTracker } from '@shared/lib/uploadProgress';
+import type { UploadProgressDetail } from '@shared/types/upload';
 import type { TrackDto, TrackListDto } from '../types';
 
 interface UseUploadMusicReturn {
@@ -14,11 +16,14 @@ interface UseUploadMusicReturn {
   deleteTrack: (id: string) => Promise<void>;
   loadTracks: (page?: number, pageSize?: number) => Promise<TrackListDto | null>;
   updateTrack: (id: string, data: Partial<TrackDto>) => Promise<TrackDto | null>;
+  uploadProgress: UploadProgressDetail | null;
+  resetUploadProgress: () => void;
   loading: boolean;
 }
 
 export const useUploadMusic = (): UseUploadMusicReturn => {
   const [loading, setLoading] = useState(false);
+  const tracker = useUploadProgressTracker();
   const {
     addTrack,
     removeTrack,
@@ -32,7 +37,6 @@ export const useUploadMusic = (): UseUploadMusicReturn => {
 
   const uploadMusic = useCallback(
     async (data: UploadMusicData): Promise<TrackDto | null> => {
-      // Validate upload data before submitting
       const validationErrors = validateUploadData(data);
       if (validationErrors.length > 0) {
         toast.error('Validation Error', validationErrors[0]);
@@ -41,24 +45,23 @@ export const useUploadMusic = (): UseUploadMusicReturn => {
 
       setLoading(true);
       const uploadId = crypto.randomUUID();
+      tracker.start(data.file.size);
 
       try {
-        // Add upload progress entry
         addUpload({
           fileId: uploadId,
           progress: 0,
           status: 'uploading',
         });
 
-        // Upload with real progress tracking
-        const track = await uploadMusicService.uploadTrack(data, (progress) => {
-          updateUpload(uploadId, { progress });
+        const track = await uploadMusicService.uploadTrack(data, (event) => {
+          tracker.onEvent(event);
+          updateUpload(uploadId, { progress: event.progress });
         });
 
-        // Mark as completed
+        tracker.markCompleted();
         updateUpload(uploadId, { progress: 100, status: 'completed' });
 
-        // Add the new track to store (cast to MusicTrack type)
         addTrack(track as unknown as Parameters<typeof addTrack>[0]);
 
         toast.success(
@@ -66,7 +69,6 @@ export const useUploadMusic = (): UseUploadMusicReturn => {
           'Your track has been uploaded successfully.'
         );
 
-        // Remove upload progress after a delay
         setTimeout(() => {
           removeUpload(uploadId);
         }, 2000);
@@ -74,6 +76,7 @@ export const useUploadMusic = (): UseUploadMusicReturn => {
         return track;
       } catch (error: unknown) {
         const errorMessage = getApiErrorMessage(error, 'Upload failed');
+        tracker.markFailed(errorMessage);
         updateUpload(uploadId, {
           status: 'failed',
           error: errorMessage,
@@ -84,7 +87,7 @@ export const useUploadMusic = (): UseUploadMusicReturn => {
         setLoading(false);
       }
     },
-    [addTrack, addUpload, removeUpload, updateUpload, toast]
+    [addTrack, addUpload, removeUpload, updateUpload, toast, tracker]
   );
 
   const deleteTrack = useCallback(
@@ -110,10 +113,7 @@ export const useUploadMusic = (): UseUploadMusicReturn => {
       try {
         setLoading(true);
         const result = await uploadMusicService.getTracks({ page, pageSize });
-
-        // Update store with loaded tracks (cast to MusicTrack array)
         setTracks(result.items as unknown as Parameters<typeof setTracks>[0]);
-
         return result;
       } catch (error: unknown) {
         const errorMessage = getApiErrorMessage(error, 'Failed to load tracks');
@@ -139,7 +139,6 @@ export const useUploadMusic = (): UseUploadMusicReturn => {
           key: data.key,
         });
 
-        // Update track in store
         updateTrackInStore(id, updatedTrack as unknown as Parameters<typeof updateTrackInStore>[1]);
 
         toast.success(
@@ -162,6 +161,8 @@ export const useUploadMusic = (): UseUploadMusicReturn => {
     deleteTrack,
     loadTracks,
     updateTrack,
+    uploadProgress: tracker.uploadProgress,
+    resetUploadProgress: tracker.reset,
     loading,
   };
 };

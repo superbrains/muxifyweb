@@ -59,6 +59,7 @@ export interface UploadVideoData {
   videoType?: VideoType;
   genre?: string;
   trackId?: string;
+  artistName?: string;
   file: File;
   thumbnail?: File;
 }
@@ -109,7 +110,11 @@ export const videoService = {
         if (progressEvent.total && onProgress) {
           // Cap at 95% so the UI doesn't sit at 100% while /complete is still running
           const progress = Math.min(95, Math.round((progressEvent.loaded * 95) / progressEvent.total));
-          onProgress(progress);
+          onProgress({
+            loaded: progressEvent.loaded,
+            total: progressEvent.total,
+            progress,
+          });
         }
       },
       transformRequest: [(d) => d], // prevent axios from JSON-stringifying the File
@@ -119,6 +124,7 @@ export const videoService = {
     const complete = await axiosInstance.post<CompleteUploadResult>(
       `/uploads/${begin.data.sessionId}/complete`,
       {
+        artistName: data.artistName,
         title: data.title,
         description: data.description,
         genre: data.genre,
@@ -143,7 +149,11 @@ export const videoService = {
       }
     }
 
-    onProgress?.(100);
+    onProgress?.({
+      loaded: data.file.size,
+      total: data.file.size,
+      progress: 100,
+    });
     return video;
   },
 
@@ -208,7 +218,11 @@ export const videoService = {
         onUploadProgress: (progressEvent: AxiosProgressEvent) => {
           if (progressEvent.total && onProgress) {
             const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-            onProgress(progress);
+            onProgress({
+              loaded: progressEvent.loaded,
+              total: progressEvent.total,
+              progress,
+            });
           }
         },
       }

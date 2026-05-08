@@ -15,5 +15,6 @@ export { Select } from "./Select";
 export { URLInput } from "./URLInput";
 export type { URLInputProps } from "./URLInput";
 export { ConfirmModal } from "./ConfirmModal";
+export { UploadProgressModal } from "./UploadProgressModal";
 export { ErrorBoundary } from "./ErrorBoundary";
 export { withErrorBoundary } from "./withErrorBoundary";

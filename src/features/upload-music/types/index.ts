@@ -122,9 +122,14 @@ export interface UploadProgress {
 export type UploadStatus = 'pending' | 'uploading' | 'processing' | 'completed' | 'failed';
 
 /**
- * Upload callback for progress tracking
+ * Upload callback for progress tracking. Emits the full byte-level event so
+ * consumers can derive speed/ETA themselves.
  */
-export type UploadProgressCallback = (progress: number) => void;
+export type UploadProgressCallback = (event: {
+  loaded: number;
+  total: number;
+  progress: number;
+}) => void;
 
 // =============================================================================
 // Validation Constants

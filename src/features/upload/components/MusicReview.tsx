@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { Button, Flex, Icon, Text } from '@chakra-ui/react';
 import { FiArrowLeft, FiArrowRight } from 'react-icons/fi';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { AnimatedTabs } from '@shared/components';
+import { AnimatedTabs, UploadProgressModal } from '@shared/components';
 import { MixReview } from './MixReview';
 import { AlbumReview } from './AlbumReview';
 import { UploadSuccessPage } from './UploadSuccessPage';
 import { useUploadMusicStore } from '@uploadMusic/store/useUploadMusicStore';
 import { useUserType } from '@/features/auth/hooks/useUserType';
+import type { UploadProgressDetail } from '@shared/types/upload';
 
 interface MusicReviewProps {
     albumTab: 'mix' | 'album';
@@ -15,16 +16,59 @@ interface MusicReviewProps {
     onPublish: () => Promise<void>;
     isDisabled?: boolean;
     isPublishing?: boolean;
+    uploadProgress?: UploadProgressDetail | null;
+    albumProgress?: { current: number; total: number };
+    onResetUploadProgress?: () => void;
 }
 
-export const MusicReview: React.FC<MusicReviewProps> = ({ albumTab, setAlbumTab, onPublish, isDisabled = false, isPublishing: externalIsPublishing = false }) => {
+export const MusicReview: React.FC<MusicReviewProps> = ({
+    albumTab,
+    setAlbumTab,
+    onPublish,
+    isDisabled = false,
+    isPublishing: externalIsPublishing = false,
+    uploadProgress = null,
+    albumProgress,
+    onResetUploadProgress,
+}) => {
     const [isPublished, setIsPublished] = useState(false);
     const [isPublishing, setIsPublishing] = useState(false);
     const isCurrentlyPublishing = isPublishing || externalIsPublishing;
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
-    const { resetMix, resetAlbum } = useUploadMusicStore();
+    const { resetMix, resetAlbum, mix, album } = useUploadMusicStore();
     const { isPodcaster, isDJ, isMusician } = useUserType();
+
+    // Build a short-lived blob URL for the cover art preview shown in the modal.
+    // Object URLs leak if not revoked, so cleanup on change/unmount.
+    const isMixTab = albumTab === 'mix';
+    const coverArtFile = isMixTab ? mix.coverArt?.file : album.coverArt?.file;
+    const [coverPreviewUrl, setCoverPreviewUrl] = useState<string | undefined>(undefined);
+    useEffect(() => {
+        if (!coverArtFile) {
+            setCoverPreviewUrl(undefined);
+            return;
+        }
+        const url = URL.createObjectURL(coverArtFile);
+        setCoverPreviewUrl(url);
+        return () => URL.revokeObjectURL(url);
+    }, [coverArtFile]);
+
+    const modalTitle = isMixTab
+        ? mix.trackTitle || mix.tracks[0]?.name?.replace(/\.[^/.]+$/, '') || 'Untitled track'
+        : album.selectedArtists[0]?.name || 'Untitled album';
+
+    const modalFileSize = (() => {
+        if (isMixTab) return mix.tracks[0]?.file?.size ?? 0;
+        if (albumProgress) {
+            const idx = Math.max(0, albumProgress.current - 1);
+            return album.tracks[idx]?.file?.size ?? 0;
+        }
+        return album.tracks[0]?.file?.size ?? 0;
+    })();
+
+    const stage = uploadProgress?.stage ?? null;
+    const showProgressModal = isCurrentlyPublishing || stage === 'failed' || stage === 'completed';
     
     // Get sub tabs based on user type
     const getSubTabs = () => {
@@ -129,6 +173,22 @@ export const MusicReview: React.FC<MusicReviewProps> = ({ albumTab, setAlbumTab,
 
     return (
         <>
+            <UploadProgressModal
+                isOpen={showProgressModal}
+                title={modalTitle}
+                thumbnailUrl={coverPreviewUrl}
+                fileSize={modalFileSize}
+                progress={uploadProgress ?? null}
+                albumProgress={albumProgress}
+                onRetry={() => {
+                    onResetUploadProgress?.();
+                    void handlePublish();
+                }}
+                onClose={() => {
+                    onResetUploadProgress?.();
+                }}
+            />
+
             {/* Review Header */}
             <Flex align="center" gap={3} mb={6}>
                 <Icon

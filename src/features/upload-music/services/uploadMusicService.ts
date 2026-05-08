@@ -66,7 +66,11 @@ export const uploadMusicService = {
       onUploadProgress: (progressEvent: AxiosProgressEvent) => {
         if (progressEvent.total && onProgress) {
           const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-          onProgress(progress);
+          onProgress({
+            loaded: progressEvent.loaded,
+            total: progressEvent.total,
+            progress,
+          });
         }
       },
       // Increase timeout for large file uploads
@@ -138,7 +142,11 @@ export const uploadMusicService = {
         onUploadProgress: (progressEvent: AxiosProgressEvent) => {
           if (progressEvent.total && onProgress) {
             const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-            onProgress(progress);
+            onProgress({
+              loaded: progressEvent.loaded,
+              total: progressEvent.total,
+              progress,
+            });
           }
         },
       }
