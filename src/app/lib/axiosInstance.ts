@@ -30,23 +30,26 @@ export const axiosInstance = axios.create({
   },
 });
 
-// Track if we're currently refreshing to prevent multiple refresh attempts
-let isRefreshing = false;
-let failedQueue: Array<{
-  resolve: (token: string) => void;
-  reject: (error: Error) => void;
-}> = [];
+// Singleton refresh promise. Every concurrent 401 awaits the SAME promise so only one
+// POST /auth/refresh ever flies. Required because the backend rotates refresh tokens
+// single-use — two parallel refreshes with the same token would race and the loser
+// would log the user out mid-session.
+let refreshPromise: Promise<string> | null = null;
 
-const processQueue = (error: Error | null, token: string | null = null) => {
-  failedQueue.forEach((prom) => {
-    if (error) {
-      prom.reject(error);
-    } else {
-      prom.resolve(token!);
-    }
-  });
-  failedQueue = [];
-};
+async function performRefresh(): Promise<string> {
+  const refreshToken = tokenStorage.getRefreshToken();
+  if (!refreshToken) {
+    throw new Error("No refresh token available");
+  }
+
+  const response = await axios.post<{
+    token: string;
+    refreshToken: string;
+  }>(`${API_BASE_URL}/auth/refresh`, { refreshToken });
+
+  tokenStorage.setTokens(response.data.token, response.data.refreshToken);
+  return response.data.token;
+}
 
 // Request interceptor to add auth token and handle FormData
 axiosInstance.interceptors.request.use(
@@ -89,56 +92,24 @@ axiosInstance.interceptors.response.use(
       return Promise.reject(error);
     }
 
-    if (isRefreshing) {
-      // If already refreshing, queue this request
-      return new Promise<string>((resolve, reject) => {
-        failedQueue.push({ resolve, reject });
-      })
-        .then((token) => {
-          originalRequest.headers = originalRequest.headers ?? {};
-          originalRequest.headers.Authorization = `Bearer ${token}`;
-          return axiosInstance(originalRequest);
-        })
-        .catch((err) => Promise.reject(err));
-    }
-
     originalRequest._retry = true;
-    isRefreshing = true;
 
-    const refreshToken = tokenStorage.getRefreshToken();
-
-    if (!refreshToken) {
-      // No refresh token available, redirect to login
-      tokenStorage.clearTokens();
-      window.location.href = "/login";
-      return Promise.reject(error);
+    // Coalesce concurrent 401s onto a single refresh call.
+    if (!refreshPromise) {
+      refreshPromise = performRefresh().finally(() => {
+        refreshPromise = null;
+      });
     }
 
     try {
-      const response = await axios.post<{
-        token: string;
-        refreshToken: string;
-      }>(`${API_BASE_URL}/auth/refresh`, { refreshToken });
-
-      const { token, refreshToken: newRefreshToken } = response.data;
-      tokenStorage.setTokens(token, newRefreshToken);
-
-      // Update the failed request with new token
+      const newToken = await refreshPromise;
       originalRequest.headers = originalRequest.headers ?? {};
-      originalRequest.headers.Authorization = `Bearer ${token}`;
-
-      // Process queued requests
-      processQueue(null, token);
-
+      originalRequest.headers.Authorization = `Bearer ${newToken}`;
       return axiosInstance(originalRequest);
     } catch (refreshError) {
-      // Refresh failed, clear tokens and redirect to login
-      processQueue(refreshError as Error, null);
       tokenStorage.clearTokens();
       window.location.href = "/login";
       return Promise.reject(refreshError);
-    } finally {
-      isRefreshing = false;
     }
   }
 );
