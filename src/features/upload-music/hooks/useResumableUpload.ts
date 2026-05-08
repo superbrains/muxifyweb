@@ -13,7 +13,7 @@
 
 import { useCallback, useRef, useState } from 'react';
 import axios, { type CancelTokenSource } from 'axios';
-import { axiosInstance } from '@app/lib/axiosInstance';
+import { axiosInstance, ensureFreshAccessToken } from '@app/lib/axiosInstance';
 import type { TrackDto } from '../types';
 import type { FeaturedArtistInput } from '../types/album';
 
@@ -168,7 +168,10 @@ export function useResumableUpload(): UseResumableUploadResult {
         });
 
         // 4. Complete: tell our backend to finalize, persist the Track, and enqueue processing.
+        // Block uploads to Azure can take many minutes; refresh the access token if it's
+        // close to expiry so /complete doesn't 401 right at the finish line.
         setPhase('finalizing');
+        await ensureFreshAccessToken(60);
         const completeResponse = await axiosInstance.post<CompleteUploadResponse>(
           `/uploads/${session.sessionId}/complete`,
           {

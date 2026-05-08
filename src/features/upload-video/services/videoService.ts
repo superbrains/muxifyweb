@@ -5,7 +5,7 @@
  */
 
 import axios from 'axios';
-import { axiosInstance } from '@app/lib/axiosInstance';
+import { axiosInstance, ensureFreshAccessToken } from '@app/lib/axiosInstance';
 import type { AxiosProgressEvent } from 'axios';
 import type {
   UpdateVideoRequest,
@@ -120,7 +120,10 @@ export const videoService = {
       transformRequest: [(d) => d], // prevent axios from JSON-stringifying the File
     });
 
-    // Step 3 — complete
+    // Step 3 — complete. Direct-to-blob uploads can take many minutes; refresh
+    // the access token if it's close to expiry so /complete doesn't 401 right
+    // at the finish line.
+    await ensureFreshAccessToken(60);
     const complete = await axiosInstance.post<CompleteUploadResult>(
       `/uploads/${begin.data.sessionId}/complete`,
       {

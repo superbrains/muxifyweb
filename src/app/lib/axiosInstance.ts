@@ -51,6 +51,47 @@ async function performRefresh(): Promise<string> {
   return response.data.token;
 }
 
+function decodeJwtExp(jwt: string): number | null {
+  try {
+    const payload = jwt.split(".")[1];
+    if (!payload) return null;
+    const json = JSON.parse(atob(payload.replace(/-/g, "+").replace(/_/g, "/")));
+    return typeof json.exp === "number" ? json.exp : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Ensure the stored access token has at least `minSeconds` of life remaining,
+ * refreshing it if not. Use this before long-tail requests (e.g. resumable
+ * upload `/complete` calls that fire after many minutes of block uploads to
+ * Azure) so the request doesn't depend on the 401-retry interceptor — under
+ * concurrent uploads the retry path can race with refresh-token rotation.
+ *
+ * Coalesces onto the same singleton `refreshPromise` as the response
+ * interceptor, so parallel uploads still produce only one /auth/refresh call.
+ */
+export async function ensureFreshAccessToken(minSeconds = 60): Promise<void> {
+  const token = tokenStorage.getAccessToken();
+  if (!token) return;
+  const exp = decodeJwtExp(token);
+  if (exp === null) return;
+  const remaining = exp - Math.floor(Date.now() / 1000);
+  if (remaining > minSeconds) return;
+  if (!refreshPromise) {
+    refreshPromise = performRefresh().finally(() => {
+      refreshPromise = null;
+    });
+  }
+  try {
+    await refreshPromise;
+  } catch {
+    // Swallow — the subsequent request will 401 and the response interceptor
+    // takes over (clear tokens, redirect to /login).
+  }
+}
+
 // Request interceptor to add auth token and handle FormData
 axiosInstance.interceptors.request.use(
   (config) => {
