@@ -36,6 +36,7 @@ export interface AlbumItem {
   coverArt: string;
   coverArtData?: string; // Base64 data for file reconstruction
   coverArtName?: string; // Original filename
+  isPublished?: boolean; // Server-driven; true = published to fans, false/undefined = draft
   tracks: {
     id: string;
     title: string;

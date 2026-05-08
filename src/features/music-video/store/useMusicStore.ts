@@ -3,6 +3,8 @@ import { persist } from "zustand/middleware";
 import type { SingleItem, AlbumItem } from "../types";
 import { indexedDbStorage } from "@/shared/lib/indexedDbStorage";
 import { uploadMusicService } from "@/features/upload-music/services/uploadMusicService";
+import { albumService } from "@/features/upload-music/services/albumService";
+import type { AlbumManageDto } from "@/features/upload-music/types/album";
 import type { TrackDto, UpdateTrackRequest } from "@/features/upload-music/types";
 import { getApiErrorMessage } from "@/shared/lib/errorUtils";
 
@@ -31,7 +33,9 @@ interface MusicStoreState {
 
   // API Actions
   fetchTracks: (page?: number, pageSize?: number) => Promise<void>;
+  fetchAlbums: () => Promise<void>;
   deleteTrack: (id: string) => Promise<void>;
+  deleteAlbum: (id: string) => Promise<void>;
   updateTrack: (id: string, data: UpdateTrackRequest) => Promise<void>;
   refreshTracks: () => Promise<void>;
   clearError: () => void;
@@ -50,6 +54,31 @@ interface MusicStoreState {
 // =============================================================================
 // Helper: Transform TrackDto to SingleItem
 // =============================================================================
+
+function albumDtoToAlbumItem(dto: AlbumManageDto): AlbumItem {
+  return {
+    id: dto.id,
+    title: dto.title,
+    artist: dto.artistName,
+    artists: [{ id: dto.artistId, name: dto.artistName, role: "Primary" }],
+    album: dto.title,
+    releaseDate: dto.releaseDate ?? dto.createdAt,
+    plays: 0,
+    unlocks: 0,
+    gifts: 0,
+    coverArt: dto.coverArtThumbnail ?? dto.coverArtUrl ?? "",
+    isPublished: dto.isPublished,
+    tracks: [], // The grid only needs metadata; the album editor fetches tracks on demand.
+    genre: dto.genreName ? [dto.genreName] : [],
+    releaseType: [dto.releaseType],
+    unlockCost: [],
+    allowSponsorship: [],
+    releaseYear: dto.releaseDate
+      ? new Date(dto.releaseDate).getFullYear().toString()
+      : new Date(dto.createdAt).getFullYear().toString(),
+    createdAt: dto.createdAt,
+  };
+}
 
 function trackDtoToSingleItem(track: TrackDto): SingleItem {
   return {
@@ -125,6 +154,19 @@ export const useMusicStore = create<MusicStoreState>()(
       },
 
       /**
+       * Fetch albums from /api/v1/albums (drafts + published).
+       */
+      fetchAlbums: async () => {
+        set({ error: null });
+        try {
+          const dtos = await albumService.listMyAlbums(true);
+          set({ albums: dtos.map(albumDtoToAlbumItem) });
+        } catch (error) {
+          set({ error: getApiErrorMessage(error, "Failed to fetch albums") });
+        }
+      },
+
+      /**
        * Delete a track via API
        */
       deleteTrack: async (id: string) => {
@@ -142,6 +184,26 @@ export const useMusicStore = create<MusicStoreState>()(
         } catch (error) {
           set({
             error: getApiErrorMessage(error, "Failed to delete track"),
+            isDeleting: null,
+          });
+          throw error;
+        }
+      },
+
+      /**
+       * Delete an album via API.
+       */
+      deleteAlbum: async (id: string) => {
+        set({ isDeleting: id, error: null });
+        try {
+          await albumService.deleteAlbum(id);
+          set((state) => ({
+            albums: state.albums.filter((item) => item.id !== id),
+            isDeleting: null,
+          }));
+        } catch (error) {
+          set({
+            error: getApiErrorMessage(error, "Failed to delete album"),
             isDeleting: null,
           });
           throw error;

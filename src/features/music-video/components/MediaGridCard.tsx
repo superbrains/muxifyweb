@@ -17,6 +17,8 @@ interface MediaGridCardProps {
     plays: number;
     kind: MediaKind;
     isDeleting?: boolean;
+    /** When false on an album, render a "Draft" badge so artists can spot unpublished work. */
+    isPublished?: boolean;
     onEdit: () => void;
     onPlay?: () => void;
     onOpen?: () => void;
@@ -39,11 +41,13 @@ export const MediaGridCard: React.FC<MediaGridCardProps> = ({
     plays,
     kind,
     isDeleting = false,
+    isPublished,
     onEdit,
     onPlay,
     onOpen,
     onDelete,
 }) => {
+    const showDraftBadge = kind === 'album' && isPublished === false;
     const handleShare = () => {
         const link = `${window.location.origin}/music-videos/${kind}/${id}`;
         if (navigator.share) {
@@ -204,6 +208,30 @@ export const MediaGridCard: React.FC<MediaGridCardProps> = ({
                         {kindLabel[kind]}
                     </Text>
                 </Box>
+
+                {/* Draft badge — only shown for unpublished albums */}
+                {showDraftBadge && (
+                    <Box
+                        position="absolute"
+                        top={2}
+                        left={2}
+                        bg="orange.500"
+                        color="white"
+                        borderRadius="md"
+                        px={2}
+                        py={0.5}
+                        shadow="sm"
+                    >
+                        <Text
+                            fontSize="10px"
+                            fontWeight="bold"
+                            textTransform="uppercase"
+                            letterSpacing="0.06em"
+                        >
+                            Draft
+                        </Text>
+                    </Box>
+                )}
             </Box>
 
             {/* Body */}

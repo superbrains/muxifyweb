@@ -18,3 +18,5 @@ export { ConfirmModal } from "./ConfirmModal";
 export { UploadProgressModal } from "./UploadProgressModal";
 export { ErrorBoundary } from "./ErrorBoundary";
 export { withErrorBoundary } from "./withErrorBoundary";
+export { ArtistAutocomplete } from "./ArtistAutocomplete";
+export type { ArtistPick } from "./ArtistAutocomplete";

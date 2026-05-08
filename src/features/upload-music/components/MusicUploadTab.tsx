@@ -107,10 +107,10 @@ export const MusicUploadTab: React.FC<MusicUploadTabProps> = ({ albumTab, setAlb
         return internalTab;
     };
     
-    // Upload session store (separate slices for mix and album)
+    // Upload session store — only the Mix slice is used here. The Album sub-tab funnels into
+    // the dedicated draft-album editor at /upload/album/:id and manages its own state.
     const {
         mix,
-        album,
         mixAddTrack,
         mixRemoveTrack,
         mixSetCoverArt,
@@ -123,17 +123,6 @@ export const MusicUploadTab: React.FC<MusicUploadTabProps> = ({ albumTab, setAlb
         mixSetUnlockCost,
         mixSetAllowSponsorship,
         mixSetReleaseYear,
-        albumAddTrack,
-        albumRemoveTrack,
-        albumSetCoverArt,
-        albumSetTrackArtists,
-        albumSetTrackTitle,
-        albumSetTrackTitles,
-        albumSetGenre,
-        albumSetReleaseType,
-        albumSetUnlockCost,
-        albumSetAllowSponsorship,
-        albumSetReleaseYear,
     } = useUploadMusicStore();
 
     // Review store (consumed by review pages) - we will sync active slice here on Continue
@@ -152,17 +141,16 @@ export const MusicUploadTab: React.FC<MusicUploadTabProps> = ({ albumTab, setAlb
         editingId,
     } = useUploadStore();
 
-    // Computed slice-specific state
-    const tracks = albumTab === 'mix' ? mix.tracks : album.tracks;
-    const coverArt = albumTab === 'mix' ? mix.coverArt : album.coverArt;
+    // Mix-only computed state.
+    const tracks = mix.tracks;
+    const coverArt = mix.coverArt;
     const trackTitle = mix.trackTitle;
     const selectedArtists = mix.selectedArtists;
-    const trackTitles = album.trackTitles;
-    const genre = albumTab === 'mix' ? mix.genre : album.genre;
-    const releaseType = albumTab === 'mix' ? mix.releaseType : album.releaseType;
-    const unlockCost = albumTab === 'mix' ? mix.unlockCost : album.unlockCost;
-    const allowSponsorship = albumTab === 'mix' ? mix.allowSponsorship : album.allowSponsorship;
-    const releaseYear = albumTab === 'mix' ? mix.releaseYear : album.releaseYear;
+    const genre = mix.genre;
+    const releaseType = mix.releaseType;
+    const unlockCost = mix.unlockCost;
+    const allowSponsorship = mix.allowSponsorship;
+    const releaseYear = mix.releaseYear;
 
     const handleAudioFileSelect = () => {
         // FileUploadArea will handle the upload progress internally
@@ -173,12 +161,7 @@ export const MusicUploadTab: React.FC<MusicUploadTabProps> = ({ albumTab, setAlb
             ...file,
             title: '',
         };
-
-        if (albumTab === 'mix') {
-            mixAddTrack(newTrack);
-        } else {
-            albumAddTrack(newTrack);
-        }
+        mixAddTrack(newTrack);
     };
 
     const handleCoverArtSelect = () => {
@@ -186,114 +169,39 @@ export const MusicUploadTab: React.FC<MusicUploadTabProps> = ({ albumTab, setAlb
     };
 
     const handleCoverArtReady = (file: UploadFile) => {
-        if (albumTab === 'mix') {
-            mixSetCoverArt(file);
-        } else {
-            albumSetCoverArt(file);
-        }
+        mixSetCoverArt(file);
     };
 
     const handleRemoveTrack = (trackId: string) => {
-        if (albumTab === 'mix') {
-            mixRemoveTrack(trackId);
-        } else {
-            albumRemoveTrack(trackId);
-            const newTitles = { ...trackTitles };
-            delete newTitles[trackId];
-            albumSetTrackTitles(newTitles);
-        }
+        mixRemoveTrack(trackId);
     };
 
     const handleRemoveCoverArt = () => {
-        if (albumTab === 'mix') {
-            mixSetCoverArt(null);
-        } else {
-            albumSetCoverArt(null);
-        }
-    };
-
-
-    // Track artists are stored separately in the store
-    const trackArtists = album.trackArtists || {};
-
-    const handleAddTrackArtist = (trackId: string, artist: string) => {
-        const currentArtists = trackArtists[trackId] || [];
-        albumSetTrackArtists({
-            ...trackArtists,
-            [trackId]: [...currentArtists, artist]
-        });
-    };
-
-    const handleUpdateTrackArtist = (trackId: string, index: number, artist: string) => {
-        const currentArtists = trackArtists[trackId] || [];
-        const updatedArtists = [...currentArtists];
-        updatedArtists[index] = artist;
-        albumSetTrackArtists({
-            ...trackArtists,
-            [trackId]: updatedArtists
-        });
-    };
-
-    const handleRemoveTrackArtist = (trackId: string, index: number) => {
-        const currentArtists = trackArtists[trackId] || [];
-        const updatedArtists = currentArtists.filter((_: string, i: number) => i !== index);
-        albumSetTrackArtists({
-            ...trackArtists,
-            [trackId]: updatedArtists
-        });
-    };
-
-    const handleTrackTitleChange = (trackId: string, title: string) => {
-        albumSetTrackTitle(trackId, title);
+        mixSetCoverArt(null);
     };
 
     const handleContinue = () => {
-        // Set active tab to music before navigating
         setActiveTab('music');
 
-        // Sync active slice into review store, then navigate
-        if (albumTab === 'mix') {
-            setReviewTracks(mix.tracks);
-            setReviewCoverArt(mix.coverArt);
-            setReviewSelectedArtists(mix.selectedArtists.map(name => ({ id: Date.now().toString(), name, role: 'artist' })));
-            setReviewTrackTitles({ [mix.tracks[0]?.id || '']: mix.trackTitle });
-            setReviewGenre(mix.genre);
-            setReviewReleaseType(mix.releaseType);
-            setReviewUnlockCost(mix.unlockCost);
-            setReviewAllowSponsorship(mix.allowSponsorship);
-            setReviewReleaseYear(mix.releaseYear);
-        } else {
-            setReviewTracks(album.tracks);
-            setReviewCoverArt(album.coverArt);
-            setReviewSelectedArtists(album.selectedArtists);
-            setReviewTrackTitles(album.trackTitles);
-            setReviewGenre(album.genre);
-            setReviewReleaseType(album.releaseType);
-            setReviewUnlockCost(album.unlockCost);
-            setReviewAllowSponsorship(album.allowSponsorship);
-            setReviewReleaseYear(album.releaseYear);
-        }
+        setReviewTracks(mix.tracks);
+        setReviewCoverArt(mix.coverArt);
+        setReviewSelectedArtists(mix.selectedArtists.map(name => ({ id: Date.now().toString(), name, role: 'artist' })));
+        setReviewTrackTitles({ [mix.tracks[0]?.id || '']: mix.trackTitle });
+        setReviewGenre(mix.genre);
+        setReviewReleaseType(mix.releaseType);
+        setReviewUnlockCost(mix.unlockCost);
+        setReviewAllowSponsorship(mix.allowSponsorship);
+        setReviewReleaseYear(mix.releaseYear);
 
-        // Build review URL with editing params if present
         const mixId = searchParams.get('mixId');
-        const albumId = searchParams.get('albumId');
-
         let reviewUrl = '/upload/review';
-
-        if (isEditing && editingId) {
-            // Add editing params to review URL
-            if (albumTab === 'mix' && mixId) {
-                reviewUrl += `?mixId=${mixId}`;
-            } else if (albumTab === 'album' && albumId) {
-                reviewUrl += `?albumId=${albumId}`;
-            }
+        if (isEditing && editingId && mixId) {
+            reviewUrl += `?mixId=${mixId}`;
         }
-
         navigate(reviewUrl);
     };
 
     const handleSaveChanges = () => {
-        // Navigate to review page just like Continue
         handleContinue();
     };
 
@@ -310,21 +218,24 @@ export const MusicUploadTab: React.FC<MusicUploadTabProps> = ({ albumTab, setAlb
                     isDisabled={isEditing}
                 />
 
-                <Button
-                    bg="primary.500"
-                    color="white"
-                    size="sm"
-                    fontSize="12px"
-                    fontWeight="semibold"
-                    px={{ base: 5, md: 7 }}
-                    h="38px"
-                    borderRadius="md"
-                    _hover={{ bg: 'primary.600' }}
-                    onClick={isEditing ? handleSaveChanges : handleContinue}
-                >
-                    {isEditing ? 'Save Changes' : 'Continue'}
-                    <Icon as={FiArrowRight} boxSize={4} ml={2} />
-                </Button>
+                {/* The album sub-tab uses its own draft → publish flow, no Continue here. */}
+                {albumTab !== 'album' && (
+                    <Button
+                        bg="primary.500"
+                        color="white"
+                        size="sm"
+                        fontSize="12px"
+                        fontWeight="semibold"
+                        px={{ base: 5, md: 7 }}
+                        h="38px"
+                        borderRadius="md"
+                        _hover={{ bg: 'primary.600' }}
+                        onClick={isEditing ? handleSaveChanges : handleContinue}
+                    >
+                        {isEditing ? 'Save Changes' : 'Continue'}
+                        <Icon as={FiArrowRight} boxSize={4} ml={2} />
+                    </Button>
+                )}
             </Flex>
 
             {/* Content */}
@@ -360,36 +271,9 @@ export const MusicUploadTab: React.FC<MusicUploadTabProps> = ({ albumTab, setAlb
                     sponsorshipOptions={sponsorshipOptions}
                 />
             ) : (
-                <AlbumTab
-                    tracks={tracks}
-                    coverArt={coverArt}
-                    trackTitles={trackTitles}
-                    trackArtists={trackArtists}
-                    genre={genre}
-                    releaseType={releaseType}
-                    unlockCost={unlockCost}
-                    allowSponsorship={allowSponsorship}
-                    releaseYear={releaseYear}
-                    onAudioFileSelect={handleAudioFileSelect}
-                    onAudioFileReady={handleAudioFileReady}
-                    onCoverArtSelect={handleCoverArtSelect}
-                    onCoverArtReady={handleCoverArtReady}
-                    onRemoveTrack={handleRemoveTrack}
-                    onRemoveCoverArt={handleRemoveCoverArt}
-                    onTrackTitleChange={handleTrackTitleChange}
-                    onAddTrackArtist={handleAddTrackArtist}
-                    onUpdateTrackArtist={handleUpdateTrackArtist}
-                    onRemoveTrackArtist={handleRemoveTrackArtist}
-                    onGenreChange={albumSetGenre}
-                    onReleaseTypeChange={albumSetReleaseType}
-                    onUnlockCostChange={albumSetUnlockCost}
-                    onSponsorshipChange={albumSetAllowSponsorship}
-                    onReleaseYearChange={albumSetReleaseYear}
-                    genreOptions={genreOptions}
-                    releaseTypeOptions={releaseTypeOptions}
-                    unlockCostOptions={unlockCostOptions}
-                    sponsorshipOptions={sponsorshipOptions}
-                />
+                /* Album tab funnels to the dedicated draft → tracks → publish editor.
+                   The legacy AlbumTab props are no longer used here. */
+                <AlbumTab />
             )}
         </>
     );

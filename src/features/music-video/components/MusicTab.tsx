@@ -36,13 +36,16 @@ export const MusicTab: React.FC = () => {
         isDeleting,
         error,
         fetchTracks,
+        fetchAlbums,
         deleteTrack,
+        deleteAlbum,
         clearError,
     } = useMusicStore();
 
     useEffect(() => {
         fetchTracks();
-    }, [fetchTracks]);
+        fetchAlbums();
+    }, [fetchTracks, fetchAlbums]);
 
     const { isPodcaster, isDJ, isMusician } = useUserType();
     type SubTabId = 'single' | 'album' | 'mix' | 'episode' | 'topic';
@@ -114,13 +117,22 @@ export const MusicTab: React.FC = () => {
     const albumLabelPlural = isPodcaster ? 'topics' : 'albums';
 
     const onItemEdit = (item: SingleItem | AlbumItem) => {
-        navigate(isSingleTab(activeTab) ? `/upload?mixId=${item.id}` : `/upload?albumId=${item.id}`);
+        // Albums use the new draft-then-tracks editor; singles still use the legacy upload page.
+        if (isSingleTab(activeTab)) {
+            navigate(`/upload?mixId=${item.id}`);
+        } else {
+            navigate(`/upload/album/${item.id}`);
+        }
     };
     const onItemOpen = (item: SingleItem | AlbumItem) => {
         navigate(`/music-videos/${isSingleTab(activeTab) ? 'single' : 'album'}/${item.id}`);
     };
     const onItemDelete = async (item: SingleItem | AlbumItem) => {
-        if (isSingleTab(activeTab)) await deleteTrack(item.id);
+        if (isSingleTab(activeTab)) {
+            await deleteTrack(item.id);
+        } else {
+            await deleteAlbum(item.id);
+        }
     };
     const onItemPlay = (item: SingleItem | AlbumItem) => {
         if (isSingleTab(activeTab)) {
@@ -204,11 +216,15 @@ export const MusicTab: React.FC = () => {
                         shadow="sm"
                         _hover={{ bg: 'primary.600' }}
                         onClick={() => {
-                            navigate(`/upload?tab=music&albumTab=${albumTabValue}`);
+                            if (isSingleTab(activeTab)) {
+                                navigate(`/upload?tab=music&albumTab=${albumTabValue}`);
+                            } else {
+                                navigate('/upload/album/new');
+                            }
                         }}
                     >
                         <Icon as={FiPlus} boxSize={4} mr={2} />
-                        Upload
+                        {isSingleTab(activeTab) ? 'Upload' : 'New album'}
                     </Button>
                 </HStack>
             </Flex>
@@ -251,11 +267,17 @@ export const MusicTab: React.FC = () => {
                             color="white"
                             fontSize="13px"
                             onClick={() => {
-                                navigate(`/upload?tab=music&albumTab=${albumTabValue}`);
+                                if (isSingleTab(activeTab)) {
+                                    navigate(`/upload?tab=music&albumTab=${albumTabValue}`);
+                                } else {
+                                    navigate('/upload/album/new');
+                                }
                             }}
                             _hover={{ bg: 'primary.600' }}
                         >
-                            Upload your first {isSingleTab(activeTab) ? singleLabel : albumLabel}
+                            {isSingleTab(activeTab)
+                                ? `Upload your first ${singleLabel}`
+                                : `Create your first ${albumLabel}`}
                         </Button>
                     </VStack>
                 </Box>
@@ -266,6 +288,7 @@ export const MusicTab: React.FC = () => {
                 >
                     {filteredItems.map((item) => {
                         const album = 'album' in item ? item.album : undefined;
+                        const isPublished = 'isPublished' in item ? item.isPublished : undefined;
                         return (
                             <MediaGridCard
                                 key={item.id}
@@ -278,6 +301,7 @@ export const MusicTab: React.FC = () => {
                                 plays={item.plays}
                                 kind={isSingleTab(activeTab) ? 'single' : 'album'}
                                 isDeleting={isDeleting === item.id}
+                                isPublished={isPublished}
                                 onEdit={() => onItemEdit(item)}
                                 onOpen={() => onItemOpen(item)}
                                 onPlay={() => onItemPlay(item)}
