@@ -65,6 +65,11 @@ export interface DashboardAnalyticsDto {
   earningsChart: ChartSeriesDto;
   playsChart: ChartSeriesDto;
   followersChart: ChartSeriesDto;
+  giftEarningsChart: ChartSeriesDto;
+  unlockEarningsChart: ChartSeriesDto;
+  otherEarningsChart: ChartSeriesDto;
+  giftCountsChart: ChartSeriesDto;
+  unlockCountsChart: ChartSeriesDto;
   totalEarnings: number;
   totalEarningsDisplay: number;
   totalPlays: number;

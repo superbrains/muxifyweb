@@ -61,14 +61,14 @@ export function mapMultiSeriesToApex(
 }
 
 /**
- * Map analytics DTO to Activity Insights chart format
- * Creates multi-series chart with Plays, (derived) Gifts trend, and Unlocks trend
+ * Map analytics DTO to Activity Insights chart format.
+ * Real per-day counts: Plays from PlayHistory, Gifts from gift count series,
+ * Unlocked from unlock count series.
  */
 export function mapAnalyticsToActivityChart(
   analyticsDto: DashboardAnalyticsDto | null
 ): ApexChartSeries[] {
   if (!analyticsDto) {
-    // Return default empty series
     return [
       { name: 'Plays', data: [] },
       { name: 'Gifts', data: [] },
@@ -76,32 +76,10 @@ export function mapAnalyticsToActivityChart(
     ];
   }
 
-  // Map plays chart
-  const playsData = analyticsDto.playsChart.data.map((point) => point.value);
-
-  // For gifts and unlocks, we can derive trends from earnings data
-  // or use the totals distributed across the period
-  // Since backend provides earningsChart which includes gift revenue,
-  // we'll use a proportional distribution based on totals
-  const dataPoints = analyticsDto.playsChart.data.length || 1;
-  const avgGiftsPerPeriod = Math.round(analyticsDto.totalGiftsReceived / dataPoints);
-  const avgUnlocksPerPeriod = Math.round(analyticsDto.totalContentUnlocks / dataPoints);
-
-  // Create a trend that roughly follows the earnings pattern
-  const earningsData = analyticsDto.earningsChart.data.map((point) => point.value);
-  const maxEarnings = Math.max(...earningsData, 1);
-
-  const giftsData = earningsData.map((value) =>
-    Math.round((value / maxEarnings) * avgGiftsPerPeriod * dataPoints * 0.5)
-  );
-  const unlocksData = earningsData.map((value) =>
-    Math.round((value / maxEarnings) * avgUnlocksPerPeriod * dataPoints * 0.5)
-  );
-
   return [
-    { name: 'Plays', data: playsData },
-    { name: 'Gifts', data: giftsData.length > 0 ? giftsData : [0] },
-    { name: 'Unlocked', data: unlocksData.length > 0 ? unlocksData : [0] },
+    { name: 'Plays', data: analyticsDto.playsChart.data.map((p) => p.value) },
+    { name: 'Gifts', data: analyticsDto.giftCountsChart.data.map((p) => p.value) },
+    { name: 'Unlocked', data: analyticsDto.unlockCountsChart.data.map((p) => p.value) },
   ];
 }
 
@@ -119,8 +97,8 @@ export function getAnalyticsCategories(
 }
 
 /**
- * Map analytics DTO to Total Revenue bar chart format
- * Creates multi-series chart with Gifting, Unlocked, and Commission breakdown
+ * Map analytics DTO to Total Revenue bar chart format.
+ * Each series is the real per-day earnings amount for that source type.
  */
 export function mapAnalyticsToRevenueChart(
   analyticsDto: DashboardAnalyticsDto | null
@@ -133,28 +111,10 @@ export function mapAnalyticsToRevenueChart(
     ];
   }
 
-  const earningsData = analyticsDto.earningsChart.data;
-
-  // Calculate proportions based on totals
-  const giftProportion = analyticsDto.totalGiftsReceived > 0 ? 0.5 : 0.3;
-  const unlockProportion = analyticsDto.totalContentUnlocks > 0 ? 0.35 : 0.4;
-  const commissionProportion = 1 - giftProportion - unlockProportion;
-
-  // Distribute across data points following earnings pattern
-  const giftingData = earningsData.map((point) =>
-    Math.round(point.value * giftProportion)
-  );
-  const unlockedData = earningsData.map((point) =>
-    Math.round(point.value * unlockProportion)
-  );
-  const commissionData = earningsData.map((point) =>
-    Math.round(point.value * commissionProportion)
-  );
-
   return [
-    { name: 'Gifting', data: giftingData },
-    { name: 'Unlocked', data: unlockedData },
-    { name: 'Commission', data: commissionData },
+    { name: 'Gifting', data: analyticsDto.giftEarningsChart.data.map((p) => p.value) },
+    { name: 'Unlocked', data: analyticsDto.unlockEarningsChart.data.map((p) => p.value) },
+    { name: 'Commission', data: analyticsDto.otherEarningsChart.data.map((p) => p.value) },
   ];
 }
 
@@ -194,7 +154,8 @@ export function mapAnalyticsToEarningsComparisonChart(
 }
 
 /**
- * Map analytics DTO to Popular Activity stacked bar chart
+ * Map analytics DTO to Popular Activity stacked bar chart.
+ * Uses the trailing 6 buckets of the real unlock/gift count series.
  */
 export function mapAnalyticsToPopularActivityChart(
   analyticsDto: DashboardAnalyticsDto | null
@@ -206,30 +167,33 @@ export function mapAnalyticsToPopularActivityChart(
     ];
   }
 
-  const dataPoints = Math.min(analyticsDto.earningsChart.data.length, 6);
-  const earningsData = analyticsDto.earningsChart.data.slice(0, dataPoints);
-
-  // Derive unlock and gifting activity from earnings pattern
-  const unlockData = earningsData.map((point) =>
-    Math.round(point.value * 0.4)
-  );
-  const giftingData = earningsData.map((point) =>
-    Math.round(point.value * 0.3)
-  );
+  const tail = <T>(arr: T[], n: number): T[] => arr.slice(Math.max(0, arr.length - n));
 
   return [
-    { name: 'Unlock', data: unlockData },
-    { name: 'Gifting', data: giftingData },
+    { name: 'Unlock', data: tail(analyticsDto.unlockCountsChart.data, 6).map((p) => p.value) },
+    { name: 'Gifting', data: tail(analyticsDto.giftCountsChart.data, 6).map((p) => p.value) },
   ];
 }
 
 /**
- * Calculate max Y-axis value based on data series
+ * Calculate Y-axis max that hugs the data and rounds up to a "nice" number
+ * (1, 2, 2.5, 5 × 10ⁿ). Returns a small default when there's no data so the
+ * chart frame still renders cleanly instead of collapsing to 0.
  */
-export function calculateYAxisMax(series: ApexChartSeries[], buffer = 1.2): number {
-  const allValues = series.flatMap((s) => s.data);
-  const maxValue = Math.max(...allValues, 100);
-  return Math.ceil(maxValue * buffer);
+export function calculateYAxisMax(series: ApexChartSeries[], buffer = 1.15): number {
+  const allValues = series.flatMap((s) => s.data).filter((v) => Number.isFinite(v));
+  const rawMax = allValues.length === 0 ? 0 : Math.max(...allValues);
+  if (rawMax <= 0) return 10;
+  return niceCeiling(rawMax * buffer);
+}
+
+function niceCeiling(n: number): number {
+  if (n <= 0) return 0;
+  const exp = Math.floor(Math.log10(n));
+  const base = Math.pow(10, exp);
+  const f = n / base;
+  const niceF = f <= 1 ? 1 : f <= 2 ? 2 : f <= 2.5 ? 2.5 : f <= 5 ? 5 : 10;
+  return Math.ceil(niceF * base);
 }
 
 /**

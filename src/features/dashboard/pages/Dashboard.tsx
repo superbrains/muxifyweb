@@ -132,8 +132,9 @@ export const Dashboard: React.FC = () => {
         },
         yaxis: {
             min: 0,
-            max: activityYMax || 400,
+            max: activityYMax,
             tickAmount: 4,
+            forceNiceScale: true,
             labels: {
                 style: {
                     fontSize: '10px',
@@ -141,6 +142,10 @@ export const Dashboard: React.FC = () => {
                     fontFamily: 'Poppins, sans-serif',
                     color: '#7B91B0'
                 },
+                formatter: function (value: number) {
+                    if (value >= 1000) return (value / 1000).toFixed(value % 1000 === 0 ? 0 : 1) + 'k';
+                    return Number.isInteger(value) ? value.toString() : value.toFixed(0);
+                }
             },
         },
         legend: {
@@ -219,8 +224,9 @@ export const Dashboard: React.FC = () => {
         },
         yaxis: {
             min: 0,
-            max: revenueYMax || 25000,
+            max: revenueYMax,
             tickAmount: 5,
+            forceNiceScale: true,
             labels: {
                 style: {
                     fontSize: '10px',
@@ -229,7 +235,8 @@ export const Dashboard: React.FC = () => {
                     fontFamily: 'Poppins, sans-serif',
                 },
                 formatter: function (value: number) {
-                    return value >= 1000 ? (value / 1000) + 'k' : value.toString();
+                    if (value >= 1000) return (value / 1000).toFixed(value % 1000 === 0 ? 0 : 1) + 'k';
+                    return Number.isInteger(value) ? value.toString() : value.toFixed(0);
                 }
             },
         },
