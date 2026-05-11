@@ -15,6 +15,7 @@ import { MdMenu } from 'react-icons/md';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { NotificationIcon, SearchIcon, LogoutIcon, HeadphoneIcon, Setting2Icon } from '../icons/CustomIcons';
 import { useWindowWidth } from '../hooks/useWindowsWidth';
+import { useAuthedImageSrc } from '../hooks/useAuthedImageSrc';
 import { NotificationDropdown } from '@/features/notifications';
 import { useNotificationStore } from '@/features/notifications/store/useNotificationStore';
 import { useUserManagementStore, type ArtistOnboardingData, type CompanyOnboardingData, type AdManagerOnboardingData } from '@/features/auth/store/useUserManagementStore';
@@ -97,13 +98,16 @@ export const Navbar: React.FC<NavbarProps> = ({
                     : userRole)
         : userRole;
 
-    const displayAvatar = userData
+    const rawAvatar = userData
         ? (userType === 'artist'
             ? (userData as ArtistOnboardingData).displayPicture
             : userType === 'company'
                 ? (userData as CompanyOnboardingData).labelLogo
                 : (userData as AdManagerOnboardingData).companyLogo)
         : userAvatar;
+    // Avatars stored on the backend come back as /api/v1/media/... proxy paths
+    // that need a JWT; resolve them to blob URLs the browser can render.
+    const displayAvatar = useAuthedImageSrc(rawAvatar);
 
     const handleLogout = async () => {
         // Disconnect from SignalR

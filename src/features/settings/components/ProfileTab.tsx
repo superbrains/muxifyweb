@@ -23,6 +23,7 @@ import {
 import { userService } from '@/shared/services/userService';
 import type { UpdateProfileRequest } from '@/features/onboarding/types';
 import { getApiErrorMessage } from '@/shared/lib/errorUtils';
+import { useAuthedImageSrc } from '@/shared/hooks/useAuthedImageSrc';
 
 type ProfileFormData = {
     fullName: string;
@@ -138,7 +139,8 @@ export const ProfileTab: React.FC = () => {
     const artistDisplayPicture = userType === 'artist' && isArtistData(userData) ? userData.displayPicture : undefined;
     const companyLabelLogo = userType === 'company' && isCompanyData(userData) ? userData.labelLogo : undefined;
     const adManagerLogo = userType === 'ad-manager' && isAdManagerData(userData) ? userData.companyLogo : undefined;
-    const profileImage = artistDisplayPicture || companyLabelLogo || adManagerLogo;
+    const rawProfileImage = artistDisplayPicture || companyLabelLogo || adManagerLogo;
+    const profileImage = useAuthedImageSrc(rawProfileImage);
     
     // Update form data when user data changes
     useEffect(() => {
