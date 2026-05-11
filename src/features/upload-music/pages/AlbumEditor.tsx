@@ -11,7 +11,8 @@ import {
   type SystemStyleObject,
 } from '@chakra-ui/react';
 import { FiArrowLeft, FiPlus } from 'react-icons/fi';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { useRoster } from '@/features/record-label/hooks/useRoster';
 import { useChakraToast } from '@shared/hooks/useChakraToast';
 import { albumService } from '../services/albumService';
 import { trackService } from '../services/trackService';
@@ -48,6 +49,12 @@ const stickyFooterStyle: SystemStyleObject = {
 export const AlbumEditor: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const onBehalfOfArtistId = searchParams.get('onBehalfOf') || undefined;
+  const { data: roster } = useRoster();
+  const onBehalfArtist = onBehalfOfArtistId
+    ? roster?.find((a) => a.artistUserId === onBehalfOfArtistId)
+    : undefined;
   const toast = useChakraToast();
 
   const [album, setAlbum] = useState<AlbumManageDto | null>(null);
@@ -233,6 +240,13 @@ export const AlbumEditor: React.FC = () => {
 
   return (
     <Box pb="100px">
+      {onBehalfOfArtistId && (
+        <Box bg="primary.50" px={{ base: 4, md: 8, lg: 10 }} py={2} borderBottom="1px solid" borderColor="primary.200">
+          <Text fontSize="11px" color="primary.700" fontWeight="medium">
+            Releasing on behalf of {onBehalfArtist?.performingName || 'roster artist'}
+          </Text>
+        </Box>
+      )}
       {/* Sticky header */}
       <Box css={stickyHeaderStyle}>
         <HStack maxW="1280px" mx="auto" justify="space-between">
@@ -392,6 +406,7 @@ export const AlbumEditor: React.FC = () => {
         }}
         albumId={album.id}
         defaultTrackNumber={album.tracks.length + 1}
+        onBehalfOfArtistId={onBehalfOfArtistId}
         onTrackAdded={() => {
           // Reload happens in onClose anyway.
         }}

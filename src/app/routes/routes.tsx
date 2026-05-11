@@ -49,6 +49,15 @@ const AdLibrary = lazy(() => import('@ads/pages/AdLibrary'));
 const AdCampaignView = lazy(() => import('@ads/pages/AdCampaignView'));
 const AdsSpending = lazy(() => import('@ads/pages/AdsSpending'));
 const AdsWallet = lazy(() => import('@ads/pages/AdsWallet'));
+// Record-label (RDC)
+const RosterPage = lazy(() => import('@/features/record-label/pages/RosterPage'));
+const ReleasesPage = lazy(() => import('@/features/record-label/pages/ReleasesPage'));
+const SplitsPage = lazy(() => import('@/features/record-label/pages/SplitsPage'));
+const SplitEditorPage = lazy(() => import('@/features/record-label/pages/SplitEditorPage'));
+const PayoutsPage = lazy(() => import('@/features/record-label/pages/PayoutsPage'));
+const AnalyticsPage = lazy(() => import('@/features/record-label/pages/AnalyticsPage'));
+const CompanySettingsPage = lazy(() => import('@/features/record-label/pages/CompanySettingsPage'));
+const InviteAcceptPage = lazy(() => import('@/features/record-label/pages/InviteAcceptPage'));
 
 export const appRoutes: RouteObject[] = [
     { path: '/login', element: <Login /> },
@@ -71,11 +80,19 @@ export const appRoutes: RouteObject[] = [
     { path: '/onboarding/ad-manager/complete-information', element: <AdManagerInformation /> },
     { path: '/onboarding/ad-manager/director-information', element: <AdManagerDirectorInformation /> },
     { path: '/onboarding/ad-manager/company-logo', element: <AdManagerCompanyLogo /> },
+    { path: '/label/invite/accept', element: <InviteAcceptPage /> },
     {
         path: '/',
         element: <ProtectedRoute />,
         children: [
             { index: true, element: <DashboardRouter /> },
+            { path: '/label/roster', element: <RosterPage /> },
+            { path: '/label/releases', element: <ReleasesPage /> },
+            { path: '/label/splits', element: <SplitsPage /> },
+            { path: '/label/splits/:trackId', element: <SplitEditorPage /> },
+            { path: '/label/payouts', element: <PayoutsPage /> },
+            { path: '/label/analytics', element: <AnalyticsPage /> },
+            { path: '/label/settings', element: <CompanySettingsPage /> },
             { path: '/upload', element: <Upload /> },
             { path: '/upload/review', element: <Review /> },
             { path: '/upload/album/new', element: <NewAlbumPage /> },

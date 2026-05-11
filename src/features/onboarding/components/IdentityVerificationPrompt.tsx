@@ -1,79 +1,68 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import {
-    Box,
-    Button,
-    Text,
-    VStack,
-} from '@chakra-ui/react';
+import { Box, Button, Input, Text, VStack } from '@chakra-ui/react';
 import { useChakraToast } from '@shared/hooks';
 import { VerifyIcon } from '@/shared/icons/CustomIcons';
 import { useUserManagementStore } from '@/features/auth/store/useUserManagementStore';
-import { useUserType } from '@/features/auth/hooks/useUserType';
-import { useArtistStore } from '@/features/artists/store/useArtistStore';
 import { profileService } from '../services/profileService';
 import { getApiErrorMessage } from '@/shared/lib/errorUtils';
 
+const ACCEPTED_TYPES = ['image/png', 'image/jpeg', 'image/jpg', 'application/pdf'];
+const MAX_BYTES = 5 * 1024 * 1024;
+
 export const IdentityVerificationPrompt: React.FC = () => {
     const [loading, setLoading] = useState(false);
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    const [fileError, setFileError] = useState<string | null>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const toast = useChakraToast();
     const navigate = useNavigate();
     const location = useLocation();
     const { markIdentityVerified, completeOnboarding, setCurrentUser } = useUserManagementStore();
-    const { isRecordLabel } = useUserType();
-    const { artists } = useArtistStore();
 
     const userId = (location.state as { userId?: string })?.userId;
 
+    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        if (!ACCEPTED_TYPES.includes(file.type)) {
+            setFileError('Only PNG, JPEG, or PDF documents are accepted.');
+            setSelectedFile(null);
+            return;
+        }
+        if (file.size > MAX_BYTES) {
+            setFileError('Document must be 5 MB or smaller.');
+            setSelectedFile(null);
+            return;
+        }
+        setFileError(null);
+        setSelectedFile(file);
+    };
+
     const handleStartVerification = async () => {
+        if (!selectedFile) {
+            setFileError('Select an identity document to continue.');
+            return;
+        }
+
         setLoading(true);
         try {
-            // Complete profile onboarding via API
+            await profileService.uploadVerificationDocs(selectedFile);
             await profileService.completeProfileOnboarding();
 
-            // Mark identity as verified and complete onboarding in local store
             if (userId) {
                 setCurrentUser(userId);
                 markIdentityVerified(userId);
                 completeOnboarding(userId);
-
-                // Log user data after onboarding completion (without large images)
-                const { getUserData, getCurrentUserType } = useUserManagementStore.getState();
-                const userData = getUserData(userId);
-                const userType = getCurrentUserType();
-
-                console.log('=== Onboarding Completed ===');
-                console.log('User ID:', userId);
-                console.log('User Type:', userType);
-
-                // Log user data without base64 images to avoid console slowdown
-                if (userData) {
-                    const dataToLog = { ...userData };
-                    // Remove large base64 image fields
-                    if ('displayPicture' in dataToLog) {
-                        dataToLog.displayPicture = '[Image data removed for logging]';
-                    }
-                    if ('labelLogo' in dataToLog) {
-                        dataToLog.labelLogo = '[Image data removed for logging]';
-                    }
-                    if ('companyLogo' in dataToLog) {
-                        dataToLog.companyLogo = '[Image data removed for logging]';
-                    }
-                    console.log('User Data:', dataToLog);
-                }
-                console.log('===========================');
             }
 
-            toast.success('Verification started!', 'Please follow the instructions to complete verification.');
-            // Navigate based on user type - record labels without artists go to add artist page
-            if (isRecordLabel && artists.length === 0) {
-                navigate('/add-artist');
-            } else {
-                navigate('/');
-            }
+            toast.success(
+                'Verification submitted!',
+                'We will review your document and notify you shortly.',
+            );
+            navigate('/');
         } catch (error) {
-            console.error('Verification error:', error);
             const errorMessage = getApiErrorMessage(error, 'Verification failed. Please try again.');
             toast.error('Verification failed', errorMessage);
         } finally {
@@ -88,7 +77,8 @@ export const IdentityVerificationPrompt: React.FC = () => {
                     Identity Verification
                 </Text>
                 <Text fontSize="xs" color="gray.600" mb={4}>
-                    We want to verify this account so no one can impersonate you fraudulently
+                    Upload a business-registration document or government-issued ID so our team can verify
+                    this account.
                 </Text>
             </Box>
 
@@ -104,19 +94,44 @@ export const IdentityVerificationPrompt: React.FC = () => {
                     justifyContent="center"
                 >
                     <Box h="60px" w="150px" display="flex" justifyContent="center" alignItems="center">
-                        <VerifyIcon
-                            color="primary.500"
-                            h="full"
-                            w="full"
-                        />
+                        <VerifyIcon color="primary.500" h="full" w="full" />
                     </Box>
                 </Box>
             </Box>
 
             <VStack gap={2} w="full">
+                <Input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".png,.jpg,.jpeg,.pdf,image/png,image/jpeg,application/pdf"
+                    onChange={handleFileSelect}
+                    display="none"
+                />
+                <Button
+                    onClick={() => fileInputRef.current?.click()}
+                    type="button"
+                    variant="outline"
+                    borderColor="primary.500"
+                    color="primary.500"
+                    size="md"
+                    fontSize="xs"
+                    width="full"
+                    fontWeight="medium"
+                    borderRadius="10px"
+                    _hover={{ bg: 'primary.50' }}
+                >
+                    {selectedFile ? selectedFile.name : 'Choose document'}
+                </Button>
+                {fileError && (
+                    <Text color="red.500" fontSize="xs">
+                        {fileError}
+                    </Text>
+                )}
+
                 <Button
                     onClick={handleStartVerification}
                     loading={loading}
+                    disabled={!selectedFile}
                     bg="primary.500"
                     color="white"
                     size="md"
@@ -126,11 +141,9 @@ export const IdentityVerificationPrompt: React.FC = () => {
                     borderRadius="10px"
                     _hover={{ bg: 'primary.600' }}
                 >
-                    Start Verification
+                    Submit for verification
                 </Button>
-
             </VStack>
-
         </VStack>
     );
 };

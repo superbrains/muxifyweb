@@ -46,6 +46,26 @@ export const profileService = {
   },
 
   /**
+   * Upload or replace the record-label company logo
+   * POST /api/v1/profile/company/logo
+   */
+  uploadCompanyLogo: async (file: File): Promise<{ logoUrl: string }> => {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const response = await api.post<{ logoUrl: string }>(
+      "/profile/company/logo",
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      }
+    );
+    return response.data;
+  },
+
+  /**
    * Add a director to company profile
    * POST /api/v1/profile/directors
    */

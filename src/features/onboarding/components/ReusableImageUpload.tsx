@@ -14,6 +14,7 @@ import { useUserManagementStore, type CompanyOnboardingData } from '@/features/a
 import { useArtistStore } from '@/features/artists/store/useArtistStore';
 import { compressImage } from '@/shared/lib/fileUtils';
 import { userService } from '@/shared/services/userService';
+import { profileService } from '@/features/onboarding/services/profileService';
 import { useUserStore } from '@/app/store/useUserStore';
 
 interface ReusableImageUploadProps {
@@ -138,14 +139,13 @@ export const ReusableImageUpload: React.FC<ReusableImageUploadProps> = ({
                     saveDisplayPicture(userId, selectedImage);
                     saved = true;
                 } else if (uploadType === 'logo' && userType === 'company') {
-                    // Upload avatar/logo to backend API
-                    const result = await userService.uploadAvatar(selectedFile);
-                    avatarUrl = result.avatarUrl;
+                    // Upload company logo to backend (POST /api/v1/profile/company/logo)
+                    const { logoUrl } = await profileService.uploadCompanyLogo(selectedFile);
 
-                    // Update global user store
-                    updateUser({ avatar: avatarUrl });
+                    // Mirror logo to the user's avatar slot so existing UI surfaces show it
+                    updateUser({ avatar: logoUrl });
 
-                    saveLabelLogo(userId, selectedImage);
+                    saveLabelLogo(userId, logoUrl);
                     // Verify the save was successful
                     const updatedUserData = getUserData(userId);
                     const companyData = updatedUserData as CompanyOnboardingData;

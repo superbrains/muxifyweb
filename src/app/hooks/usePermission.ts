@@ -15,6 +15,13 @@ interface Permission {
   canViewPayments: boolean;
   canAddArtists: boolean;
   canViewSettings: boolean;
+  // Record-label specific
+  canManageRoster: boolean;
+  canInviteArtists: boolean;
+  canManageSplits: boolean;
+  canTriggerPayouts: boolean;
+  canViewLabelAnalytics: boolean;
+  canUploadOnBehalfOfArtist: boolean;
 }
 
 const emptyPermissions: Permission = {
@@ -27,10 +34,17 @@ const emptyPermissions: Permission = {
   canViewPayments: false,
   canAddArtists: false,
   canViewSettings: false,
+  canManageRoster: false,
+  canInviteArtists: false,
+  canManageSplits: false,
+  canTriggerPayouts: false,
+  canViewLabelAnalytics: false,
+  canUploadOnBehalfOfArtist: false,
 };
 
 const rolePermissions: Record<CreatorRole, Permission> = {
   artist: {
+    ...emptyPermissions,
     canUploadMusic: true,
     canUploadVideo: true,
     canViewEarnings: true,
@@ -38,10 +52,10 @@ const rolePermissions: Record<CreatorRole, Permission> = {
     canViewFans: true,
     canViewSales: true,
     canViewPayments: true,
-    canAddArtists: false,
     canViewSettings: true,
   },
   dj: {
+    ...emptyPermissions,
     canUploadMusic: true,
     canUploadVideo: true,
     canViewEarnings: true,
@@ -49,18 +63,16 @@ const rolePermissions: Record<CreatorRole, Permission> = {
     canViewFans: true,
     canViewSales: true,
     canViewPayments: true,
-    canAddArtists: false,
     canViewSettings: true,
   },
   creator: {
-    canUploadMusic: false,
+    ...emptyPermissions,
     canUploadVideo: true,
     canViewEarnings: true,
     canViewLeaderboard: true,
     canViewFans: true,
     canViewSales: true,
     canViewPayments: true,
-    canAddArtists: false,
     canViewSettings: true,
   },
   record_label: {
@@ -73,6 +85,15 @@ const rolePermissions: Record<CreatorRole, Permission> = {
     canViewPayments: true,
     canAddArtists: true,
     canViewSettings: true,
+    canManageRoster: true,
+    canInviteArtists: true,
+    canManageSplits: true,
+    // canTriggerPayouts is server-enforced against VerificationStatus === Verified;
+    // we keep the role-level flag true and let the dashboard read the cached
+    // summary to disable the UI when verification isn't approved yet.
+    canTriggerPayouts: true,
+    canViewLabelAnalytics: true,
+    canUploadOnBehalfOfArtist: true,
   },
 };
 
@@ -111,6 +132,18 @@ export const usePermission = (role?: UserRole) => {
         return permissions.canAddArtists;
       case "/settings":
         return permissions.canViewSettings;
+      case "/label/roster":
+        return permissions.canManageRoster;
+      case "/label/releases":
+        return permissions.canManageRoster;
+      case "/label/splits":
+        return permissions.canManageSplits;
+      case "/label/payouts":
+        return permissions.canTriggerPayouts;
+      case "/label/analytics":
+        return permissions.canViewLabelAnalytics;
+      case "/label/settings":
+        return permissions.canManageRoster;
       default:
         return true;
     }

@@ -27,6 +27,8 @@ interface AddTrackModalProps {
   albumId: string;
   /** Track number (1-based). Pass current track count + 1 from the parent. */
   defaultTrackNumber: number;
+  /** When set, the label is releasing on behalf of this artist. */
+  onBehalfOfArtistId?: string;
   /** Called once the chunked upload + complete succeeds. */
   onTrackAdded: (track: TrackDto) => void;
 }
@@ -36,6 +38,7 @@ export const AddTrackModal: React.FC<AddTrackModalProps> = ({
   onClose,
   albumId,
   defaultTrackNumber,
+  onBehalfOfArtistId,
   onTrackAdded,
 }) => {
   const upload = useResumableUpload();
@@ -81,6 +84,7 @@ export const AddTrackModal: React.FC<AddTrackModalProps> = ({
         albumId,
         trackNumber: defaultTrackNumber,
         featuredArtists: featured.length > 0 ? featured : undefined,
+        onBehalfOfArtistId,
       });
       onTrackAdded(created);
       onClose();

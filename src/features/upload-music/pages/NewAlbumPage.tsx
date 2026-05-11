@@ -9,9 +9,10 @@ import {
   VStack,
 } from '@chakra-ui/react';
 import { FiArrowLeft, FiArrowRight } from 'react-icons/fi';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { albumService } from '../services/albumService';
 import { useChakraToast } from '@shared/hooks/useChakraToast';
+import { useRoster } from '@/features/record-label/hooks/useRoster';
 
 /**
  * Lightweight intake page: asks for the album title up-front, creates a draft,
@@ -21,6 +22,12 @@ import { useChakraToast } from '@shared/hooks/useChakraToast';
 export const NewAlbumPage: React.FC = () => {
   const navigate = useNavigate();
   const toast = useChakraToast();
+  const [searchParams] = useSearchParams();
+  const onBehalfOfArtistId = searchParams.get('onBehalfOf') || undefined;
+  const { data: roster } = useRoster();
+  const onBehalfArtist = onBehalfOfArtistId
+    ? roster?.find((a) => a.artistUserId === onBehalfOfArtistId)
+    : undefined;
   const [title, setTitle] = useState('');
   const [creating, setCreating] = useState(false);
 
@@ -33,7 +40,10 @@ export const NewAlbumPage: React.FC = () => {
         title: trimmed,
         releaseType: 'Album',
       });
-      navigate(`/upload/album/${album.id}`, { replace: true });
+      const nextPath = onBehalfOfArtistId
+        ? `/upload/album/${album.id}?onBehalfOf=${onBehalfOfArtistId}`
+        : `/upload/album/${album.id}`;
+      navigate(nextPath, { replace: true });
     } catch (e) {
       toast.error('Could not create album', e instanceof Error ? e.message : '');
     } finally {
@@ -53,6 +63,13 @@ export const NewAlbumPage: React.FC = () => {
       </Button>
 
       <VStack align="stretch" gap={6}>
+        {onBehalfOfArtistId && (
+          <Box bg="primary.50" borderRadius="12px" p={3} borderLeft="3px solid" borderColor="primary.500">
+            <Text fontSize="11px" color="primary.700" fontWeight="medium">
+              Releasing on behalf of {onBehalfArtist?.performingName || 'roster artist'}
+            </Text>
+          </Box>
+        )}
         <Box>
           <Text
             fontSize="11px"

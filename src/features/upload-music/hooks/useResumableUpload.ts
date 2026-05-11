@@ -42,6 +42,8 @@ export interface CompleteAudioUploadInput {
   featuredArtists?: FeaturedArtistInput[];
   unlockCostCoins?: number;
   allowSponsorship?: boolean;
+  /** Record-label releasing on behalf of a roster artist. */
+  onBehalfOfArtistId?: string;
 }
 
 export interface UseResumableUploadResult {
@@ -186,6 +188,7 @@ export function useResumableUpload(): UseResumableUploadResult {
             featuredArtists: complete.featuredArtists,
             unlockCostCoins: complete.unlockCostCoins,
             allowSponsorship: complete.allowSponsorship,
+            onBehalfOfArtistId: complete.onBehalfOfArtistId,
           },
         );
 

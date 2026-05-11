@@ -14,6 +14,11 @@ export interface DirectorInfo {
   name: string;
   meansOfIdentification: string;
   identityNumber: string;
+  // Extended fields (v2) for record-label onboarding
+  email?: string;
+  phone?: string;
+  position?: string; // CEO | COO | Director | Secretary | Other
+  isPrimaryContact?: boolean;
 }
 
 // Artist-specific data
@@ -635,6 +640,16 @@ export const useUserManagementStore = create<UserManagementState>()(
     {
       name: "user-management-storage",
       storage: indexedDbStorage,
+      version: 2,
+      // v1 → v2: DirectorInfo gained email/phone/position/isPrimaryContact.
+      // Older in-flight sessions don't carry these fields; reset to an empty
+      // store so the new onboarding form starts clean rather than rendering
+      // half-populated rows.
+      migrate: () => ({
+        users: {},
+        currentUserId: null,
+        primaryUserType: null,
+      }),
       partialize: (state) => ({
         users: state.users,
         currentUserId: state.currentUserId,
