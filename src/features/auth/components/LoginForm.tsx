@@ -11,7 +11,10 @@ import {
 import { useAuth } from '@app/hooks/useAuth';
 import { useChakraToast } from '@shared/hooks';
 import { authService } from '@shared/services/auth';
+import { userService } from '@shared/services/userService';
 import type { LoginCredentials } from '@shared/services/auth';
+import { tokenStorage } from '@app/lib/axiosInstance';
+import { useUserManagementStore } from '@/features/auth/store/useUserManagementStore';
 import { PasswordInput } from "@/components/ui/password-input"
 
 export const LoginForm: React.FC = () => {
@@ -59,10 +62,25 @@ export const LoginForm: React.FC = () => {
         setLoading(true);
         try {
             const response = await authService.login(formData);
-            const { user, token } = response.data;
+            const { user, token, refreshToken } = response.data;
 
-            localStorage.setItem('auth_token', token);
-            login(user);
+            tokenStorage.setTokens(token, refreshToken);
+
+            // Pull the full profile and hydrate role-specific stores so the
+            // dashboard/navbar shows real info instead of the seeded defaults.
+            try {
+                const profile = await userService.getCurrentUser();
+                useUserManagementStore.getState().hydrateFromProfile(profile);
+                login({
+                    ...user,
+                    name: profile.name || user.name,
+                    avatar: profile.avatar ?? user.avatar,
+                    isVerified: profile.isVerified ?? user.isVerified,
+                });
+            } catch (profileError) {
+                console.warn('Failed to load profile after login', profileError);
+                login(user);
+            }
 
             toast.success('Welcome back!', 'You have been successfully logged in.');
             navigate('/');

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import {
     Box,
     Text,
@@ -20,6 +20,9 @@ import {
     type CompanySubType,
     type AdManagerOnboardingData,
 } from '@/features/auth/store/useUserManagementStore';
+import { userService } from '@/shared/services/userService';
+import type { UpdateProfileRequest } from '@/features/onboarding/types';
+import { getApiErrorMessage } from '@/shared/lib/errorUtils';
 
 type ProfileFormData = {
     fullName: string;
@@ -59,6 +62,14 @@ const COMPANY_LABEL_MAP: Record<CompanySubType, string> = {
 const formatLocation = (state?: string, country?: string) =>
     [state, country].filter(Boolean).join(', ');
 
+const splitLocation = (location: string): { state: string | null; country: string | null } => {
+    if (!location) return { state: null, country: null };
+    const parts = location.split(',').map((part) => part.trim()).filter(Boolean);
+    if (parts.length === 0) return { state: null, country: null };
+    if (parts.length === 1) return { state: null, country: parts[0] };
+    return { state: parts[0], country: parts[parts.length - 1] };
+};
+
 const isArtistData = (data: unknown): data is ArtistOnboardingData =>
     !!data && typeof (data as ArtistOnboardingData).userType === 'string' && (data as ArtistOnboardingData).email !== undefined;
 
@@ -69,9 +80,11 @@ const isAdManagerData = (data: unknown): data is AdManagerOnboardingData =>
     !!data && typeof (data as AdManagerOnboardingData).userType === 'string' && (data as AdManagerOnboardingData).fullName !== undefined;
 
 export const ProfileTab: React.FC = () => {
-    const { getCurrentUserData, getCurrentUserType } = useUserManagementStore();
+    const { getCurrentUserData, getCurrentUserType, hydrateFromProfile } = useUserManagementStore();
     const userData = getCurrentUserData();
     const userType = getCurrentUserType();
+    const fileInputRef = useRef<HTMLInputElement | null>(null);
+    const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
     
     const getInitialFormData = (): ProfileFormData => {
         if (!userData || !userType) {
@@ -144,8 +157,33 @@ export const ProfileTab: React.FC = () => {
     const handleSave = async () => {
         setIsLoading(true);
         try {
-            // Simulate API call
-            await new Promise(resolve => setTimeout(resolve, 2000));
+            const { state, country } = splitLocation(formData.location);
+            const payload: UpdateProfileRequest = {
+                name: formData.fullName,
+                phone,
+                country: country ?? undefined,
+                state: state ?? undefined,
+            };
+
+            if (userType === 'artist') {
+                payload.performingName = formData.performingName;
+            } else if (userType === 'company') {
+                payload.legalName = formData.fullName;
+                payload.tradingName = formData.performingName;
+                payload.address = formData.residentialAddress
+                    ? {
+                          street: formData.residentialAddress,
+                          city: state ?? undefined,
+                          state: state ?? undefined,
+                          country: country ?? undefined,
+                      }
+                    : undefined;
+            } else if (userType === 'ad-manager') {
+                payload.companyName = formData.fullName;
+            }
+
+            const updated = await userService.updateProfile(payload);
+            hydrateFromProfile(updated);
 
             toaster.create({
                 title: 'Profile Updated',
@@ -159,12 +197,45 @@ export const ProfileTab: React.FC = () => {
             console.error('update profile error', error);
             toaster.create({
                 title: 'Update Failed',
-                description: 'Failed to update profile. Please try again.',
+                description: getApiErrorMessage(error, 'Failed to update profile. Please try again.'),
                 type: 'error',
                 duration: 3000,
             });
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const handlePhotoClick = () => {
+        if (!isEditing || isUploadingPhoto) return;
+        fileInputRef.current?.click();
+    };
+
+    const handlePhotoChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        event.target.value = '';
+        if (!file) return;
+
+        setIsUploadingPhoto(true);
+        try {
+            await userService.uploadAvatar(file);
+            const refreshed = await userService.getCurrentUser();
+            hydrateFromProfile(refreshed);
+            toaster.create({
+                title: 'Photo updated',
+                description: 'Your profile photo has been updated.',
+                type: 'success',
+                duration: 3000,
+            });
+        } catch (error) {
+            toaster.create({
+                title: 'Upload failed',
+                description: getApiErrorMessage(error, 'Failed to upload photo. Please try again.'),
+                type: 'error',
+                duration: 3000,
+            });
+        } finally {
+            setIsUploadingPhoto(false);
         }
     };
 
@@ -200,17 +271,31 @@ export const ProfileTab: React.FC = () => {
                         color="gray.600"
                         fontSize="sm"
                         fontWeight="bold"
+                        cursor={isEditing ? 'pointer' : 'default'}
+                        onClick={handlePhotoClick}
+                        title={isEditing ? 'Click to change your photo' : undefined}
                     >
                         {!profileImage
                             ? (formData.fullName?.charAt(0).toUpperCase() || 'U')
                             : null}
                     </Box>
+                    <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        hidden
+                        onChange={handlePhotoChange}
+                    />
                     <VStack align="start" gap={0.5}>
                         <Text fontSize="xs" fontWeight="medium" color="gray.900">
                             Your photo
                         </Text>
                         <Text fontSize="2xs" color="gray.500">
-                            This will be displayed on your profile.
+                            {isUploadingPhoto
+                                ? 'Uploading…'
+                                : isEditing
+                                    ? 'Click the avatar to upload a new photo.'
+                                    : 'This will be displayed on your profile.'}
                         </Text>
                     </VStack>
                 </HStack>

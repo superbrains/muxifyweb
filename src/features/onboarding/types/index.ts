@@ -109,6 +109,10 @@ export interface UserProfileDto {
   companyName?: string;
   industry?: string;
   activeCampaignCount?: number;
+
+  // Security
+  hasTransactionPin?: boolean;
+  transactionPinSetAt?: string;
 }
 
 // User Summary DTO (public profile)

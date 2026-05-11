@@ -12,6 +12,8 @@ import {
 } from '@chakra-ui/react';
 import { MdClose, MdVisibility, MdVisibilityOff } from 'react-icons/md';
 import { toaster } from '@/components/ui/toaster-instance';
+import { authService } from '@/shared/services/auth';
+import { getApiErrorMessage } from '@/shared/lib/errorUtils';
 
 interface UpdatePasswordModalProps {
     isOpen: boolean;
@@ -53,10 +55,12 @@ export const UpdatePasswordModal: React.FC<UpdatePasswordModalProps> = ({
             return;
         }
 
-        if (newPassword.length < 6) {
+        // Backend enforces 8+ chars with upper/lower/digit; mirror the lower
+        // bound here so users get an immediate hint before submitting.
+        if (newPassword.length < 8) {
             toaster.create({
                 title: 'Weak Password',
-                description: 'Password must be at least 6 characters long',
+                description: 'Password must be at least 8 characters long',
                 type: 'error',
                 duration: 3000,
             });
@@ -65,8 +69,7 @@ export const UpdatePasswordModal: React.FC<UpdatePasswordModalProps> = ({
 
         setLoading(true);
         try {
-            // Simulate API call
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            await authService.changePassword(currentPassword, newPassword);
 
             toaster.create({
                 title: 'Password Updated',
@@ -74,12 +77,15 @@ export const UpdatePasswordModal: React.FC<UpdatePasswordModalProps> = ({
                 type: 'success',
                 duration: 3000,
             });
+            setCurrentPassword('');
+            setNewPassword('');
+            setRepeatPassword('');
             onSuccess();
         } catch (error) {
             console.error('update password error', error);
             toaster.create({
                 title: 'Update Failed',
-                description: 'Failed to update password. Please try again.',
+                description: getApiErrorMessage(error, 'Failed to update password. Please check your current password and try again.'),
                 type: 'error',
                 duration: 3000,
             });

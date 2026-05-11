@@ -16,6 +16,7 @@ export interface RegisterData {
 export interface AuthResponse {
   user: User;
   token: string;
+  refreshToken: string;
 }
 
 export const authService = {
@@ -37,4 +38,10 @@ export const authService = {
 
   verifyEmail: (code: string) =>
     api.post("/auth/verify-email", { code }),
+
+  changePassword: (currentPassword: string, newPassword: string) =>
+    api.post<{ message: string }>("/auth/change-password", {
+      currentPassword,
+      newPassword,
+    }),
 };

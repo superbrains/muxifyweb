@@ -29,8 +29,8 @@ interface NavbarProps {
 
 export const Navbar: React.FC<NavbarProps> = ({
     isCollapsed,
-    userName = 'Davido',
-    userRole = 'Artist',
+    userName = '',
+    userRole = '',
     userAvatar,
 }) => {
     const location = useLocation();
@@ -127,9 +127,10 @@ export const Navbar: React.FC<NavbarProps> = ({
 
     // Get page title based on current route
     const pageTitle = useMemo(() => {
+        const greeting = displayName ? `Hi ${displayName}` : 'Welcome';
         const path = location.pathname;
         const routeTitles: Record<string, string> = {
-            '/': `Hi ${displayName}`,
+            '/': greeting,
             '/upload': 'Upload Media',
             '/upload/review': 'Review',
             '/music-videos': 'Music & Videos',
@@ -142,7 +143,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             '/settings': 'Settings',
         };
 
-        return routeTitles[path] || `Hi ${displayName}`;
+        return routeTitles[path] || greeting;
     }, [location.pathname, displayName]);
 
     return (

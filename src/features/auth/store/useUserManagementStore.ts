@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { indexedDbStorage } from "@/shared/lib/indexedDbStorage";
+import type { UserProfileDto } from "@/features/onboarding/types";
 
 // User type definitions
 export type UserType = "artist" | "company" | "ad-manager";
@@ -142,11 +143,53 @@ interface UserManagementState {
   getCurrentUserType: () => UserType | null;
   clearUser: (userId: string) => void;
   clearAllUsers: () => void;
+  hydrateFromProfile: (profile: UserProfileDto) => void;
 }
 
 // Generate a unique user ID
 const generateUserId = (): string => {
   return `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+};
+
+// Map backend role string (artist, dj, creator, record_label, ad_manager, fan, admin)
+// onto the frontend's coarser UserType. Returns null for roles that don't have a
+// matching slot (fan, admin) so callers can skip hydration safely.
+const mapBackendRoleToUserType = (role: string): UserType | null => {
+  switch (role) {
+    case "artist":
+    case "dj":
+    case "creator":
+      return "artist";
+    case "record_label":
+      return "company";
+    case "ad_manager":
+      return "ad-manager";
+    default:
+      return null;
+  }
+};
+
+const mapBackendRoleToArtistSubType = (role: string): ArtistSubType | null => {
+  switch (role) {
+    case "artist":
+      return "artist";
+    case "dj":
+      return "dj";
+    case "creator":
+      return "creator";
+    default:
+      return null;
+  }
+};
+
+// Profile.location comes back as "State, Country" (or just "Country") — split it
+// so the existing onboarding fields stay populated.
+const parseLocationParts = (location?: string): { state?: string; country?: string } => {
+  if (!location) return {};
+  const parts = location.split(",").map((p) => p.trim()).filter(Boolean);
+  if (parts.length === 0) return {};
+  if (parts.length === 1) return { country: parts[0] };
+  return { state: parts[0], country: parts[parts.length - 1] };
 };
 
 export const useUserManagementStore = create<UserManagementState>()(
@@ -502,6 +545,90 @@ export const useUserManagementStore = create<UserManagementState>()(
           users: {},
           currentUserId: null,
           primaryUserType: null,
+        });
+      },
+
+      hydrateFromProfile: (profile: UserProfileDto) => {
+        const userType = mapBackendRoleToUserType(profile.role);
+        if (!userType) return;
+
+        const userId = profile.id;
+        const state = get();
+        const existing = state.users[userId];
+        const now = new Date().toISOString();
+        const location = parseLocationParts(profile.location);
+
+        let data: OnboardingData;
+
+        if (userType === "artist") {
+          const previous = existing?.data as ArtistOnboardingData | undefined;
+          data = {
+            userType: (mapBackendRoleToArtistSubType(profile.role) ??
+              previous?.userType ??
+              "artist") as ArtistSubType,
+            email: profile.email,
+            phone: (previous?.phone as string | undefined) ?? "",
+            fullName: profile.name,
+            performingName: profile.performingName,
+            recordLabel: previous?.recordLabel,
+            country: location.country ?? previous?.country,
+            state: location.state ?? previous?.state,
+            residentAddress: previous?.residentAddress,
+            displayPicture: profile.avatar ?? previous?.displayPicture,
+            emailVerified: profile.isVerified || previous?.emailVerified,
+            identityVerified: profile.isVerified || previous?.identityVerified,
+            identityVerificationDocuments: previous?.identityVerificationDocuments,
+          } as ArtistOnboardingData;
+        } else if (userType === "company") {
+          const previous = existing?.data as CompanyOnboardingData | undefined;
+          data = {
+            userType: (previous?.userType ?? "record_label") as CompanySubType,
+            email: profile.email,
+            phone: (previous?.phone as string | undefined) ?? "",
+            legalCompanyName: profile.legalName ?? previous?.legalCompanyName,
+            companyName: profile.tradingName ?? profile.name ?? previous?.companyName,
+            natureOfBusiness: profile.natureOfBusiness ?? previous?.natureOfBusiness,
+            country: location.country ?? previous?.country,
+            state: location.state ?? previous?.state,
+            companyAddress: previous?.companyAddress,
+            directors: previous?.directors,
+            artists: previous?.artists,
+            labelLogo: profile.avatar ?? previous?.labelLogo,
+            emailVerified: profile.isVerified || previous?.emailVerified,
+            identityVerified: profile.isVerified || previous?.identityVerified,
+            identityVerificationDocuments: previous?.identityVerificationDocuments,
+          } as CompanyOnboardingData;
+        } else {
+          const previous = existing?.data as AdManagerOnboardingData | undefined;
+          data = {
+            userType: (previous?.userType ?? "business") as AdManagerSubType,
+            email: profile.email,
+            phone: (previous?.phone as string | undefined) ?? "",
+            fullName: profile.name,
+            cacRegistrationNumber: previous?.cacRegistrationNumber,
+            yearOfRegistration: previous?.yearOfRegistration,
+            country: location.country ?? previous?.country,
+            state: location.state ?? previous?.state,
+            residentAddress: previous?.residentAddress,
+            directors: previous?.directors,
+            companyLogo: profile.avatar ?? previous?.companyLogo,
+            emailVerified: profile.isVerified || previous?.emailVerified,
+          } as AdManagerOnboardingData;
+        }
+
+        set({
+          users: {
+            ...state.users,
+            [userId]: {
+              userType,
+              data,
+              onboardingComplete: profile.onboardingCompleted ?? existing?.onboardingComplete ?? false,
+              createdAt: existing?.createdAt ?? profile.createdAt ?? now,
+              updatedAt: now,
+            },
+          },
+          currentUserId: userId,
+          primaryUserType: userType,
         });
       },
     }),

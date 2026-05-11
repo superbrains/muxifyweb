@@ -12,6 +12,11 @@ export interface AvatarResult {
   avatarUrl: string;
 }
 
+export interface PinStatusResult {
+  hasPin: boolean;
+  setAt: string | null;
+}
+
 export const userService = {
   /**
    * Get the current authenticated user's profile
@@ -61,5 +66,30 @@ export const userService = {
    */
   deactivateAccount: async (): Promise<void> => {
     await api.delete("/users/me");
+  },
+
+  /**
+   * Get whether the user has a transactional PIN configured
+   * GET /api/v1/auth/pin/status
+   */
+  getPinStatus: async (): Promise<PinStatusResult> => {
+    const response = await api.get<PinStatusResult>("/auth/pin/status");
+    return response.data;
+  },
+
+  /**
+   * Set initial transactional PIN (only if none is set yet)
+   * POST /api/v1/auth/pin
+   */
+  setPin: async (pin: string): Promise<void> => {
+    await api.post("/auth/pin", { pin });
+  },
+
+  /**
+   * Change an existing transactional PIN
+   * POST /api/v1/auth/pin/change
+   */
+  changePin: async (currentPin: string, newPin: string): Promise<void> => {
+    await api.post("/auth/pin/change", { currentPin, newPin });
   },
 };

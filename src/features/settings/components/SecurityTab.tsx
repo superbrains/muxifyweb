@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
     Box,
     Text,
@@ -9,20 +9,39 @@ import {
 } from '@chakra-ui/react';
 import { UpdatePasswordModal } from './UpdatePasswordModal';
 import { UpdateTransactionPinModal } from './UpdateTransactionPinModal';
+import { userService } from '@/shared/services/userService';
 
 export const SecurityTab: React.FC = () => {
     const [isUpdatePasswordOpen, setIsUpdatePasswordOpen] = useState(false);
     const [isUpdatePinOpen, setIsUpdatePinOpen] = useState(false);
+    const [hasPin, setHasPin] = useState<boolean | null>(null);
+
+    const refreshPinStatus = useCallback(async () => {
+        try {
+            const status = await userService.getPinStatus();
+            setHasPin(status.hasPin);
+        } catch (error) {
+            console.warn('Failed to fetch pin status', error);
+            setHasPin(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        refreshPinStatus();
+    }, [refreshPinStatus]);
 
     const handlePasswordUpdateSuccess = () => {
         setIsUpdatePasswordOpen(false);
-        // Handle success logic here
     };
 
     const handlePinUpdateSuccess = () => {
         setIsUpdatePinOpen(false);
-        // Handle success logic here
+        refreshPinStatus();
     };
+
+    const pinButtonLabel = hasPin === null
+        ? 'Loading…'
+        : hasPin ? 'Change PIN' : 'Set PIN';
 
     return (
         <>
@@ -75,7 +94,7 @@ export const SecurityTab: React.FC = () => {
                         <HStack gap={2}>
                             <Input
                                 type="password"
-                                value="••••"
+                                value={hasPin ? '••••' : 'Not set'}
                                 size="sm"
                                 bg="gray.50"
                                 borderColor="gray.200"
@@ -91,8 +110,9 @@ export const SecurityTab: React.FC = () => {
                                 borderRadius="md"
                                 _hover={{ bg: 'primary.600' }}
                                 onClick={() => setIsUpdatePinOpen(true)}
+                                disabled={hasPin === null}
                             >
-                                Change PIN
+                                {pinButtonLabel}
                             </Button>
                         </HStack>
                     </Box>
@@ -109,6 +129,7 @@ export const SecurityTab: React.FC = () => {
                 isOpen={isUpdatePinOpen}
                 onClose={() => setIsUpdatePinOpen(false)}
                 onSuccess={handlePinUpdateSuccess}
+                isInitialSetup={hasPin === false}
             />
         </>
     );
