@@ -150,7 +150,7 @@ export const UpdateTransactionPinModal: React.FC<UpdateTransactionPinModalProps>
                     </Dialog.Header>
 
                     <Text fontSize="xs" color="gray.600" mb={6} textAlign="center">
-                        Lorem ipsum dolor sit amet consectetur. Blandit malesuada sed malesuada duis ipsum et tempus.
+                        Set a 4-digit PIN to authorize coin purchases, gifts and withdrawals on your account.
                     </Text>
 
                     <VStack gap={4} w="full">

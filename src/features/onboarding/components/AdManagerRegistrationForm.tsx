@@ -136,7 +136,7 @@ export const AdManagerRegistrationForm: React.FC = () => {
                     Ad Manager
                 </Text>
                 <Text fontSize="xs" color="gray.600" mb={4}>
-                    Lorem ipsum dolor sit amet consectetur. Mauris placerat nulla sit duis.
+                    Create your ad manager account to launch campaigns on Muxify.
                 </Text>
             </Box>
 

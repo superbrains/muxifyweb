@@ -130,7 +130,7 @@ export const UpdatePasswordModal: React.FC<UpdatePasswordModalProps> = ({
                     </Dialog.Header>
 
                     <Text fontSize="xs" color="gray.600" mb={6} textAlign="center">
-                        Lorem ipsum dolor sit amet consectetur. Blandit malesuada sed malesuada duis ipsum et tempus.
+                        Choose a strong password to keep your Muxify account and earnings secure.
                     </Text>
 
                     <VStack gap={4} w="full">

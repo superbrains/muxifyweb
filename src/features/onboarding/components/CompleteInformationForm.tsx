@@ -11,6 +11,7 @@ import {
 import { useChakraToast } from '@shared/hooks';
 import { CountryStateSelect } from '@shared/components/CountryStateSelect';
 import { useUserManagementStore } from '@/features/auth/store/useUserManagementStore';
+import type { ArtistOnboardingData } from '@/features/auth/store/useUserManagementStore';
 import { profileService } from '../services/profileService';
 import { useUserStore } from '@/app/store/useUserStore';
 import { getApiErrorMessage } from '@/shared/lib/errorUtils';
@@ -26,25 +27,35 @@ interface CompleteInformationData {
 }
 
 export const CompleteInformationForm: React.FC = () => {
-    const [formData, setFormData] = useState<CompleteInformationData>({
-        fullName: '',
-        performingName: '',
-        recordLabel: '',
-        country: '',
-        state: '',
-        residentAddress: '',
-    });
-    const [loading, setLoading] = useState(false);
-    const [errors, setErrors] = useState<Partial<CompleteInformationData>>({});
-
     const toast = useChakraToast();
     const navigate = useNavigate();
     const location = useLocation();
-    const { saveArtistInformation, setCurrentUser } = useUserManagementStore();
+    const { saveArtistInformation, setCurrentUser, getUserData } = useUserManagementStore();
     const { updateUser } = useUserStore();
 
     // Get userId from location state or use current user
     const userId = (location.state as { userId?: string })?.userId;
+
+    const invitedLabelName = userId
+        ? (getUserData(userId) as ArtistOnboardingData | null)?.invitedByLabelName
+        : undefined;
+    const isInvited = Boolean(invitedLabelName && invitedLabelName.trim());
+
+    const [formData, setFormData] = useState<CompleteInformationData>(() => {
+        const initial = userId
+            ? (useUserManagementStore.getState().getUserData(userId) as ArtistOnboardingData | null)
+            : null;
+        return {
+            fullName: initial?.fullName ?? '',
+            performingName: initial?.performingName ?? '',
+            recordLabel: initial?.invitedByLabelName ?? initial?.recordLabel ?? '',
+            country: initial?.country ?? '',
+            state: initial?.state ?? '',
+            residentAddress: initial?.residentAddress ?? '',
+        };
+    });
+    const [loading, setLoading] = useState(false);
+    const [errors, setErrors] = useState<Partial<CompleteInformationData>>({});
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
@@ -91,7 +102,7 @@ export const CompleteInformationForm: React.FC = () => {
             // Complete artist profile via API
             await profileService.completeArtistProfile({
                 performingName: formData.performingName,
-                bio: formData.recordLabel ? `Signed to ${formData.recordLabel}` : undefined,
+                bio: isInvited ? `Signed to ${invitedLabelName}` : undefined,
                 country: formData.country,
                 state: formData.state,
             });
@@ -107,7 +118,7 @@ export const CompleteInformationForm: React.FC = () => {
                 saveArtistInformation(userId, {
                     fullName: formData.fullName,
                     performingName: formData.performingName,
-                    recordLabel: formData.recordLabel || undefined,
+                    recordLabel: isInvited ? invitedLabelName : undefined,
                     country: formData.country,
                     state: formData.state,
                     residentAddress: formData.residentAddress,
@@ -133,7 +144,9 @@ export const CompleteInformationForm: React.FC = () => {
                     Complete Information
                 </Text>
                 <Text fontSize="xs" color="gray.600" mb={4}>
-                    Lorem ipsum dolor sit amet consectetur. Mauris placerat nulla sit duis.
+                    {isInvited
+                        ? `Complete your profile to join ${invitedLabelName}.`
+                        : 'Finish setting up your profile so fans can discover and support your music.'}
                 </Text>
             </Box>
 
@@ -196,30 +209,29 @@ export const CompleteInformationForm: React.FC = () => {
                         )}
                     </Box>
 
-                    {/* Record Label (Optional) */}
-                    <Box>
-                        <Text fontSize="xs" fontWeight="medium" color="grey.500" mb={1}>
-                            Record Label <Text as="span" color="gray.400">(Optional)</Text>
-                        </Text>
-                        <Input
-                            name="recordLabel"
-                            type="text"
-                            variant="subtle"
-                            value={formData.recordLabel}
-                            size="sm"
-                            fontSize="xs"
-                            _placeholder={{
-                                fontSize: 'xs',
-                            }}
-                            onChange={handleChange}
-                            placeholder="Record Label"
-                            borderColor="transparent"
-                            _focus={{
-                                borderColor: 'primary.500',
-                                boxShadow: '0 0 0 1px #f94444',
-                            }}
-                        />
-                    </Box>
+                    {isInvited && (
+                        <Box>
+                            <Text fontSize="xs" fontWeight="medium" color="grey.500" mb={1}>
+                                Record Label
+                            </Text>
+                            <Input
+                                name="recordLabel"
+                                type="text"
+                                variant="subtle"
+                                value={invitedLabelName}
+                                readOnly
+                                disabled
+                                size="sm"
+                                fontSize="xs"
+                                cursor="not-allowed"
+                                opacity={0.7}
+                                borderColor="transparent"
+                            />
+                            <Text fontSize="xs" color="gray.500" mt={1}>
+                                You were invited by {invitedLabelName}. This will be linked after verification.
+                            </Text>
+                        </Box>
+                    )}
 
                     {/* Country and State */}
                     <CountryStateSelect

@@ -136,7 +136,7 @@ export const AdManagerInformationForm: React.FC = () => {
                     Complete Information
                 </Text>
                 <Text fontSize="xs" color="gray.600" mb={4}>
-                    Lorem ipsum dolor sit amet consectetur. Mauris placerat nulla sit duis.
+                    Add a few more details so we can verify your account and unlock the ad dashboard.
                 </Text>
             </Box>
 

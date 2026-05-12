@@ -146,7 +146,7 @@ export const CompanyRegistrationForm: React.FC = () => {
                     Recording & Distribution Company
                 </Text>
                 <Text fontSize="xs" color="gray.600" mb={4}>
-                    Lorem ipsum dolor sit amet consectetur. Mauris placerat nulla sit duis.
+                    Set up your label account to manage releases, splits and payouts.
                 </Text>
             </Box>
 

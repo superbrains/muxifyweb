@@ -154,7 +154,7 @@ export const CompanyInformationForm: React.FC = () => {
                     Company Information
                 </Text>
                 <Text fontSize="xs" color="gray.600" mb={4}>
-                    Lorem ipsum dolor sit amet consectetur. Mauris placerat nulla sit duis.
+                    Tell us about your company so we can verify and activate your label account.
                 </Text>
             </Box>
 

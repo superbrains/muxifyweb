@@ -311,7 +311,7 @@ export const VideoAdsPhonePreview: React.FC = memo(() => {
                         lineHeight="1.4"
                         lineClamp={2}
                     >
-                        Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+                        New episode out now — tap in for the laughs, then send a gift to keep them coming.
                     </Text>
                 </Box>
 

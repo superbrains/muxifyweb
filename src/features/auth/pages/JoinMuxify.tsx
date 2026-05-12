@@ -23,21 +23,21 @@ export const JoinMuxify: React.FC = () => {
         {
             id: 'artist',
             title: 'Artist, Creators, DJs & Podcasters',
-            description: 'Lorem ipsum dolor sit amet consecte, lorem dolor.',
+            description: 'Upload music, grow your fanbase, and earn from streams, gifts and unlocks.',
             icon: ArtistIcon,
             route: '/onboarding/artist/register'
         },
         {
             id: 'company',
             title: 'Recording & Distribution Company',
-            description: 'Lorem ipsum dolor sit amet consecte, lorem dolor.',
+            description: 'Manage your roster, distribute releases and track royalties in one place.',
             icon: MusicDashboardIcon,
             route: '/onboarding/company/register'
         },
         {
             id: 'ad-manager',
             title: 'Ad Manager',
-            description: 'Lorem ipsum dolor sit amet consecte, lorem dolor.',
+            description: 'Launch targeted campaigns and reach engaged music audiences across Muxify.',
             icon: ChartSquareIcon,
             route: '/onboarding/ad-manager/register'
         }
@@ -92,7 +92,7 @@ export const JoinMuxify: React.FC = () => {
                                 color="gray.600"
                                 textAlign="center"
                             >
-                                Lorem ipsum dolor sit amet consectetur. Mauris placerat nulla sit duis.
+                                Tell us how you plan to use Muxify so we can tailor your experience.
                             </Text>
                         </Box>
 

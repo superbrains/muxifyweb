@@ -161,7 +161,7 @@ export const ArtistRegistrationForm: React.FC = () => {
                     Artists, Creators, DJs & Podcasters
                 </Text>
                 <Text fontSize="xs" color="gray.600" mb={4}>
-                    Lorem ipsum dolor sit amet consectetur. Mauris placerat nulla sit duis.
+                    Create your creator account in minutes — start uploading and earning today.
                 </Text>
             </Box>
 
