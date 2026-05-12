@@ -3,12 +3,15 @@ import type {
     AcceptInvitationRequest,
     AcceptInvitationResponse,
     InvitationDto,
+    InvitationLookupResponse,
     InviteArtistRequest,
     InviteArtistResponse,
     LabelAnalyticsDto,
-    LabelReleaseDto,
+    LabelReleaseSummaryDto,
+    LabelReleasesPageDto,
     LabelSummaryDto,
     PayoutDto,
+    ReleaseFilters,
     ReleaseSplitsDto,
     RosterArtistDto,
     SetSplitsRequest,
@@ -59,12 +62,40 @@ export const recordLabelService = {
         );
         return data;
     },
+    /**
+     * Public (no-auth) lookup used by the accept page to render label context
+     * and decide whether to send the invitee into sign-in or registration.
+     */
+    lookupInvitation: async (token: string): Promise<InvitationLookupResponse> => {
+        const { data } = await api.get<InvitationLookupResponse>(
+            `/labels/invitations/lookup`,
+            { params: { token } },
+        );
+        return data;
+    },
 
     // Releases
-    getReleases: async (limit?: number): Promise<LabelReleaseDto[]> => {
-        const { data } = await api.get<LabelReleaseDto[]>(`${BASE}/releases`, {
-            params: { limit },
+    getReleases: async (
+        filters: ReleaseFilters = {},
+        limit?: number,
+    ): Promise<LabelReleasesPageDto> => {
+        const params: Record<string, string | number | undefined> = {
+            kind: filters.kind,
+            status: filters.status?.join(','),
+            artistId: filters.artistIds?.join(','),
+            search: filters.search,
+            sort: filters.sort,
+            page: filters.page,
+            pageSize: filters.pageSize,
+            limit,
+        };
+        const { data } = await api.get<LabelReleasesPageDto>(`${BASE}/releases`, {
+            params,
         });
+        return data;
+    },
+    getReleasesSummary: async (): Promise<LabelReleaseSummaryDto> => {
+        const { data } = await api.get<LabelReleaseSummaryDto>(`${BASE}/releases/summary`);
         return data;
     },
 

@@ -13,7 +13,8 @@ import { useNavigate } from 'react-router-dom';
 import { useLabelReleases } from '../hooks/useLabelReleases';
 
 const SplitsPage: React.FC = () => {
-    const { data: releases, isLoading } = useLabelReleases();
+    const { data, isLoading } = useLabelReleases({ kind: 'track', pageSize: 100 });
+    const releases = data?.items ?? [];
     const navigate = useNavigate();
 
     return (
@@ -38,7 +39,7 @@ const SplitsPage: React.FC = () => {
                 <Center py={10}>
                     <Spinner size="md" color="primary.500" />
                 </Center>
-            ) : !releases || releases.length === 0 ? (
+            ) : releases.length === 0 ? (
                 <Center
                     bg="white"
                     borderRadius="20px"
@@ -55,7 +56,7 @@ const SplitsPage: React.FC = () => {
                     <Stack gap={0}>
                         {releases.map((r) => (
                             <HStack
-                                key={r.trackId}
+                                key={r.id}
                                 py={3}
                                 px={3}
                                 borderRadius="md"
@@ -78,7 +79,7 @@ const SplitsPage: React.FC = () => {
                                     fontWeight="medium"
                                     borderRadius="8px"
                                     _hover={{ bg: 'primary.600' }}
-                                    onClick={() => navigate(`/label/splits/${r.trackId}`)}
+                                    onClick={() => navigate(`/label/splits/${r.id}`)}
                                 >
                                     Edit splits
                                 </Button>

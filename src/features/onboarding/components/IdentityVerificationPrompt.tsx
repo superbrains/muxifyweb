@@ -3,8 +3,12 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Box, Button, Input, Text, VStack } from '@chakra-ui/react';
 import { useChakraToast } from '@shared/hooks';
 import { VerifyIcon } from '@/shared/icons/CustomIcons';
-import { useUserManagementStore } from '@/features/auth/store/useUserManagementStore';
+import {
+    useUserManagementStore,
+    type ArtistOnboardingData,
+} from '@/features/auth/store/useUserManagementStore';
 import { profileService } from '../services/profileService';
+import { recordLabelService } from '@/features/record-label/services/recordLabelService';
 import { getApiErrorMessage } from '@/shared/lib/errorUtils';
 
 const ACCEPTED_TYPES = ['image/png', 'image/jpeg', 'image/jpg', 'application/pdf'];
@@ -19,7 +23,8 @@ export const IdentityVerificationPrompt: React.FC = () => {
     const toast = useChakraToast();
     const navigate = useNavigate();
     const location = useLocation();
-    const { markIdentityVerified, completeOnboarding, setCurrentUser } = useUserManagementStore();
+    const { markIdentityVerified, completeOnboarding, setCurrentUser, getUserData } =
+        useUserManagementStore();
 
     const userId = (location.state as { userId?: string })?.userId;
 
@@ -57,10 +62,37 @@ export const IdentityVerificationPrompt: React.FC = () => {
                 completeOnboarding(userId);
             }
 
-            toast.success(
-                'Verification submitted!',
-                'We will review your document and notify you shortly.',
-            );
+            // If the artist arrived via a label invitation, auto-accept now
+            // that onboarding is complete. Failures here don't block: the
+            // account is fully set up, only the roster-join didn't happen.
+            const invitationToken = userId
+                ? (getUserData(userId) as ArtistOnboardingData | null)?.invitationToken
+                : undefined;
+            if (invitationToken) {
+                try {
+                    const res = await recordLabelService.acceptInvitation({
+                        token: invitationToken,
+                    });
+                    toast.success(
+                        `Welcome to ${res.labelName}!`,
+                        'You are now on their roster.',
+                    );
+                } catch (acceptError) {
+                    toast.error(
+                        'Could not join the label',
+                        getApiErrorMessage(
+                            acceptError,
+                            'Your account is set up, but joining the label failed. Contact support.',
+                        ),
+                    );
+                }
+            } else {
+                toast.success(
+                    'Verification submitted!',
+                    'We will review your document and notify you shortly.',
+                );
+            }
+
             navigate('/');
         } catch (error) {
             const errorMessage = getApiErrorMessage(error, 'Verification failed. Please try again.');

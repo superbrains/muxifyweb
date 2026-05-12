@@ -9,6 +9,7 @@ const Register = lazy(() => import('@auth/pages/Register'));
 const ForgotPassword = lazy(() => import('@auth/pages/ForgotPassword'));
 const JoinMuxify = lazy(() => import('@auth/pages/JoinMuxify'));
 const ArtistRegistration = lazy(() => import('@onboarding/pages/ArtistRegistration'));
+const InvitedArtistRegistration = lazy(() => import('@onboarding/pages/InvitedArtistRegistration'));
 const ArtistEmailVerification = lazy(() => import('@onboarding/pages/ArtistEmailVerification'));
 const CompleteInformation = lazy(() => import('@onboarding/pages/CompleteInformation'));
 const DisplayPicture = lazy(() => import('@onboarding/pages/DisplayPicture'));
@@ -61,6 +62,7 @@ export const appRoutes: RouteObject[] = [
     { path: '/forgot-password', element: <ForgotPassword /> },
     { path: '/join', element: <JoinMuxify /> },
     { path: '/onboarding/artist/register', element: <ArtistRegistration /> },
+    { path: '/onboarding/artist/invited/register', element: <InvitedArtistRegistration /> },
     { path: '/onboarding/artist/verify-email', element: <ArtistEmailVerification /> },
     { path: '/onboarding/artist/complete-information', element: <CompleteInformation /> },
     { path: '/onboarding/artist/display-picture', element: <DisplayPicture /> },

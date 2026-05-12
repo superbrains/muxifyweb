@@ -7,6 +7,7 @@ export const labelKeys = {
     invitations: ['label', 'invitations'] as const,
     releases: <T>(filters?: T) =>
         ['label', 'releases', filters ?? {}] as const,
+    releasesSummary: ['label', 'releases', 'summary'] as const,
     splits: (trackId: string) => ['label', 'splits', trackId] as const,
     payouts: <T>(filters?: T) =>
         ['label', 'payouts', filters ?? {}] as const,

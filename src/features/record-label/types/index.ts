@@ -64,6 +64,15 @@ export interface AcceptInvitationResponse {
     labelName: string;
 }
 
+export interface InvitationLookupResponse {
+    inviteeEmail: string;
+    labelName: string;
+    personalNote?: string;
+    expiresAt: string;
+    status: 'Pending' | 'Accepted' | 'Declined' | 'Revoked' | 'Expired';
+    userExists: boolean;
+}
+
 export type SplitRecipientRole = 'Artist' | 'Label' | 'Featured';
 
 export interface ReleaseSplitDto {
@@ -135,12 +144,69 @@ export interface LabelAnalyticsDto {
     }>;
 }
 
+export type ReleaseKind = 'track' | 'video';
+
+export type ReleaseStatus =
+    | 'Draft'
+    | 'Scheduled'
+    | 'Live'
+    | 'Processing'
+    | 'Failed';
+
+export type ReleaseTypeName =
+    | 'Single'
+    | 'EP'
+    | 'Album'
+    | 'Mix'
+    | 'Compilation'
+    | 'MusicVideo';
+
+export type UploadSource = 'Artist' | 'Label';
+
 export interface LabelReleaseDto {
-    trackId: string;
+    id: string;
+    kind: ReleaseKind;
     title: string;
     artistUserId: string;
     artistName: string;
     coverArtUrl?: string;
-    releasedAt: string;
+    releaseDate?: string;
+    createdAt: string;
     streams: number;
+    status: ReleaseStatus;
+    releaseType: ReleaseTypeName;
+    albumId?: string;
+    albumTitle?: string;
+    uploadSource: UploadSource;
+    isPublished: boolean;
+}
+
+export interface LabelReleasesPageDto {
+    items: LabelReleaseDto[];
+    total: number;
+    page: number;
+    pageSize: number;
+}
+
+export type ReleaseSortKey = 'recent' | 'streams' | 'title';
+
+export interface ReleaseFilters {
+    kind?: 'all' | ReleaseKind;
+    status?: ReleaseStatus[];
+    artistIds?: string[];
+    search?: string;
+    sort?: ReleaseSortKey;
+    page?: number;
+    pageSize?: number;
+}
+
+export interface LabelReleaseSummaryDto {
+    total: number;
+    live: number;
+    scheduled: number;
+    drafts: number;
+    processing: number;
+    musicVideos: number;
+    streamsLast30d: number;
+    streamsPrev30d: number;
 }

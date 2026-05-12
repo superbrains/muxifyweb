@@ -14,6 +14,7 @@ export interface RegisterRequest {
   name?: string;
   phone?: string;
   role?: "artist" | "dj" | "creator" | "record_label";
+  invitationToken?: string;
 }
 
 export interface LogoutRequest {

@@ -27,7 +27,7 @@ export interface ArtistOnboardingData {
   userType: ArtistSubType;
   email: string;
   phone: string;
-  
+
   // Complete Information
   fullName?: string;
   performingName?: string;
@@ -35,13 +35,13 @@ export interface ArtistOnboardingData {
   country?: string;
   state?: string;
   residentAddress?: string;
-  
+
   // Display Picture
   displayPicture?: string; // Base64 or URL
-  
+
   // Email verification
   emailVerified?: boolean;
-  
+
   // Identity verification
   identityVerified?: boolean;
   identityVerificationDocuments?: {
@@ -49,6 +49,13 @@ export interface ArtistOnboardingData {
     idNumber?: string;
     idDocument?: string; // Base64 or URL
   };
+
+  // Label invitation context. Populated only when the artist arrived via a
+  // record-label invitation link; lets the onboarding flow skip the email
+  // verification step (already proven by token possession) and call the
+  // accept-invitation endpoint after the final step.
+  invitationToken?: string;
+  invitedByLabelName?: string;
 }
 
 // Company-specific data
@@ -142,6 +149,7 @@ interface UserManagementState {
   saveDirectorsInfo: (userId: string, directors: DirectorInfo[]) => void;
   markEmailVerified: (userId: string) => void;
   markIdentityVerified: (userId: string) => void;
+  setInvitationContext: (userId: string, token: string, labelName: string) => void;
   completeOnboarding: (userId: string) => void;
   getUserData: (userId: string) => OnboardingData | null;
   getCurrentUserData: () => OnboardingData | null;
@@ -421,6 +429,28 @@ export const useUserManagementStore = create<UserManagementState>()(
         }
       },
 
+      setInvitationContext: (userId: string, token: string, labelName: string) => {
+        const state = get();
+        const user = state.users[userId];
+
+        if (!user || user.userType !== "artist") return;
+
+        set({
+          users: {
+            ...state.users,
+            [userId]: {
+              ...user,
+              data: {
+                ...(user.data as ArtistOnboardingData),
+                invitationToken: token,
+                invitedByLabelName: labelName,
+              },
+              updatedAt: new Date().toISOString(),
+            },
+          },
+        });
+      },
+
       markEmailVerified: (userId: string) => {
         const state = get();
         const user = state.users[userId];
@@ -640,11 +670,11 @@ export const useUserManagementStore = create<UserManagementState>()(
     {
       name: "user-management-storage",
       storage: indexedDbStorage,
-      version: 2,
-      // v1 → v2: DirectorInfo gained email/phone/position/isPrimaryContact.
-      // Older in-flight sessions don't carry these fields; reset to an empty
-      // store so the new onboarding form starts clean rather than rendering
-      // half-populated rows.
+      version: 3,
+      // Reset in-flight sessions on schema bumps. Older versions don't carry
+      // newly-added fields (v2: DirectorInfo extensions; v3: invitation
+      // context on ArtistOnboardingData), so we start clean rather than
+      // rendering half-populated state.
       migrate: () => ({
         users: {},
         currentUserId: null,

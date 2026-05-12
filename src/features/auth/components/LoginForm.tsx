@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
     Box,
     Button,
@@ -28,6 +28,7 @@ export const LoginForm: React.FC = () => {
     const { login } = useAuth();
     const toast = useChakraToast();
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
@@ -83,7 +84,12 @@ export const LoginForm: React.FC = () => {
             }
 
             toast.success('Welcome back!', 'You have been successfully logged in.');
-            navigate('/');
+            // Respect ?next= so flows like the label-invitation accept page can
+            // round-trip the user back after sign-in. Only same-origin paths
+            // are honored — reject anything that looks like an absolute URL.
+            const next = searchParams.get('next');
+            const safeNext = next && next.startsWith('/') && !next.startsWith('//') ? next : null;
+            navigate(safeNext ?? '/');
         } catch (error: unknown) {
             let errorMessage = 'Invalid credentials';
             if (error && typeof error === 'object' && 'response' in error) {
