@@ -5,6 +5,7 @@ import {
     Box,
     Button,
     Center,
+    chakra,
     HStack,
     IconButton,
     Input,
@@ -196,9 +197,8 @@ const SplitEditorPage: React.FC = () => {
                                         </Text>
                                         <HStack gap={1} flexWrap="wrap">
                                             {SPLIT_ROLES.map((role) => (
-                                                <Box
+                                                <chakra.button
                                                     key={role}
-                                                    as="button"
                                                     type="button"
                                                     onClick={() => handleRoleChange(i, role)}
                                                     fontSize="9px"
@@ -211,7 +211,7 @@ const SplitEditorPage: React.FC = () => {
                                                     aria-pressed={row.recipientRole === role}
                                                 >
                                                     {role}
-                                                </Box>
+                                                </chakra.button>
                                             ))}
                                         </HStack>
                                     </VStack>

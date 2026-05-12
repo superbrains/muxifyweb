@@ -4,6 +4,7 @@ import {
     Box,
     Button,
     Center,
+    chakra,
     Dialog,
     HStack,
     Input,
@@ -184,15 +185,16 @@ const RecipientRow: React.FC<RecipientRowProps> = ({
     disabled,
     onClick,
 }) => (
-    <HStack
-        as="button"
+    <chakra.button
         type="button"
         onClick={disabled ? undefined : onClick}
+        display="flex"
         gap={3}
-        align="center"
+        alignItems="center"
         py={2}
         px={2}
         borderRadius="10px"
+        bg="transparent"
         _hover={disabled ? undefined : { bg: 'primary.50' }}
         opacity={disabled ? 0.45 : 1}
         cursor={disabled ? 'not-allowed' : 'pointer'}
@@ -214,5 +216,5 @@ const RecipientRow: React.FC<RecipientRowProps> = ({
                 {disabled ? 'Already added' : subtitle}
             </Text>
         </VStack>
-    </HStack>
+    </chakra.button>
 );
