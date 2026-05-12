@@ -117,7 +117,6 @@ const SplitEditorPage: React.FC = () => {
                                         <Box
                                             key={role}
                                             as="button"
-                                            type="button"
                                             onClick={() => handleRoleChange(i, role)}
                                             fontSize="9px"
                                             px={2}
