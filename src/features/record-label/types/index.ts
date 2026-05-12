@@ -17,6 +17,8 @@ export interface LabelSummaryDto {
     verificationSubmittedAt?: string;
 }
 
+export type RosterOnboardingStatus = 'Active' | 'PendingOnboarding';
+
 export interface RosterArtistDto {
     artistUserId: string;
     performingName: string;
@@ -26,6 +28,7 @@ export interface RosterArtistDto {
     monthlyStreams: number;
     monthlyRevenueMinor: number;
     joinedAt: string;
+    onboardingStatus: RosterOnboardingStatus;
 }
 
 export interface InvitationDto {

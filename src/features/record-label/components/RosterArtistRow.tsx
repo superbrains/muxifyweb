@@ -24,8 +24,33 @@ export const RosterArtistRow: React.FC<RosterArtistRowProps> = ({ artist, onRemo
             <VStack align="start" gap={0}>
                 <HStack gap={2}>
                     <Text fontSize="xs" fontWeight="semibold" color="gray.900">
-                        {artist.performingName}
+                        {artist.performingName || artist.fullName || 'Unnamed artist'}
                     </Text>
+                    {artist.onboardingStatus === 'Active' ? (
+                        <Box
+                            bg="#E7FFF7"
+                            color="green.600"
+                            fontSize="9px"
+                            px={2}
+                            py={0.5}
+                            borderRadius="full"
+                            fontWeight="medium"
+                        >
+                            Active
+                        </Box>
+                    ) : (
+                        <Box
+                            bg="orange.50"
+                            color="orange.600"
+                            fontSize="9px"
+                            px={2}
+                            py={0.5}
+                            borderRadius="full"
+                            fontWeight="medium"
+                        >
+                            Pending onboarding
+                        </Box>
+                    )}
                     {artist.isVerified && (
                         <Box
                             bg="primary.70"
@@ -40,7 +65,7 @@ export const RosterArtistRow: React.FC<RosterArtistRowProps> = ({ artist, onRemo
                     )}
                 </HStack>
                 <Text fontSize="10px" color="gray.500">
-                    {artist.fullName}
+                    {artist.fullName || 'Awaiting profile setup'}
                 </Text>
             </VStack>
         </HStack>

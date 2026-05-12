@@ -44,10 +44,14 @@ export const RecipientPicker: React.FC<RecipientPickerProps> = ({
     const { data: roster, isLoading } = useRoster();
 
     const filteredRoster = useMemo(() => {
+        // Only fully-onboarded artists can be split recipients: their profile
+        // must exist so payouts can actually reach them.
+        const onboarded = (roster ?? []).filter(
+            (r) => r.onboardingStatus === 'Active',
+        );
         const q = query.trim().toLowerCase();
-        const list = roster ?? [];
-        if (!q) return list;
-        return list.filter(
+        if (!q) return onboarded;
+        return onboarded.filter(
             (r) =>
                 r.performingName.toLowerCase().includes(q) ||
                 r.fullName.toLowerCase().includes(q),
