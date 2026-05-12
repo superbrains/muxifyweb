@@ -10,12 +10,28 @@ import {
 } from '@chakra-ui/react';
 import { useChakraToast } from '@shared/hooks';
 import { GalleryAddIcon } from '@/shared/icons/CustomIcons';
-import { useUserManagementStore, type CompanyOnboardingData } from '@/features/auth/store/useUserManagementStore';
+import { useUserManagementStore, type UserType } from '@/features/auth/store/useUserManagementStore';
 import { useArtistStore } from '@/features/artists/store/useArtistStore';
 import { compressImage } from '@/shared/lib/fileUtils';
 import { userService } from '@/shared/services/userService';
 import { profileService } from '@/features/onboarding/services/profileService';
 import { useUserStore } from '@/app/store/useUserStore';
+import type { UserRole } from '@shared/types/user';
+
+const mapBackendRoleToUserType = (role?: UserRole): UserType | null => {
+    switch (role) {
+        case 'artist':
+        case 'dj':
+        case 'creator':
+            return 'artist';
+        case 'record_label':
+            return 'company';
+        case 'ad_manager':
+            return 'ad-manager';
+        default:
+            return null;
+    }
+};
 
 interface ReusableImageUploadProps {
     title: string;
@@ -40,11 +56,14 @@ export const ReusableImageUpload: React.FC<ReusableImageUploadProps> = ({
     const location = useLocation();
     const { saveDisplayPicture, saveLabelLogo, saveCompanyLogo, setCurrentUser, getCurrentUserType, completeOnboarding } = useUserManagementStore();
     const { updateArtist } = useArtistStore();
-    const { updateUser } = useUserStore();
+    const { updateUser, user } = useUserStore();
 
     const userId = (location.state as { userId?: string })?.userId;
     const artistId = (location.state as { artistId?: string })?.artistId;
-    const userType = getCurrentUserType();
+    // Prefer the local onboarding store (set during fresh signup) but fall back
+    // to the authenticated user's backend role for returning users whose local
+    // store was wiped by a version migration or never initialized via login.
+    const userType = getCurrentUserType() ?? mapBackendRoleToUserType(user?.role);
     const isAddArtistFlow = !!artistId;
 
     const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -116,78 +135,30 @@ export const ReusableImageUpload: React.FC<ReusableImageUploadProps> = ({
                 }
                 saved = true;
             } else if (!isAddArtistFlow && userId) {
-                // Set current user first for user onboarding flow
+                // The backend is the source of truth for the uploaded asset.
+                // The local zustand cache is just a UI mirror — saveLabelLogo et al.
+                // no-op when the userId isn't in the store (returning user, post-
+                // migration reset, etc.), so we don't gate the upload on it.
                 setCurrentUser(userId);
 
-                // Get user data to validate
-                const { getUserData } = useUserManagementStore.getState();
-                const userData = getUserData(userId);
-
-                if (!userData) {
-                    throw new Error('User data not found. Please restart the onboarding process.');
-                }
-
                 if (uploadType === 'display-picture' && userType === 'artist') {
-                    // Upload avatar to backend API
                     const result = await userService.uploadAvatar(selectedFile);
                     avatarUrl = result.avatarUrl;
-
-                    // Update global user store with new avatar
                     updateUser({ avatar: avatarUrl });
-
-                    // Save to local onboarding store
                     saveDisplayPicture(userId, selectedImage);
                     saved = true;
                 } else if (uploadType === 'logo' && userType === 'company') {
-                    // Upload company logo to backend (POST /api/v1/profile/company/logo)
                     const { logoUrl } = await profileService.uploadCompanyLogo(selectedFile);
-
-                    // Mirror logo to the user's avatar slot so existing UI surfaces show it
                     updateUser({ avatar: logoUrl });
-
                     saveLabelLogo(userId, logoUrl);
-                    // Verify the save was successful
-                    const updatedUserData = getUserData(userId);
-                    const companyData = updatedUserData as CompanyOnboardingData;
-                    if (!updatedUserData || !companyData || !companyData.labelLogo) {
-                        throw new Error('Failed to save logo. Please try again.');
-                    }
                     saved = true;
                 } else if (uploadType === 'logo' && userType === 'ad-manager') {
-                    // Upload avatar/logo to backend API
                     const result = await userService.uploadAvatar(selectedFile);
                     avatarUrl = result.avatarUrl;
-
-                    // Update global user store
                     updateUser({ avatar: avatarUrl });
-
                     saveCompanyLogo(userId, selectedImage);
-                    // Verify the save was successful
-                    const updatedUserData = getUserData(userId);
-                    if (!updatedUserData || !('companyLogo' in updatedUserData) || !updatedUserData.companyLogo) {
-                        throw new Error('Failed to save logo. Please try again.');
-                    }
-                    // Ad-manager completes onboarding after logo upload
                     completeOnboarding(userId);
                     saved = true;
-
-                    // Log user data after onboarding completion (without large images)
-                    const { getCurrentUserType } = useUserManagementStore.getState();
-                    const userTypeLogged = getCurrentUserType();
-
-                    console.log('=== Onboarding Completed (Ad Manager) ===');
-                    console.log('User ID:', userId);
-                    console.log('User Type:', userTypeLogged);
-
-                    // Log without base64 images to avoid console slowdown
-                    if (updatedUserData) {
-                        const dataToLog = { ...updatedUserData };
-                        if ('companyLogo' in dataToLog) {
-                            dataToLog.companyLogo = '[Image data removed for logging]';
-                        }
-                        console.log('User Data:', dataToLog);
-                    }
-                    console.log('=========================================');
                 }
             }
 
