@@ -46,6 +46,12 @@ export const recordLabelService = {
     revokeInvitation: async (invitationId: string): Promise<void> => {
         await api.post(`${BASE}/artists/invitations/${invitationId}/revoke`);
     },
+    resendInvitation: async (invitationId: string): Promise<InviteArtistResponse> => {
+        const { data } = await api.post<InviteArtistResponse>(
+            `${BASE}/artists/invitations/${invitationId}/resend`,
+        );
+        return data;
+    },
     acceptInvitation: async (req: AcceptInvitationRequest): Promise<AcceptInvitationResponse> => {
         const { data } = await api.post<AcceptInvitationResponse>(
             `${BASE}/artists/invitations/accept`,

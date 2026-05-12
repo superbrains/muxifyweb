@@ -25,12 +25,27 @@ export const useInviteArtist = () => {
     return useMutation({
         mutationFn: (req: InviteArtistRequest) => recordLabelService.inviteArtist(req),
         onSuccess: () => {
-            toast.success('Invitation sent', 'The artist will receive an email.');
+            toast.success('Invitation sent', 'The artist will receive an email shortly.');
             qc.invalidateQueries({ queryKey: labelKeys.invitations });
             qc.invalidateQueries({ queryKey: labelKeys.summary });
         },
         onError: (err) => {
             toast.error('Could not send invitation', getApiErrorMessage(err, 'Please try again.'));
+        },
+    });
+};
+
+export const useResendInvitation = () => {
+    const qc = useQueryClient();
+    const toast = useChakraToast();
+    return useMutation({
+        mutationFn: (invitationId: string) => recordLabelService.resendInvitation(invitationId),
+        onSuccess: () => {
+            toast.success('Invitation re-sent', 'A fresh link is on its way to the artist.');
+            qc.invalidateQueries({ queryKey: labelKeys.invitations });
+        },
+        onError: (err) => {
+            toast.error('Could not resend invitation', getApiErrorMessage(err, 'Please try again.'));
         },
     });
 };

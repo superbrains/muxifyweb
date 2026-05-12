@@ -46,6 +46,13 @@ export interface InviteArtistRequest {
 export interface InviteArtistResponse {
     invitationId: string;
     expiresAt: string;
+    /**
+     * Accept URL containing the raw token. The backend dispatches the email
+     * fire-and-forget (matching the OTP-verification pattern), so this URL is
+     * returned as a reliable copy-paste fallback that the label can share
+     * directly with the artist.
+     */
+    acceptUrl: string;
 }
 
 export interface AcceptInvitationRequest {
