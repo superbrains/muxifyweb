@@ -73,7 +73,20 @@ export interface InvitationLookupResponse {
     userExists: boolean;
 }
 
-export type SplitRecipientRole = 'Artist' | 'Label' | 'Featured';
+export type SplitRecipientRole =
+    | 'Artist'
+    | 'Label'
+    | 'Featured'
+    | 'Producer'
+    | 'Songwriter';
+
+export const SPLIT_ROLES: readonly SplitRecipientRole[] = [
+    'Artist',
+    'Label',
+    'Featured',
+    'Producer',
+    'Songwriter',
+];
 
 export interface ReleaseSplitDto {
     recipientUserId: string;
