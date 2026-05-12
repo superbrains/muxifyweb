@@ -76,8 +76,10 @@ export async function ensureFreshAccessToken(minSeconds = 60): Promise<void> {
   const token = tokenStorage.getAccessToken();
   if (!token) return;
   const exp = decodeJwtExp(token);
-  if (exp === null) return;
-  const remaining = exp - Math.floor(Date.now() / 1000);
+  // If exp is unreadable, treat the token as stale and force a refresh —
+  // otherwise an opaque/corrupt token would silently pass and the next
+  // request would 401, defeating the point of this helper.
+  const remaining = exp === null ? -1 : exp - Math.floor(Date.now() / 1000);
   if (remaining > minSeconds) return;
   if (!refreshPromise) {
     refreshPromise = performRefresh().finally(() => {

@@ -163,11 +163,21 @@ export function useResumableUpload(): UseResumableUploadResult {
         }
 
         // 3. Commit block list — tells Azure to assemble the blocks into a single blob.
+        // Inspect the response status: if Azure rejects the commit, we want a visible
+        // upload-side error here, not a confusing "staging blob not found" 400 from
+        // /complete later. Azure returns 201 Created on success.
         setPhase('committing');
         const commitUrl = `${session.uploadUri}&comp=blocklist`;
-        await axios.put(commitUrl, buildBlockListXml(blockIds), {
+        const commitResp = await axios.put(commitUrl, buildBlockListXml(blockIds), {
           headers: { 'Content-Type': 'application/xml' },
+          validateStatus: () => true,
         });
+        if (commitResp.status !== 201) {
+          const body = typeof commitResp.data === 'string' ? commitResp.data.slice(0, 500) : '';
+          throw new Error(
+            `Azure block-list commit failed (status ${commitResp.status}). ${body}`,
+          );
+        }
 
         // 4. Complete: tell our backend to finalize, persist the Track, and enqueue processing.
         // Block uploads to Azure can take many minutes; refresh the access token if it's
