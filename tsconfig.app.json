@@ -35,7 +35,6 @@
       "@fansSubscribers/*": ["./src/features/fans-and-subscribers/*"],
       "@salesReport/*": ["./src/features/sales-report/*"],
       "@payments/*": ["./src/features/payments/*"],
-      "@addArtist/*": ["./src/features/add-artists/*"],
       "@settings/*": ["./src/features/settings/*"],
       "@onboarding/*": ["./src/features/onboarding/*"],
       "@ads/*": ["./src/features/ads/*"]

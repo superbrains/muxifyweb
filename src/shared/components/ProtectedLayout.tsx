@@ -8,7 +8,6 @@ import { ErrorBoundary } from './ErrorBoundary';
 import { useSidebarStore } from '@/shared/store/useSidebarStore';
 import { useWindowWidth } from '../hooks/useWindowsWidth';
 import { useUserType } from '@/features/auth/hooks/useUserType';
-import { useArtistStore } from '@/features/artists/store/useArtistStore';
 import { useAdsStore } from '@/features/ads/store/useAdsStore';
 import { MiniPlayer } from '@/features/player/components/MiniPlayer';
 import { usePlayerStore } from '@/features/player/store/usePlayerStore';
@@ -27,8 +26,7 @@ export const ProtectedLayout: React.FC<ProtectedLayoutProps> = ({ children }) =>
     // Responsive behavior using custom hook to prevent flash
     const { windowWidth } = useWindowWidth();
     const isMobile = windowWidth < 768;
-    const { isRecordLabel, isAdManager } = useUserType();
-    const { artists } = useArtistStore();
+    const { isAdManager } = useUserType();
     const { campaigns } = useAdsStore();
     const playerVisible = usePlayerStore((s) => s.currentTrack !== null);
 
@@ -47,18 +45,9 @@ export const ProtectedLayout: React.FC<ProtectedLayoutProps> = ({ children }) =>
         setIsInitialRender(false);
     }, []);
 
-    // Redirect record labels without artists to add artist page
-    useEffect(() => {
-        if (isRecordLabel !== undefined) {
-            setIsChecking(false);
-            if (isRecordLabel && artists.length === 0 && !location.pathname.startsWith('/add-artist')) {
-                navigate('/add-artist', { replace: true });
-            }
-        }
-    }, [isRecordLabel, artists.length, navigate, location.pathname]);
-
     // Redirect ad managers without campaigns to empty state page
     useEffect(() => {
+        setIsChecking(false);
         if (isAdManager !== undefined) {
             if (isAdManager && campaigns.length === 0 && !location.pathname.startsWith('/ads')) {
                 navigate('/ads', { replace: true });
@@ -69,8 +58,7 @@ export const ProtectedLayout: React.FC<ProtectedLayoutProps> = ({ children }) =>
     }, [isAdManager, campaigns.length, navigate, location.pathname]);
 
     // Early return to prevent rendering if redirecting or still checking
-    if (isChecking || 
-        (isRecordLabel && artists.length === 0 && !location.pathname.startsWith('/add-artist')) ||
+    if (isChecking ||
         (isAdManager && campaigns.length === 0 && !location.pathname.startsWith('/ads'))) {
         return null;
     }

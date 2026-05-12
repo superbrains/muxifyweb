@@ -9,7 +9,6 @@ import { useAdsUploadStore } from '../../../store/useAdsUploadStore';
 import { useChakraToast } from '@/shared/hooks/useChakraToast';
 import { MusicPlayerAndCutPreviewPane } from '../MusicPlayerAndCutPreviewPane';
 import { MusicViewPhonePreview } from '../MusicViewPhonePreview';
-import { useArtistStore } from '@/features/artists/store/useArtistStore';
 
 interface UploadFile {
     id: string;
@@ -50,7 +49,9 @@ export const MusicAdsFlow1: React.FC<{
     const photoFile = useAdsUploadStore((state) => state.photoFile);
     const photoSetFile = useAdsUploadStore((state) => state.photoSetFile);
     const toast = useChakraToast();
-    const artists = useArtistStore((state) => state.artists);
+    // Artist targeting suggestions: backend artist-directory endpoint pending.
+    // Until then, autocomplete shows no suggestions (matches prior behavior).
+    const artists: { id: string; name: string }[] = [];
 
     // Populate form fields from store when editing (musicAdInfo exists)
     // Only populate if musicAdInfo exists (edit mode), not for new campaigns

@@ -9,6 +9,7 @@ import {
     Menu,
 } from '@chakra-ui/react';
 import { useArtistStore } from '@/features/artists/store/useArtistStore';
+import { useRoster } from '@/features/record-label/hooks/useRoster';
 import { AuthedImage } from '@/shared/components/AuthedImage';
 
 interface ArtistDropdownProps {
@@ -16,8 +17,10 @@ interface ArtistDropdownProps {
 }
 
 export const ArtistDropdown: React.FC<ArtistDropdownProps> = ({ isCollapsed = false }) => {
-    const { artists, selectedArtistId, setSelectedArtist, getSelectedArtist } = useArtistStore();
-    const selectedArtist = getSelectedArtist();
+    const { selectedArtistId, setSelectedArtist } = useArtistStore();
+    const { data: roster } = useRoster();
+    const artists = roster ?? [];
+    const selectedArtist = artists.find((a) => a.artistUserId === selectedArtistId) ?? null;
 
     const handleSelectArtist = (artistId: string) => {
         setSelectedArtist(artistId);
@@ -46,10 +49,10 @@ export const ArtistDropdown: React.FC<ArtistDropdownProps> = ({ isCollapsed = fa
                 >
                     <HStack gap={2} w="full" justify="space-between">
                         <HStack gap={2} flex={1}>
-                            {selectedArtist?.avatar && (
+                            {selectedArtist?.avatarUrl && (
                                 <AuthedImage
-                                    src={selectedArtist.avatar}
-                                    alt={selectedArtist.name}
+                                    src={selectedArtist.avatarUrl}
+                                    alt={selectedArtist.performingName}
                                     boxSize={4}
                                     borderRadius="full"
                                     objectFit="cover"
@@ -57,7 +60,7 @@ export const ArtistDropdown: React.FC<ArtistDropdownProps> = ({ isCollapsed = fa
                             )}
                             {!isCollapsed && (
                                 <Text fontSize="xs" lineClamp={1} maxW="120px">
-                                    {selectedArtist?.name || 'Select Artist'}
+                                    {selectedArtist?.performingName || 'Select Artist'}
                                 </Text>
                             )}
                         </HStack>
@@ -100,18 +103,18 @@ export const ArtistDropdown: React.FC<ArtistDropdownProps> = ({ isCollapsed = fa
 
                         {artists.map((artist) => (
                             <Menu.Item
-                                key={artist.id}
-                                value={artist.id}
-                                onClick={() => handleSelectArtist(artist.id)}
+                                key={artist.artistUserId}
+                                value={artist.artistUserId}
+                                onClick={() => handleSelectArtist(artist.artistUserId)}
                                 _hover={{ bg: 'gray.50' }}
-                                bg={selectedArtistId === artist.id ? 'primary.50' : 'transparent'}
+                                bg={selectedArtistId === artist.artistUserId ? 'primary.50' : 'transparent'}
                                 px={2}
                                 py={2}
                             >
                                 <HStack gap={2} w="full">
                                     <AuthedImage
-                                        src={artist.avatar}
-                                        alt={artist.name}
+                                        src={artist.avatarUrl}
+                                        alt={artist.performingName}
                                         boxSize={8}
                                         borderRadius="full"
                                         objectFit="cover"
@@ -127,19 +130,19 @@ export const ArtistDropdown: React.FC<ArtistDropdownProps> = ({ isCollapsed = fa
                                                 fontWeight="semibold"
                                                 fontSize="xs"
                                             >
-                                                {artist.name.charAt(0).toUpperCase()}
+                                                {artist.performingName.charAt(0).toUpperCase()}
                                             </Box>
                                         }
                                     />
                                     <VStack align="start" gap={0} flex={1}>
                                         <Text fontSize="sm" fontWeight="medium" color="gray.900">
-                                            {artist.name}
+                                            {artist.performingName}
                                         </Text>
                                         <Text fontSize="xs" color="gray.500">
                                             Artist
                                         </Text>
                                     </VStack>
-                                    {selectedArtistId === artist.id && (
+                                    {selectedArtistId === artist.artistUserId && (
                                         <Icon
                                             as={() => (
                                                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -165,4 +168,3 @@ export const ArtistDropdown: React.FC<ArtistDropdownProps> = ({ isCollapsed = fa
         </Menu.Root>
     );
 };
-

@@ -11,7 +11,6 @@ import {
 import { useChakraToast } from '@shared/hooks';
 import { GalleryAddIcon } from '@/shared/icons/CustomIcons';
 import { useUserManagementStore, type UserType } from '@/features/auth/store/useUserManagementStore';
-import { useArtistStore } from '@/features/artists/store/useArtistStore';
 import { compressImage } from '@/shared/lib/fileUtils';
 import { userService } from '@/shared/services/userService';
 import { profileService } from '@/features/onboarding/services/profileService';
@@ -55,16 +54,13 @@ export const ReusableImageUpload: React.FC<ReusableImageUploadProps> = ({
     const navigate = useNavigate();
     const location = useLocation();
     const { saveDisplayPicture, saveLabelLogo, saveCompanyLogo, setCurrentUser, getCurrentUserType, completeOnboarding } = useUserManagementStore();
-    const { updateArtist } = useArtistStore();
     const { updateUser, user } = useUserStore();
 
     const userId = (location.state as { userId?: string })?.userId;
-    const artistId = (location.state as { artistId?: string })?.artistId;
     // Prefer the local onboarding store (set during fresh signup) but fall back
     // to the authenticated user's backend role for returning users whose local
     // store was wiped by a version migration or never initialized via login.
     const userType = getCurrentUserType() ?? mapBackendRoleToUserType(user?.role);
-    const isAddArtistFlow = !!artistId;
 
     const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -105,14 +101,8 @@ export const ReusableImageUpload: React.FC<ReusableImageUploadProps> = ({
             return;
         }
 
-        // Validate based on flow type
-        if (!isAddArtistFlow && !userId) {
+        if (!userId) {
             toast.error('User ID missing', 'Please start the onboarding process again.');
-            return;
-        }
-
-        if (isAddArtistFlow && !artistId) {
-            toast.error('Artist ID missing', 'Please start the add artist process again.');
             return;
         }
 
@@ -122,44 +112,30 @@ export const ReusableImageUpload: React.FC<ReusableImageUploadProps> = ({
             let saved = false;
             let avatarUrl: string | undefined;
 
-            // Handle artist display picture upload (for add artist flow)
-            if (isAddArtistFlow && uploadType === 'display-picture' && artistId) {
-                updateArtist(artistId, {
-                    avatar: selectedImage,
-                });
-                // Verify the save was successful
-                const { getArtistById } = useArtistStore.getState();
-                const updatedArtist = getArtistById(artistId);
-                if (!updatedArtist || !updatedArtist.avatar) {
-                    throw new Error('Failed to save display picture. Please try again.');
-                }
-                saved = true;
-            } else if (!isAddArtistFlow && userId) {
-                // The backend is the source of truth for the uploaded asset.
-                // The local zustand cache is just a UI mirror — saveLabelLogo et al.
-                // no-op when the userId isn't in the store (returning user, post-
-                // migration reset, etc.), so we don't gate the upload on it.
-                setCurrentUser(userId);
+            // The backend is the source of truth for the uploaded asset.
+            // The local zustand cache is just a UI mirror — saveLabelLogo et al.
+            // no-op when the userId isn't in the store (returning user, post-
+            // migration reset, etc.), so we don't gate the upload on it.
+            setCurrentUser(userId);
 
-                if (uploadType === 'display-picture' && userType === 'artist') {
-                    const result = await userService.uploadAvatar(selectedFile);
-                    avatarUrl = result.avatarUrl;
-                    updateUser({ avatar: avatarUrl });
-                    saveDisplayPicture(userId, selectedImage);
-                    saved = true;
-                } else if (uploadType === 'logo' && userType === 'company') {
-                    const { logoUrl } = await profileService.uploadCompanyLogo(selectedFile);
-                    updateUser({ avatar: logoUrl });
-                    saveLabelLogo(userId, logoUrl);
-                    saved = true;
-                } else if (uploadType === 'logo' && userType === 'ad-manager') {
-                    const result = await userService.uploadAvatar(selectedFile);
-                    avatarUrl = result.avatarUrl;
-                    updateUser({ avatar: avatarUrl });
-                    saveCompanyLogo(userId, selectedImage);
-                    completeOnboarding(userId);
-                    saved = true;
-                }
+            if (uploadType === 'display-picture' && userType === 'artist') {
+                const result = await userService.uploadAvatar(selectedFile);
+                avatarUrl = result.avatarUrl;
+                updateUser({ avatar: avatarUrl });
+                saveDisplayPicture(userId, selectedImage);
+                saved = true;
+            } else if (uploadType === 'logo' && userType === 'company') {
+                const { logoUrl } = await profileService.uploadCompanyLogo(selectedFile);
+                updateUser({ avatar: logoUrl });
+                saveLabelLogo(userId, logoUrl);
+                saved = true;
+            } else if (uploadType === 'logo' && userType === 'ad-manager') {
+                const result = await userService.uploadAvatar(selectedFile);
+                avatarUrl = result.avatarUrl;
+                updateUser({ avatar: avatarUrl });
+                saveCompanyLogo(userId, selectedImage);
+                completeOnboarding(userId);
+                saved = true;
             }
 
             if (!saved) {
@@ -168,7 +144,7 @@ export const ReusableImageUpload: React.FC<ReusableImageUploadProps> = ({
 
             toast.success(`${uploadType === 'logo' ? 'Logo' : 'Display picture'} uploaded!`, `Your ${uploadType === 'logo' ? 'logo' : 'profile picture'} has been updated.`);
             navigate(nextRoute, {
-                state: { userId, artistId }
+                state: { userId }
             });
         } catch (error) {
             console.error('Upload error:', error);

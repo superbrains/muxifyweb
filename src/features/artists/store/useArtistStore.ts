@@ -12,38 +12,13 @@ import type {
   TrackSortBy,
 } from "@shared/types/artist";
 
-/**
- * Local artist record for record label management
- * Note: Record label management endpoints are not yet available on the backend
- * This local state is preserved until those endpoints are created
- */
-export interface Artist {
-  id: string;
-  name: string;
-  email?: string;
-  phone?: string;
-  avatar?: string;
-  genre?: string;
-  userType?: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
 interface ArtistState {
-  // ============================================
-  // Record Label Management (Local State)
-  // Note: Kept as local state until backend endpoints are available
-  // ============================================
-  artists: Artist[];
+  // UI selection state for the ArtistDropdown (which roster artist is the
+  // record-label user currently acting as). Persisted so the choice survives
+  // navigations and reloads. The roster itself comes from the backend via
+  // useRoster() — no local copy is kept here.
   selectedArtistId: string | null;
-
-  // Local artist CRUD actions (for record label management)
-  addArtist: (artist: Omit<Artist, 'id' | 'createdAt' | 'updatedAt'>) => Artist;
-  updateArtist: (id: string, updates: Partial<Artist>) => void;
-  deleteArtist: (id: string) => void;
   setSelectedArtist: (artistId: string | null) => void;
-  getSelectedArtist: () => Artist | null;
-  getArtistById: (id: string) => Artist | undefined;
 
   // ============================================
   // Public Artist Profile (API Integration)
@@ -87,11 +62,8 @@ interface ArtistState {
 export const useArtistStore = create<ArtistState>()(
   persist(
     (set, get) => ({
-      // ============================================
-      // Record Label Management State (Local)
-      // ============================================
-      artists: [],
       selectedArtistId: null,
+      setSelectedArtist: (artistId) => set({ selectedArtistId: artistId }),
 
       // ============================================
       // Public Artist Profile State (API)
@@ -114,55 +86,6 @@ export const useArtistStore = create<ArtistState>()(
       albumsError: null,
       videosError: null,
       newReleasesError: null,
-
-      // ============================================
-      // Record Label Management Actions (Local)
-      // ============================================
-      addArtist: (artistData) => {
-        const newArtist: Artist = {
-          ...artistData,
-          id: `artist_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        };
-
-        set((state) => ({
-          artists: [...state.artists, newArtist],
-        }));
-
-        return newArtist;
-      },
-
-      updateArtist: (id, updates) => {
-        set((state) => ({
-          artists: state.artists.map((artist) =>
-            artist.id === id
-              ? { ...artist, ...updates, updatedAt: new Date().toISOString() }
-              : artist
-          ),
-        }));
-      },
-
-      deleteArtist: (id) => {
-        set((state) => ({
-          artists: state.artists.filter((artist) => artist.id !== id),
-          selectedArtistId: state.selectedArtistId === id ? null : state.selectedArtistId,
-        }));
-      },
-
-      setSelectedArtist: (artistId) => {
-        set({ selectedArtistId: artistId });
-      },
-
-      getSelectedArtist: () => {
-        const state = get();
-        if (!state.selectedArtistId) return null;
-        return state.artists.find((a) => a.id === state.selectedArtistId) || null;
-      },
-
-      getArtistById: (id) => {
-        return get().artists.find((artist) => artist.id === id);
-      },
 
       // ============================================
       // Public Artist Profile Actions (API)
@@ -228,7 +151,6 @@ export const useArtistStore = create<ArtistState>()(
         set({ isFollowLoading: true });
         try {
           const result = await artistService.followArtist(artistId);
-          // Update local profile if it matches
           const state = get();
           if (state.artistProfile?.id === artistId) {
             set({
@@ -251,7 +173,6 @@ export const useArtistStore = create<ArtistState>()(
         set({ isFollowLoading: true });
         try {
           const result = await artistService.unfollowArtist(artistId);
-          // Update local profile if it matches
           const state = get();
           if (state.artistProfile?.id === artistId) {
             set({
@@ -319,12 +240,9 @@ export const useArtistStore = create<ArtistState>()(
     {
       name: "artist-storage",
       storage: indexedDbStorage,
-      // Only persist local record label management data, not API-fetched data
       partialize: (state) => ({
-        artists: state.artists,
         selectedArtistId: state.selectedArtistId,
       }),
     }
   )
 );
-

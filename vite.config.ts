@@ -33,7 +33,6 @@ export default defineConfig({
       ),
       "@salesReport": path.resolve(__dirname, "./src/features/sales-report"),
       "@payments": path.resolve(__dirname, "./src/features/payments"),
-      "@addArtist": path.resolve(__dirname, "./src/features/add-artists"),
       "@settings": path.resolve(__dirname, "./src/features/settings"),
       "@onboarding": path.resolve(__dirname, "./src/features/onboarding"),
       "@ads": path.resolve(__dirname, "./src/features/ads"),
