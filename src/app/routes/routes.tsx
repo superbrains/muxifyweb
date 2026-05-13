@@ -52,7 +52,6 @@ const ReleasesPage = lazy(() => import('@/features/record-label/pages/ReleasesPa
 const SplitsPage = lazy(() => import('@/features/record-label/pages/SplitsPage'));
 const SplitEditorPage = lazy(() => import('@/features/record-label/pages/SplitEditorPage'));
 const PayoutsPage = lazy(() => import('@/features/record-label/pages/PayoutsPage'));
-const AnalyticsPage = lazy(() => import('@/features/record-label/pages/AnalyticsPage'));
 const CompanySettingsPage = lazy(() => import('@/features/record-label/pages/CompanySettingsPage'));
 const InviteAcceptPage = lazy(() => import('@/features/record-label/pages/InviteAcceptPage'));
 
@@ -89,7 +88,6 @@ export const appRoutes: RouteObject[] = [
             { path: '/label/splits', element: <SplitsPage /> },
             { path: '/label/splits/:trackId', element: <SplitEditorPage /> },
             { path: '/label/payouts', element: <PayoutsPage /> },
-            { path: '/label/analytics', element: <AnalyticsPage /> },
             { path: '/label/settings', element: <CompanySettingsPage /> },
             { path: '/upload', element: <Upload /> },
             { path: '/upload/review', element: <Review /> },

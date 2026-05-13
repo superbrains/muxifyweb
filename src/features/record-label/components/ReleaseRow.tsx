@@ -17,7 +17,6 @@ interface ReleaseRowProps {
     release: LabelReleaseDto;
     onOpenDetail: (release: LabelReleaseDto) => void;
     onOpenSplits: (release: LabelReleaseDto) => void;
-    onOpenAnalytics: (release: LabelReleaseDto) => void;
     onEdit: (release: LabelReleaseDto) => void;
 }
 
@@ -58,7 +57,6 @@ export const ReleaseRow: React.FC<ReleaseRowProps> = ({
     release: r,
     onOpenDetail,
     onOpenSplits,
-    onOpenAnalytics,
     onEdit,
 }) => {
     const style = STATUS_STYLES[r.status];
@@ -241,14 +239,6 @@ export const ReleaseRow: React.FC<ReleaseRowProps> = ({
                                         Manage splits
                                     </Menu.Item>
                                 )}
-                                <Menu.Item
-                                    value="analytics"
-                                    onClick={() => onOpenAnalytics(r)}
-                                    fontSize="xs"
-                                    _hover={{ bg: 'gray.50' }}
-                                >
-                                    View analytics
-                                </Menu.Item>
                             </Menu.Content>
                         </Menu.Positioner>
                     </Portal>

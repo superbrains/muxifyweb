@@ -20,7 +20,6 @@ interface Permission {
     canInviteArtists: boolean;
     canManageSplits: boolean;
     canTriggerPayouts: boolean;
-    canViewLabelAnalytics: boolean;
 }
 
 interface NavigationItem {
@@ -49,7 +48,6 @@ const recordLabelNav: NavigationItem[] = [
     { name: 'Releases', href: '/label/releases', icon: '🎵', permission: 'canManageRoster' },
     { name: 'Splits', href: '/label/splits', icon: '🧮', permission: 'canManageSplits' },
     { name: 'Payouts', href: '/label/payouts', icon: '💸', permission: 'canTriggerPayouts' },
-    { name: 'Analytics', href: '/label/analytics', icon: '📈', permission: 'canViewLabelAnalytics' },
     { name: 'Music & Videos', href: '/music-videos', icon: '🎶' },
     { name: 'Earnings & Royalty', href: '/earning-royalty', icon: '💰', permission: 'canViewEarnings' },
     { name: 'Settings', href: '/label/settings', icon: '⚙️', permission: 'canManageRoster' },

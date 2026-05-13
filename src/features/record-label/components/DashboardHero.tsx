@@ -3,6 +3,10 @@ import { Box, Button, Flex, HStack, Text, VStack } from '@chakra-ui/react';
 import { FiPlus, FiSend, FiZap } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/features/auth/store/useAuthStore';
+import {
+    useUserManagementStore,
+    type CompanyOnboardingData,
+} from '@/features/auth/store/useUserManagementStore';
 import { InviteArtistDialog } from './InviteArtistDialog';
 import { PayoutTriggerDialog } from './PayoutTriggerDialog';
 import type { VerificationStatus } from '../types';
@@ -24,11 +28,20 @@ const STATUS_PILL: Record<
 export const DashboardHero: React.FC<DashboardHeroProps> = ({ verificationStatus }) => {
     const navigate = useNavigate();
     const user = useAuthStore((s) => s.user);
+    const { getCurrentUserData, getCurrentUserType } = useUserManagementStore();
     const [inviteOpen, setInviteOpen] = useState(false);
     const [payoutOpen, setPayoutOpen] = useState(false);
     const pill = STATUS_PILL[verificationStatus];
     const isVerified = verificationStatus === 'Verified';
-    const labelName = user?.name?.trim() || 'your label';
+
+    const userData = getCurrentUserData();
+    const userType = getCurrentUserType();
+    const companyName =
+        userData && userType === 'company'
+            ? (userData as CompanyOnboardingData).companyName ||
+              (userData as CompanyOnboardingData).legalCompanyName
+            : undefined;
+    const labelName = companyName?.trim() || user?.name?.trim() || 'your label';
 
     return (
         <Box

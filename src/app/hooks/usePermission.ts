@@ -20,7 +20,6 @@ interface Permission {
   canInviteArtists: boolean;
   canManageSplits: boolean;
   canTriggerPayouts: boolean;
-  canViewLabelAnalytics: boolean;
   canUploadOnBehalfOfArtist: boolean;
 }
 
@@ -38,7 +37,6 @@ const emptyPermissions: Permission = {
   canInviteArtists: false,
   canManageSplits: false,
   canTriggerPayouts: false,
-  canViewLabelAnalytics: false,
   canUploadOnBehalfOfArtist: false,
 };
 
@@ -92,7 +90,6 @@ const rolePermissions: Record<CreatorRole, Permission> = {
     // we keep the role-level flag true and let the dashboard read the cached
     // summary to disable the UI when verification isn't approved yet.
     canTriggerPayouts: true,
-    canViewLabelAnalytics: true,
     canUploadOnBehalfOfArtist: true,
   },
 };
@@ -140,8 +137,6 @@ export const usePermission = (role?: UserRole) => {
         return permissions.canManageSplits;
       case "/label/payouts":
         return permissions.canTriggerPayouts;
-      case "/label/analytics":
-        return permissions.canViewLabelAnalytics;
       case "/label/settings":
         return permissions.canManageRoster;
       default:

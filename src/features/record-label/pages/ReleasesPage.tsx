@@ -108,10 +108,6 @@ const ReleasesPage: React.FC = () => {
         (r: LabelReleaseDto) => navigate(`/label/splits/${r.id}`),
         [navigate],
     );
-    const openAnalytics = React.useCallback(
-        (r: LabelReleaseDto) => navigate(`/label/analytics?trackId=${r.id}`),
-        [navigate],
-    );
     const editRelease = React.useCallback(
         (r: LabelReleaseDto) => {
             if (r.kind === 'video') {
@@ -345,7 +341,6 @@ const ReleasesPage: React.FC = () => {
                                     release={r}
                                     onOpenDetail={setDetail}
                                     onOpenSplits={openSplits}
-                                    onOpenAnalytics={openAnalytics}
                                     onEdit={editRelease}
                                 />
                             ))}
@@ -402,7 +397,6 @@ const ReleasesPage: React.FC = () => {
                 release={detail}
                 onClose={() => setDetail(null)}
                 onOpenSplits={openSplits}
-                onOpenAnalytics={openAnalytics}
                 onEdit={editRelease}
             />
         </VStack>

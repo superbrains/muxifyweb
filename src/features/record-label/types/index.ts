@@ -4,6 +4,70 @@ export type VerificationStatus =
     | 'Verified'
     | 'Rejected';
 
+export interface LabelAddressDto {
+    street: string;
+    city: string;
+    state: string;
+    country: string;
+    postalCode?: string;
+}
+
+export interface LabelSocialLinksDto {
+    twitter?: string;
+    instagram?: string;
+    youTube?: string;
+    spotify?: string;
+    tikTok?: string;
+    facebook?: string;
+}
+
+export interface LabelDirectorDto {
+    id: string;
+    fullName: string;
+    email: string;
+    phoneNumber?: string;
+    position: string;
+    isPrimaryContact: boolean;
+    identityDocumentUrl?: string;
+}
+
+export interface LabelSettingsDto {
+    legalName: string;
+    tradingName?: string;
+    natureOfBusiness: string;
+    registrationNumber?: string;
+    registrationDocumentUrl?: string;
+    address: LabelAddressDto;
+    website?: string;
+    logoUrl?: string;
+    socialLinks: LabelSocialLinksDto;
+    verificationStatus: VerificationStatus;
+    verificationRejectionReason?: string;
+    verificationSubmittedAt?: string;
+    verificationReviewedAt?: string;
+    directors: LabelDirectorDto[];
+}
+
+export interface UpdateLabelProfileRequest {
+    legalName: string;
+    tradingName?: string;
+    natureOfBusiness: string;
+    registrationNumber?: string;
+    address: LabelAddressDto;
+    website?: string;
+    socialLinks?: LabelSocialLinksDto;
+}
+
+export interface AddLabelDirectorRequest {
+    fullName: string;
+    email: string;
+    phoneNumber?: string;
+    position: string;
+    isPrimaryContact: boolean;
+}
+
+export type UpdateLabelDirectorRequest = AddLabelDirectorRequest;
+
 export interface LabelSummaryDto {
     rosterCount: number;
     releasesLast30d: number;

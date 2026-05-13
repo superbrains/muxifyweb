@@ -12,7 +12,7 @@ import {
     VStack,
 } from '@chakra-ui/react';
 import { useQuery } from '@tanstack/react-query';
-import { FiExternalLink, FiVideo, FiX } from 'react-icons/fi';
+import { FiVideo, FiX } from 'react-icons/fi';
 import { AuthedImage } from '../../../shared/components/AuthedImage';
 import { recordLabelService } from '../services/recordLabelService';
 import type { LabelReleaseDto, ReleaseStatus } from '../types';
@@ -22,7 +22,6 @@ interface ReleaseDetailDrawerProps {
     release: LabelReleaseDto | null;
     onClose: () => void;
     onOpenSplits: (release: LabelReleaseDto) => void;
-    onOpenAnalytics: (release: LabelReleaseDto) => void;
     onEdit: (release: LabelReleaseDto) => void;
 }
 
@@ -109,7 +108,6 @@ export const ReleaseDetailDrawer: React.FC<ReleaseDetailDrawerProps> = ({
     release,
     onClose,
     onOpenSplits,
-    onOpenAnalytics,
     onEdit,
 }) => {
     const open = release !== null;
@@ -279,36 +277,20 @@ export const ReleaseDetailDrawer: React.FC<ReleaseDetailDrawerProps> = ({
                         </Drawer.Body>
 
                         <Drawer.Footer borderTop="1px solid" borderColor="gray.100" px={5} py={4}>
-                            <HStack width="100%" gap={2}>
-                                <Button
-                                    onClick={() => r && onEdit(r)}
-                                    size="sm"
-                                    variant="outline"
-                                    fontSize="xs"
-                                    borderRadius="10px"
-                                    flex="1"
-                                    disabled={!r}
-                                >
-                                    Edit metadata
-                                </Button>
-                                <Button
-                                    onClick={() => r && onOpenAnalytics(r)}
-                                    size="sm"
-                                    bg="primary.500"
-                                    color="white"
-                                    fontSize="xs"
-                                    fontWeight="medium"
-                                    borderRadius="10px"
-                                    _hover={{ bg: 'primary.600' }}
-                                    flex="1"
-                                    disabled={!r}
-                                >
-                                    <HStack gap={1}>
-                                        <Text>Analytics</Text>
-                                        <FiExternalLink />
-                                    </HStack>
-                                </Button>
-                            </HStack>
+                            <Button
+                                onClick={() => r && onEdit(r)}
+                                size="sm"
+                                bg="primary.500"
+                                color="white"
+                                fontSize="xs"
+                                fontWeight="medium"
+                                borderRadius="10px"
+                                _hover={{ bg: 'primary.600' }}
+                                width="100%"
+                                disabled={!r}
+                            >
+                                Edit metadata
+                            </Button>
                         </Drawer.Footer>
                     </Drawer.Content>
                 </Drawer.Positioner>
