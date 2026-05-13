@@ -8,10 +8,12 @@ export interface LabelSummaryDto {
     rosterCount: number;
     releasesLast30d: number;
     mtdRevenueMinor: number;
+    prevMonthRevenueMinor: number;
     currency: string;
     pendingPayoutsCount: number;
     pendingPayoutsAmountMinor: number;
     streamsLast30d: number;
+    rosterGrowthLast30d: number;
     verificationStatus: VerificationStatus;
     verificationRejectionReason?: string;
     verificationSubmittedAt?: string;
@@ -224,6 +226,7 @@ export interface LabelReleaseDto {
     albumTitle?: string;
     uploadSource: UploadSource;
     isPublished: boolean;
+    splitsComplete: boolean;
 }
 
 export interface LabelReleasesPageDto {

@@ -12,6 +12,7 @@ import ReactApexChart from 'react-apexcharts';
 import type { ApexOptions } from 'apexcharts';
 import { useLabelAnalytics, type AnalyticsRange } from '../hooks/useAnalytics';
 import { formatMinorAmount } from '../lib/format';
+import { baseChartTheme } from '../lib/chartTheme';
 
 const isoNDaysAgo = (n: number): string => {
     const d = new Date();
@@ -25,25 +26,7 @@ const defaultRange = (): AnalyticsRange => ({
     granularity: 'day',
 });
 
-const baseAxisStyle: ApexOptions = {
-    chart: {
-        toolbar: { show: false },
-        fontFamily: 'Manrope, sans-serif',
-    },
-    xaxis: {
-        labels: {
-            style: { colors: '#7B91B0', fontFamily: 'Poppins', fontSize: '10px' },
-        },
-    },
-    yaxis: {
-        labels: {
-            style: { colors: '#7B91B0', fontFamily: 'Poppins', fontSize: '10px' },
-        },
-    },
-    grid: { borderColor: '#F1F5F9' },
-    legend: { show: false },
-    dataLabels: { enabled: false },
-};
+const baseAxisStyle: ApexOptions = baseChartTheme;
 
 const AnalyticsPage: React.FC = () => {
     const range = useMemo(defaultRange, []);
