@@ -3,18 +3,22 @@ import { useChakraToast } from '@shared/hooks';
 import { recordLabelService } from '../services/recordLabelService';
 import { labelKeys } from './useLabelSummary';
 import { getApiErrorMessage } from '@/shared/lib/errorUtils';
-import type { TriggerPayoutRequest } from '../types';
+import type { PayoutsFilters, TriggerPayoutRequest } from '../types';
 
-interface PayoutsFilters {
-    status?: string;
-    from?: string;
-    to?: string;
-}
+export const usePayouts = (filters: PayoutsFilters = {}) => {
+    const { search: _search, ...serverFilters } = filters;
+    return useQuery({
+        queryKey: labelKeys.payouts(serverFilters),
+        queryFn: () => recordLabelService.getPayouts(serverFilters),
+        staleTime: 30_000,
+    });
+};
 
-export const usePayouts = (filters: PayoutsFilters = {}) =>
+export const usePayout = (id: string | undefined) =>
     useQuery({
-        queryKey: labelKeys.payouts(filters),
-        queryFn: () => recordLabelService.getPayouts(filters),
+        queryKey: labelKeys.payout(id ?? '__none__'),
+        queryFn: () => recordLabelService.getPayout(id!),
+        enabled: Boolean(id),
         staleTime: 30_000,
     });
 
@@ -29,8 +33,16 @@ export const useTriggerPayout = () => {
             req: TriggerPayoutRequest;
             idempotencyKey: string;
         }) => recordLabelService.triggerPayout(req, idempotencyKey),
-        onSuccess: () => {
-            toast.success('Payout initiated', 'Your roster will receive their funds shortly.');
+        onSuccess: (data) => {
+            const payoutCount = data.batches.reduce((sum, b) => sum + b.payoutCount, 0);
+            const batchCount = data.batches.length;
+            const description =
+                batchCount === 0
+                    ? 'No payouts were created.'
+                    : batchCount === 1
+                    ? `${payoutCount} ${payoutCount === 1 ? 'payout' : 'payouts'} initiated.`
+                    : `${payoutCount} payouts initiated across ${batchCount} currencies.`;
+            toast.success('Payout initiated', description);
             qc.invalidateQueries({ queryKey: ['label', 'payouts'] });
             qc.invalidateQueries({ queryKey: labelKeys.summary });
         },

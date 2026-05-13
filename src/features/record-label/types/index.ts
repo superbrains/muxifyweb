@@ -167,10 +167,34 @@ export interface TriggerPayoutRequest {
     artistIds?: string[];
 }
 
-export interface TriggerPayoutResponse {
+/**
+ * One batch per distinct currency produced by a single trigger call. A label with
+ * NGN-only earnings yields one entry; mixed-currency earnings yield one entry per
+ * currency. Each entry is mono-currency by construction (backend invariant).
+ */
+export interface PayoutBatchSummary {
     batchId: string;
+    currency: string;
     payoutCount: number;
     totalAmountMinor: number;
+}
+
+export interface TriggerPayoutResponse {
+    batches: PayoutBatchSummary[];
+}
+
+/**
+ * Frontend-side filters for the payouts list. Mirrors the backend query string
+ * (`status`, `from`, `to`, `page`, `pageSize`). `search` is applied client-side
+ * to the currently-loaded page.
+ */
+export interface PayoutsFilters {
+    status?: PayoutStatus;
+    from?: string;
+    to?: string;
+    page?: number;
+    pageSize?: number;
+    search?: string;
 }
 
 export interface LabelAnalyticsDto {

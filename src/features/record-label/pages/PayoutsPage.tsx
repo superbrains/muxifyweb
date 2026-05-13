@@ -1,41 +1,97 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
     Avatar,
     Box,
     Button,
     Center,
     HStack,
-    Spinner,
+    Skeleton,
     Stack,
     Text,
     VStack,
 } from '@chakra-ui/react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { usePayouts } from '../hooks/usePayouts';
 import { useLabelSummary } from '../hooks/useLabelSummary';
 import { PayoutTriggerDialog } from '../components/PayoutTriggerDialog';
+import { PayoutsKpiStrip } from '../components/PayoutsKpiStrip';
+import { PayoutsFilterBar } from '../components/PayoutsFilterBar';
+import { PayoutDetailDrawer } from '../components/PayoutDetailDrawer';
 import { formatMinorAmount } from '../lib/format';
-import type { PayoutStatus } from '../types';
+import { payoutStatusStyle, PAYOUT_STATUSES } from '../lib/payoutStatusColor';
+import type { PayoutDto, PayoutStatus, PayoutsFilters } from '../types';
 
-const statusColor = (status: PayoutStatus): { bg: string; color: string } => {
-    switch (status) {
-        case 'Paid':
-            return { bg: '#E7FFF7', color: 'green.600' };
-        case 'Processing':
-            return { bg: '#ECF7FF', color: '#3B82F6' };
-        case 'Failed':
-            return { bg: 'primary.70', color: 'primary.600' };
-        case 'Pending':
-        default:
-            return { bg: '#FFF9E6', color: '#92660C' };
-    }
-};
+const PAGE_SIZE = 25;
+
+function isPayoutStatus(value: string): value is PayoutStatus {
+    return (PAYOUT_STATUSES as readonly string[]).includes(value);
+}
+
+function filtersFromParams(params: URLSearchParams): PayoutsFilters {
+    const status = params.get('status');
+    const from = params.get('from');
+    const to = params.get('to');
+    const page = params.get('page');
+    const search = params.get('search');
+    return {
+        status: status && isPayoutStatus(status) ? status : undefined,
+        from: from ?? undefined,
+        to: to ?? undefined,
+        page: page ? Math.max(1, Number(page)) : 1,
+        pageSize: PAGE_SIZE,
+        search: search ?? undefined,
+    };
+}
+
+function paramsFromFilters(filters: PayoutsFilters): URLSearchParams {
+    const p = new URLSearchParams();
+    if (filters.status) p.set('status', filters.status);
+    if (filters.from) p.set('from', filters.from);
+    if (filters.to) p.set('to', filters.to);
+    if (filters.page && filters.page > 1) p.set('page', String(filters.page));
+    if (filters.search) p.set('search', filters.search);
+    return p;
+}
 
 const PayoutsPage: React.FC = () => {
-    const [triggerOpen, setTriggerOpen] = useState(false);
-    const { data: payouts, isLoading } = usePayouts();
-    const { data: summary } = useLabelSummary();
+    const navigate = useNavigate();
+    const [searchParams, setSearchParams] = useSearchParams();
+    const filters = React.useMemo(() => filtersFromParams(searchParams), [searchParams]);
+    const updateFilters = React.useCallback(
+        (next: PayoutsFilters) => setSearchParams(paramsFromFilters(next), { replace: false }),
+        [setSearchParams],
+    );
+
+    const [triggerOpen, setTriggerOpen] = React.useState(false);
+    const [detailId, setDetailId] = React.useState<string | null>(null);
+
+    const { data: payouts, isLoading } = usePayouts(filters);
+    const { data: summary, isLoading: summaryLoading } = useLabelSummary();
 
     const canTrigger = summary?.verificationStatus === 'Verified';
+
+    // Client-side recipient search applied to the loaded page (the backend doesn't
+    // currently support server-side recipient text search — tracked for a follow-up).
+    const searchTerm = (filters.search ?? '').trim().toLowerCase();
+    const visiblePayouts = React.useMemo(() => {
+        if (!payouts) return [] as PayoutDto[];
+        if (!searchTerm) return payouts;
+        return payouts.filter((p) => p.recipientName.toLowerCase().includes(searchTerm));
+    }, [payouts, searchTerm]);
+
+    const goPage = (delta: number) => {
+        const current = filters.page ?? 1;
+        updateFilters({ ...filters, page: Math.max(1, current + delta) });
+    };
+
+    const total = summary?.pendingPayoutsCount ?? 0;
+    const headerSub =
+        total === 0
+            ? 'Send earnings to artists on your roster.'
+            : `${total} pending · ${formatMinorAmount(
+                  summary?.pendingPayoutsAmountMinor ?? 0,
+                  summary?.currency ?? 'NGN',
+              )} pending balance`;
 
     return (
         <VStack
@@ -52,7 +108,7 @@ const PayoutsPage: React.FC = () => {
                         Payouts
                     </Text>
                     <Text fontSize="11px" color="gray.600">
-                        Send earnings to artists on your roster
+                        {headerSub}
                     </Text>
                 </Box>
                 <Button
@@ -70,82 +126,200 @@ const PayoutsPage: React.FC = () => {
                 </Button>
             </HStack>
 
-            {!canTrigger && (
-                <Box bg="#FFF9E6" color="#92660C" borderRadius="12px" p={3}>
+            {!canTrigger && summary && (
+                <HStack
+                    bg="#FFF9E6"
+                    color="#92660C"
+                    borderRadius="12px"
+                    border="1px solid"
+                    borderColor="#FDE68A"
+                    px={4}
+                    py={3}
+                    justify="space-between"
+                    flexWrap="wrap"
+                    gap={2}
+                >
                     <Text fontSize="xs">
                         Verification is required before you can trigger a payout.
                     </Text>
-                </Box>
+                    <Button
+                        onClick={() => navigate('/label/settings/verification')}
+                        size="xs"
+                        fontSize="11px"
+                        fontWeight="semibold"
+                        borderRadius="8px"
+                        bg="#92660C"
+                        color="white"
+                        _hover={{ bg: '#7A5409' }}
+                    >
+                        Start verification
+                    </Button>
+                </HStack>
             )}
 
+            <PayoutsKpiStrip
+                summary={summary}
+                payouts={payouts}
+                isLoading={summaryLoading || isLoading}
+            />
+
+            <PayoutsFilterBar filters={filters} onChange={updateFilters} />
+
             {isLoading ? (
-                <Center py={10}>
-                    <Spinner size="md" color="primary.500" />
-                </Center>
-            ) : !payouts || payouts.length === 0 ? (
+                <Stack gap={2} bg="white" borderRadius="20px" border="1px solid" borderColor="gray.100" p={3}>
+                    {Array.from({ length: 4 }).map((_, i) => (
+                        <Skeleton key={i} height="56px" borderRadius="md" />
+                    ))}
+                </Stack>
+            ) : visiblePayouts.length === 0 ? (
                 <Center
                     bg="white"
                     borderRadius="20px"
-                    py={10}
+                    border="1px solid"
+                    borderColor="gray.100"
+                    py={12}
                     px={4}
                     minH="40vh"
                 >
-                    <Text fontSize="xs" color="gray.500">
-                        No payouts yet.
-                    </Text>
+                    <Stack gap={2} align="center" maxW="320px" textAlign="center">
+                        <Text fontSize="sm" fontWeight="semibold" color="gray.900" fontFamily="Poppins">
+                            {filters.status || filters.from || filters.to || searchTerm
+                                ? 'No payouts match these filters'
+                                : 'No payouts yet'}
+                        </Text>
+                        <Text fontSize="xs" color="gray.500">
+                            {filters.status || filters.from || filters.to || searchTerm
+                                ? 'Try clearing some filters, or pick a wider date range.'
+                                : 'When you trigger a payout for a period, every eligible artist on your roster receives a row here.'}
+                        </Text>
+                        {canTrigger && !(filters.status || filters.from || filters.to || searchTerm) && (
+                            <Button
+                                onClick={() => setTriggerOpen(true)}
+                                mt={2}
+                                bg="primary.500"
+                                color="white"
+                                size="sm"
+                                fontSize="xs"
+                                fontWeight="medium"
+                                borderRadius="10px"
+                                _hover={{ bg: 'primary.600' }}
+                            >
+                                Trigger first payout
+                            </Button>
+                        )}
+                    </Stack>
                 </Center>
             ) : (
-                <Box bg="white" borderRadius="xl" p={2}>
+                <Box
+                    bg="white"
+                    borderRadius="20px"
+                    border="1px solid"
+                    borderColor="gray.100"
+                    p={2}
+                >
                     <Stack gap={0}>
-                        {payouts.map((p) => {
-                            const sc = statusColor(p.status);
-                            return (
-                                <HStack
-                                    key={p.id}
-                                    py={3}
-                                    px={3}
-                                    borderRadius="md"
-                                    _hover={{ bg: 'primary.50' }}
-                                    justify="space-between"
-                                >
-                                    <HStack gap={3}>
-                                        <Avatar.Root size="sm">
-                                            <Avatar.Fallback name={p.recipientName} />
-                                        </Avatar.Root>
-                                        <VStack align="start" gap={0}>
-                                            <Text fontSize="xs" fontWeight="semibold" color="gray.900">
-                                                {p.recipientName}
-                                            </Text>
-                                            <Text fontSize="10px" color="gray.500">
-                                                {new Date(p.initiatedAt).toLocaleString()}
-                                            </Text>
-                                        </VStack>
-                                    </HStack>
-                                    <HStack gap={4}>
-                                        <Box
-                                            bg={sc.bg}
-                                            color={sc.color}
-                                            fontSize="9px"
-                                            fontWeight="semibold"
-                                            px={2}
-                                            py={0.5}
-                                            borderRadius="full"
-                                        >
-                                            {p.status}
-                                        </Box>
-                                        <Text fontSize="xs" fontWeight="bold" color="gray.900">
-                                            {formatMinorAmount(p.amountMinor, p.currency)}
-                                        </Text>
-                                    </HStack>
-                                </HStack>
-                            );
-                        })}
+                        {visiblePayouts.map((p) => (
+                            <PayoutRow key={p.id} payout={p} onOpen={() => setDetailId(p.id)} />
+                        ))}
                     </Stack>
                 </Box>
             )}
 
+            {(payouts?.length ?? 0) >= PAGE_SIZE || (filters.page ?? 1) > 1 ? (
+                <HStack justify="space-between" align="center" px={1}>
+                    <Text fontSize="11px" color="gray.500">
+                        Page {filters.page ?? 1}
+                        {searchTerm && payouts && payouts.length !== visiblePayouts.length
+                            ? ` · ${visiblePayouts.length} of ${payouts.length} shown`
+                            : ''}
+                    </Text>
+                    <HStack gap={2}>
+                        <Button
+                            onClick={() => goPage(-1)}
+                            disabled={(filters.page ?? 1) <= 1}
+                            size="xs"
+                            variant="outline"
+                            fontSize="11px"
+                            borderRadius="8px"
+                            borderColor="gray.200"
+                            color="gray.700"
+                        >
+                            Previous
+                        </Button>
+                        <Button
+                            onClick={() => goPage(1)}
+                            disabled={(payouts?.length ?? 0) < PAGE_SIZE}
+                            size="xs"
+                            variant="outline"
+                            fontSize="11px"
+                            borderRadius="8px"
+                            borderColor="gray.200"
+                            color="gray.700"
+                        >
+                            Next
+                        </Button>
+                    </HStack>
+                </HStack>
+            ) : null}
+
             <PayoutTriggerDialog open={triggerOpen} onClose={() => setTriggerOpen(false)} />
+            <PayoutDetailDrawer payoutId={detailId} onClose={() => setDetailId(null)} />
         </VStack>
+    );
+};
+
+const PayoutRow: React.FC<{ payout: PayoutDto; onOpen: () => void }> = ({ payout, onOpen }) => {
+    const style = payoutStatusStyle(payout.status);
+    return (
+        <HStack
+            onClick={onOpen}
+            py={3}
+            px={3}
+            borderRadius="md"
+            cursor="pointer"
+            transition="background 120ms ease"
+            _hover={{ bg: 'gray.50' }}
+            justify="space-between"
+            borderBottom="1px solid"
+            borderColor="gray.50"
+        >
+            <HStack gap={3} minW={0}>
+                <Avatar.Root size="sm">
+                    <Avatar.Fallback name={payout.recipientName} />
+                </Avatar.Root>
+                <VStack align="start" gap={0} minW={0}>
+                    <Text fontSize="xs" fontWeight="semibold" color="gray.900" lineClamp={1}>
+                        {payout.recipientName}
+                    </Text>
+                    <Text fontSize="10px" color="gray.500">
+                        Initiated {new Date(payout.initiatedAt).toLocaleString()}
+                    </Text>
+                </VStack>
+            </HStack>
+            <HStack gap={4}>
+                <HStack
+                    gap={1.5}
+                    bg={style.bg}
+                    color={style.color}
+                    fontSize="10px"
+                    fontWeight="semibold"
+                    px={2.5}
+                    py={1}
+                    borderRadius="full"
+                >
+                    <Box boxSize="6px" borderRadius="full" bg={style.dot} />
+                    <Text>{style.label}</Text>
+                </HStack>
+                <Text
+                    fontSize="xs"
+                    fontWeight="bold"
+                    color="gray.900"
+                    fontVariantNumeric="tabular-nums"
+                >
+                    {formatMinorAmount(payout.amountMinor, payout.currency)}
+                </Text>
+            </HStack>
+        </HStack>
     );
 };
 
