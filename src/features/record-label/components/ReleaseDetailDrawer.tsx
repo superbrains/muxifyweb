@@ -4,7 +4,6 @@ import {
     Button,
     Drawer,
     HStack,
-    Image,
     Portal,
     Separator,
     Spinner,
@@ -14,6 +13,7 @@ import {
 } from '@chakra-ui/react';
 import { useQuery } from '@tanstack/react-query';
 import { FiExternalLink, FiVideo, FiX } from 'react-icons/fi';
+import { AuthedImage } from '../../../shared/components/AuthedImage';
 import { recordLabelService } from '../services/recordLabelService';
 import type { LabelReleaseDto, ReleaseStatus } from '../types';
 import { labelKeys } from '../hooks/useLabelSummary';
@@ -150,29 +150,28 @@ export const ReleaseDetailDrawer: React.FC<ReleaseDetailDrawerProps> = ({
                                     {/* Cover + title */}
                                     <HStack gap={3} align="start">
                                         <Box position="relative" flexShrink={0}>
-                                            {r.coverArtUrl ? (
-                                                <Image
-                                                    src={r.coverArtUrl}
-                                                    alt=""
-                                                    boxSize="80px"
-                                                    borderRadius="md"
-                                                    objectFit="cover"
-                                                />
-                                            ) : (
-                                                <Box
-                                                    boxSize="80px"
-                                                    borderRadius="md"
-                                                    bg="primary.50"
-                                                    color="primary.600"
-                                                    display="flex"
-                                                    alignItems="center"
-                                                    justifyContent="center"
-                                                    fontSize="md"
-                                                    fontWeight="semibold"
-                                                >
-                                                    {r.title.charAt(0).toUpperCase()}
-                                                </Box>
-                                            )}
+                                            <AuthedImage
+                                                src={r.coverArtUrl}
+                                                alt=""
+                                                boxSize="80px"
+                                                borderRadius="md"
+                                                objectFit="cover"
+                                                fallback={
+                                                    <Box
+                                                        boxSize="80px"
+                                                        borderRadius="md"
+                                                        bg="primary.50"
+                                                        color="primary.600"
+                                                        display="flex"
+                                                        alignItems="center"
+                                                        justifyContent="center"
+                                                        fontSize="md"
+                                                        fontWeight="semibold"
+                                                    >
+                                                        {r.title.charAt(0).toUpperCase()}
+                                                    </Box>
+                                                }
+                                            />
                                             {r.kind === 'video' && (
                                                 <Box
                                                     position="absolute"

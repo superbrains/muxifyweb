@@ -21,6 +21,9 @@ import type { SplitRecipientRole } from '../types';
 export interface PickedRecipient {
     id: string;
     name: string;
+    avatarUrl?: string;
+    isVerified: boolean;
+    accountType: 'Artist' | 'Label';
     defaultRole: SplitRecipientRole;
 }
 
@@ -130,6 +133,8 @@ export const RecipientPicker: React.FC<RecipientPickerProps> = ({
                                                     onSelect({
                                                         id: labelSelf.id,
                                                         name: labelSelf.name,
+                                                        isVerified: false,
+                                                        accountType: 'Label',
                                                         defaultRole: 'Label',
                                                     })
                                                 }
@@ -147,6 +152,9 @@ export const RecipientPicker: React.FC<RecipientPickerProps> = ({
                                                     onSelect({
                                                         id: r.artistUserId,
                                                         name: r.performingName || r.fullName,
+                                                        avatarUrl: r.avatarUrl,
+                                                        isVerified: r.isVerified,
+                                                        accountType: 'Artist',
                                                         defaultRole: 'Artist',
                                                     })
                                                 }

@@ -3,7 +3,6 @@ import {
     Box,
     Button,
     HStack,
-    Image,
     Menu,
     Portal,
     Spinner,
@@ -11,6 +10,7 @@ import {
     VStack,
 } from '@chakra-ui/react';
 import { FiMoreVertical, FiVideo } from 'react-icons/fi';
+import { AuthedImage } from '../../../shared/components/AuthedImage';
 import type { LabelReleaseDto, ReleaseStatus } from '../types';
 
 interface ReleaseRowProps {
@@ -79,29 +79,28 @@ export const ReleaseRow: React.FC<ReleaseRowProps> = ({
         >
             {/* Cover */}
             <Box position="relative" flexShrink={0}>
-                {r.coverArtUrl ? (
-                    <Image
-                        src={r.coverArtUrl}
-                        alt=""
-                        boxSize="48px"
-                        borderRadius="md"
-                        objectFit="cover"
-                    />
-                ) : (
-                    <Box
-                        boxSize="48px"
-                        borderRadius="md"
-                        bg="primary.50"
-                        color="primary.600"
-                        display="flex"
-                        alignItems="center"
-                        justifyContent="center"
-                        fontSize="xs"
-                        fontWeight="semibold"
-                    >
-                        {initials(r.artistName || r.title)}
-                    </Box>
-                )}
+                <AuthedImage
+                    src={r.coverArtUrl}
+                    alt=""
+                    boxSize="48px"
+                    borderRadius="md"
+                    objectFit="cover"
+                    fallback={
+                        <Box
+                            boxSize="48px"
+                            borderRadius="md"
+                            bg="primary.50"
+                            color="primary.600"
+                            display="flex"
+                            alignItems="center"
+                            justifyContent="center"
+                            fontSize="xs"
+                            fontWeight="semibold"
+                        >
+                            {initials(r.artistName || r.title)}
+                        </Box>
+                    }
+                />
                 {r.kind === 'video' && (
                     <Box
                         position="absolute"

@@ -115,10 +115,15 @@ export const SPLIT_ROLES: readonly SplitRecipientRole[] = [
     'Songwriter',
 ];
 
+export type SplitAccountType = 'Artist' | 'Label' | 'Other';
+
 export interface ReleaseSplitDto {
     recipientUserId: string;
     recipientName: string;
+    recipientAvatarUrl?: string;
     recipientRole: SplitRecipientRole;
+    accountType: SplitAccountType;
+    isVerified: boolean;
     percentBps: number;
 }
 
