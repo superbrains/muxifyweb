@@ -2,7 +2,6 @@ import { api } from '@shared/services/api';
 import type {
     AcceptInvitationRequest,
     AcceptInvitationResponse,
-    InvitationDto,
     InvitationLookupResponse,
     InviteArtistRequest,
     InviteArtistResponse,
@@ -14,6 +13,7 @@ import type {
     ReleaseFilters,
     ReleaseSplitsDto,
     RosterArtistDto,
+    RosterEntryDto,
     SetSplitsRequest,
     TriggerPayoutRequest,
     TriggerPayoutResponse,
@@ -28,8 +28,21 @@ export const recordLabelService = {
     },
 
     // Roster
+    /**
+     * Active-roster-only view used by the artist picker, filter bar, and recipient picker.
+     * For the unified roster-page list (including pending/declined/expired invitations and
+     * deactivated artists), use {@link getRosterEntries}.
+     */
     getRoster: async (): Promise<RosterArtistDto[]> => {
         const { data } = await api.get<RosterArtistDto[]>(`${BASE}/artists`);
+        return data;
+    },
+    /**
+     * Unified roster-page view: roster members (Active / PendingOnboarding) plus
+     * invitation rows (Invited / Declined / Expired / Revoked / Deactivated).
+     */
+    getRosterEntries: async (): Promise<RosterEntryDto[]> => {
+        const { data } = await api.get<RosterEntryDto[]>(`${BASE}/roster`);
         return data;
     },
     inviteArtist: async (req: InviteArtistRequest): Promise<InviteArtistResponse> => {
@@ -39,12 +52,11 @@ export const recordLabelService = {
         );
         return data;
     },
-    removeArtist: async (artistUserId: string): Promise<void> => {
-        await api.delete(`${BASE}/artists/${artistUserId}`);
+    deactivateArtist: async (artistUserId: string): Promise<void> => {
+        await api.post(`${BASE}/artists/${artistUserId}/deactivate`);
     },
-    getInvitations: async (): Promise<InvitationDto[]> => {
-        const { data } = await api.get<InvitationDto[]>(`${BASE}/artists/invitations`);
-        return data;
+    reactivateArtist: async (artistUserId: string): Promise<void> => {
+        await api.post(`${BASE}/artists/${artistUserId}/reactivate`);
     },
     revokeInvitation: async (invitationId: string): Promise<void> => {
         await api.post(`${BASE}/artists/invitations/${invitationId}/revoke`);

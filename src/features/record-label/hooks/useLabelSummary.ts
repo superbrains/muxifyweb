@@ -4,6 +4,7 @@ import { recordLabelService } from '../services/recordLabelService';
 export const labelKeys = {
     summary: ['label', 'summary'] as const,
     roster: ['label', 'roster'] as const,
+    rosterEntries: ['label', 'roster-entries'] as const,
     invitations: ['label', 'invitations'] as const,
     releases: <T>(filters?: T) =>
         ['label', 'releases', filters ?? {}] as const,

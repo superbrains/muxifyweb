@@ -31,14 +31,38 @@ export interface RosterArtistDto {
     onboardingStatus: RosterOnboardingStatus;
 }
 
-export interface InvitationDto {
-    id: string;
-    email: string;
-    status: 'Pending' | 'Accepted' | 'Declined' | 'Revoked' | 'Expired';
-    createdAt: string;
-    expiresAt: string;
-    acceptedAt?: string;
-    revokedAt?: string;
+export type RosterEntryStatus =
+    | 'Active'
+    | 'PendingOnboarding'
+    | 'Invited'
+    | 'Declined'
+    | 'Expired'
+    | 'Revoked'
+    | 'Deactivated';
+
+export type RosterEntryKind = 'Roster' | 'Invitation';
+
+/**
+ * Unified roster-page row. A "Roster" entry is a current roster member (Active or
+ * PendingOnboarding); an "Invitation" entry is a sent invite that hasn't joined the
+ * roster (Invited / Declined / Expired / Revoked) or a previously-deactivated artist
+ * (Deactivated, with an artistUserId so they can be reactivated).
+ */
+export interface RosterEntryDto {
+    kind: RosterEntryKind;
+    artistUserId?: string;
+    invitationId?: string;
+    displayName: string;
+    email?: string;
+    avatarUrl?: string;
+    isVerified: boolean;
+    monthlyStreams: number;
+    monthlyRevenueMinor: number;
+    joinedAt?: string;
+    invitedAt?: string;
+    expiresAt?: string;
+    deactivatedAt?: string;
+    status: RosterEntryStatus;
 }
 
 export interface InviteArtistRequest {
