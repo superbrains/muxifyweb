@@ -7,9 +7,6 @@ import {
     Stack,
     Text,
     VStack,
-    Select,
-    Portal,
-    createListCollection,
 } from '@chakra-ui/react';
 import { useChakraToast } from '@shared/hooks';
 import { CountryStateSelect } from '@shared/components/CountryStateSelect';
@@ -17,22 +14,9 @@ import { useUserManagementStore } from '@/features/auth/store/useUserManagementS
 import { profileService } from '../services/profileService';
 import { getApiErrorMessage } from '@/shared/lib/errorUtils';
 
-// Collections for select options
-const businessTypes = createListCollection({
-    items: [
-        { label: "Record Label", value: "record_label" },
-        { label: "Distribution", value: "distribution" },
-        { label: "Music Publishing", value: "publishing" },
-        { label: "Artist Management", value: "management" },
-        { label: "Music Production", value: "production" },
-        { label: "Event Management", value: "events" },
-    ],
-});
-
 interface CompanyInformationData {
     legalCompanyName: string;
     companyName: string;
-    natureOfBusiness: string;
     country: string;
     state: string;
     companyAddress: string;
@@ -41,7 +25,6 @@ interface CompanyInformationData {
 interface CompanyInformationErrors {
     legalCompanyName?: string;
     companyName?: string;
-    natureOfBusiness?: string;
     country?: string;
     state?: string;
     companyAddress?: string;
@@ -51,7 +34,6 @@ export const CompanyInformationForm: React.FC = () => {
     const [formData, setFormData] = useState<CompanyInformationData>({
         legalCompanyName: '',
         companyName: '',
-        natureOfBusiness: '',
         country: '',
         state: '',
         companyAddress: '',
@@ -82,10 +64,6 @@ export const CompanyInformationForm: React.FC = () => {
             newErrors.legalCompanyName = 'Legal company name is required';
         }
 
-        if (!formData.natureOfBusiness) {
-            newErrors.natureOfBusiness = 'Nature of business is required';
-        }
-
         if (!formData.country) {
             newErrors.country = 'Country is required';
         }
@@ -109,11 +87,10 @@ export const CompanyInformationForm: React.FC = () => {
 
         setLoading(true);
         try {
-            // Complete company profile via API
             const updatedProfile = await profileService.completeCompanyProfile({
                 legalName: formData.legalCompanyName,
                 tradingName: formData.companyName || undefined,
-                natureOfBusiness: formData.natureOfBusiness,
+                natureOfBusiness: 'record_label',
                 address: {
                     street: formData.companyAddress,
                     city: formData.state, // Using state as city for now
@@ -122,13 +99,11 @@ export const CompanyInformationForm: React.FC = () => {
                 },
             });
 
-            // Save information to local store for flow tracking
             if (userId) {
                 setCurrentUser(userId);
                 saveCompanyInformation(userId, {
                     legalCompanyName: formData.legalCompanyName,
                     companyName: formData.companyName || undefined,
-                    natureOfBusiness: formData.natureOfBusiness,
                     country: formData.country,
                     state: formData.state,
                     companyAddress: formData.companyAddress,
@@ -213,52 +188,6 @@ export const CompanyInformationForm: React.FC = () => {
                                 boxShadow: '0 0 0 1px #f94444',
                             }}
                         />
-                    </Box>
-
-                    {/* Nature of Business */}
-                    <Box>
-                        <Text fontSize="xs" fontWeight="medium" color="grey.500" mb={1}>
-                            Nature of Business
-                        </Text>
-                        <Select.Root
-                            size="sm"
-                            fontSize="xs"
-                            collection={businessTypes}
-                            value={formData.natureOfBusiness ? [formData.natureOfBusiness] : []}
-                            onValueChange={(details) => {
-                                setFormData(prev => ({ ...prev, natureOfBusiness: details.value[0] || '' }));
-                                if (errors.natureOfBusiness) {
-                                    setErrors(prev => ({ ...prev, natureOfBusiness: undefined }));
-                                }
-                            }}
-                        >
-                            <Select.HiddenSelect name="natureOfBusiness" />
-                            <Select.Control>
-                                <Select.Trigger>
-                                    <Select.ValueText placeholder="Nature of Business" />
-                                </Select.Trigger>
-                                <Select.IndicatorGroup>
-                                    <Select.Indicator />
-                                </Select.IndicatorGroup>
-                            </Select.Control>
-                            <Portal>
-                                <Select.Positioner>
-                                    <Select.Content>
-                                        {businessTypes.items.map((business) => (
-                                            <Select.Item fontSize="xs" item={business} key={business.value}>
-                                                {business.label}
-                                                <Select.ItemIndicator />
-                                            </Select.Item>
-                                        ))}
-                                    </Select.Content>
-                                </Select.Positioner>
-                            </Portal>
-                        </Select.Root>
-                        {errors.natureOfBusiness && (
-                            <Text color="red.500" fontSize="xs" mt={0.5}>
-                                {errors.natureOfBusiness}
-                            </Text>
-                        )}
                     </Box>
 
                     {/* Country and State */}
