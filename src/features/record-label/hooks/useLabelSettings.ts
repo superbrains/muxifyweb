@@ -1,6 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { getApiErrorMessage } from '@shared/lib/errorUtils';
 import { useChakraToast } from '@shared/hooks/useChakraToast';
+import { userService } from '@shared/services/userService';
+import { useUserManagementStore } from '@/features/auth/store/useUserManagementStore';
+import { useUserStore } from '@app/store/useUserStore';
+import type { UserRole } from '@shared/types/user';
 import { labelSettingsService } from '../services/labelSettingsService';
 import { labelKeys } from './useLabelSummary';
 import type {
@@ -51,8 +55,27 @@ export const useUploadLabelLogo = () => {
     const toast = useChakraToast();
     return useMutation({
         mutationFn: (file: File) => labelSettingsService.uploadLogo(file),
-        onSuccess: () => {
+        onSuccess: async () => {
             invalidate(qc);
+            // Re-fetch /users/me so the header avatar (which reads from
+            // useUserManagementStore.labelLogo, hydrated from profile.avatar)
+            // updates immediately. Mirrors AuthBootstrap's hydration flow.
+            try {
+                const profile = await userService.getCurrentUser();
+                useUserManagementStore.getState().hydrateFromProfile(profile);
+                useUserStore.getState().setUser({
+                    id: profile.id,
+                    email: profile.email,
+                    name: profile.name,
+                    role: profile.role as UserRole,
+                    avatar: profile.avatar,
+                    isVerified: profile.isVerified,
+                    createdAt: profile.createdAt,
+                    updatedAt: profile.updatedAt ?? profile.createdAt,
+                });
+            } catch {
+                // Silent — next page load will hydrate fresh state.
+            }
             toast.success('Logo updated', 'Your new logo is live.');
         },
         onError: (err) => {
