@@ -112,23 +112,6 @@ export const RegisterForm: React.FC = () => {
             </div>
 
             <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Account type
-                </label>
-                <select
-                    name="role"
-                    value={formData.role}
-                    onChange={handleChange}
-                    className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                >
-                    <option value="artist">Artist</option>
-                    <option value="dj">DJ</option>
-                    <option value="creator">Creator</option>
-                    <option value="record_label">Record Label</option>
-                </select>
-            </div>
-
-            <div>
                 <Input
                     label="Password"
                     name="password"

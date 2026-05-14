@@ -9,9 +9,6 @@ import {
     VStack,
     HStack,
     Link,
-    Select,
-    Portal,
-    createListCollection,
 } from '@chakra-ui/react';
 import { PhoneInput } from 'react-international-phone';
 import 'react-international-phone/style.css';
@@ -21,30 +18,8 @@ import { useUserManagementStore } from '@/features/auth/store/useUserManagementS
 import { authService } from '@/features/auth/services/authService';
 import { useUserStore } from '@/app/store/useUserStore';
 import { getApiErrorMessage } from '@/shared/lib/errorUtils';
-import type { RegisterRequest } from '@/features/auth/services/authService';
-
-// Map frontend user types to backend role format
-const userTypeToRole: Record<string, RegisterRequest['role']> = {
-    artist: 'artist',
-    musician: 'artist',  // Musicians are also artists
-    creator: 'creator',
-    dj: 'dj',
-    podcaster: 'creator', // Podcasters use creator role
-};
-
-// Collections for select options
-const userTypes = createListCollection({
-    items: [
-        { label: "Artist", value: "artist" },
-        { label: "Musician", value: "musician" },
-        { label: "Creator", value: "creator" },
-        { label: "DJ", value: "dj" },
-        { label: "Podcaster", value: "podcaster" },
-    ],
-});
 
 interface ArtistRegistrationData {
-    userType: string;
     email: string;
     phone: string;
     password: string;
@@ -52,7 +27,6 @@ interface ArtistRegistrationData {
 }
 
 interface ArtistRegistrationErrors {
-    userType?: string;
     email?: string;
     phone?: string;
     password?: string;
@@ -61,7 +35,6 @@ interface ArtistRegistrationErrors {
 
 export const ArtistRegistrationForm: React.FC = () => {
     const [formData, setFormData] = useState<ArtistRegistrationData>({
-        userType: 'artist', // Default to 'artist'
         email: '',
         phone: '',
         password: '',
@@ -125,26 +98,20 @@ export const ArtistRegistrationForm: React.FC = () => {
 
         setLoading(true);
         try {
-            // Map frontend userType to backend role
-            const role = userTypeToRole[formData.userType] || 'artist';
-
-            // Register with the backend API
             const result = await authService.register({
                 email: formData.email,
                 password: formData.password,
                 phone: formData.phone,
-                role,
+                role: 'artist',
             });
 
-            // Store user in global state
             login(result.user);
 
-            // Also initialize in user management store for onboarding flow
-            const userId = initializeUser('artist', formData.email, formData.phone, formData.userType);
+            const userId = initializeUser('artist', formData.email, formData.phone, 'artist');
 
             toast.success('Registration successful!', 'Please verify your email to continue.');
             navigate('/onboarding/artist/verify-email', {
-                state: { email: formData.email, userType: formData.userType, userId }
+                state: { email: formData.email, userId }
             });
         } catch (error: unknown) {
             const errorMessage = getApiErrorMessage(error, 'Registration failed. Please try again.');
@@ -167,47 +134,6 @@ export const ArtistRegistrationForm: React.FC = () => {
 
             <Box as="form" onSubmit={handleSubmit} w="full">
                 <Stack gap={3}>
-                    {/* User Type */}
-                    <Box>
-                        <Text fontSize="xs" fontWeight="medium" color="grey.500" mb={1}>
-                            What type of user are you?
-                        </Text>
-                        <Select.Root
-                            size="sm"
-                            fontSize="xs"
-                            collection={userTypes}
-                            value={[formData.userType]}
-                            onValueChange={(details) => {
-                                setFormData(prev => ({ ...prev, userType: details.value[0] }));
-                                if (errors.userType) {
-                                    setErrors(prev => ({ ...prev, userType: undefined }));
-                                }
-                            }}
-                        >
-                            <Select.HiddenSelect name="userType" />
-                            <Select.Control>
-                                <Select.Trigger>
-                                    <Select.ValueText placeholder="Select user type" />
-                                </Select.Trigger>
-                                <Select.IndicatorGroup>
-                                    <Select.Indicator />
-                                </Select.IndicatorGroup>
-                            </Select.Control>
-                            <Portal>
-                                <Select.Positioner>
-                                    <Select.Content>
-                                        {userTypes.items.map((userType) => (
-                                            <Select.Item fontSize="xs" item={userType} key={userType.value}>
-                                                {userType.label}
-                                                <Select.ItemIndicator />
-                                            </Select.Item>
-                                        ))}
-                                    </Select.Content>
-                                </Select.Positioner>
-                            </Portal>
-                        </Select.Root>
-                    </Box>
-
                     {/* Email */}
                     <Box>
                         <Text fontSize="xs" fontWeight="medium" color="grey.500" mb={1}>

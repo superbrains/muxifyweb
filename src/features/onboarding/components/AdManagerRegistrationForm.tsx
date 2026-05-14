@@ -9,9 +9,6 @@ import {
     VStack,
     HStack,
     Link,
-    Select,
-    Portal,
-    createListCollection,
 } from '@chakra-ui/react';
 import { PhoneInput } from 'react-international-phone';
 import 'react-international-phone/style.css';
@@ -19,18 +16,7 @@ import { useChakraToast } from '@shared/hooks';
 import { PasswordInput } from "@/components/ui/password-input";
 import { useUserManagementStore } from '@/features/auth/store/useUserManagementStore';
 
-// Collections for select options
-const userTypes = createListCollection({
-    items: [
-        { label: "Personal Use", value: "personal" },
-        { label: "Business Use", value: "business" },
-        { label: "Agency", value: "agency" },
-        { label: "Enterprise", value: "enterprise" },
-    ],
-});
-
 interface AdManagerRegistrationData {
-    userType: string;
     email: string;
     phone: string;
     password: string;
@@ -38,7 +24,6 @@ interface AdManagerRegistrationData {
 }
 
 interface AdManagerRegistrationErrors {
-    userType?: string;
     email?: string;
     phone?: string;
     password?: string;
@@ -47,7 +32,6 @@ interface AdManagerRegistrationErrors {
 
 export const AdManagerRegistrationForm: React.FC = () => {
     const [formData, setFormData] = useState<AdManagerRegistrationData>({
-        userType: 'personal',
         email: '',
         phone: '',
         password: '',
@@ -109,15 +93,14 @@ export const AdManagerRegistrationForm: React.FC = () => {
 
         setLoading(true);
         try {
-            // Initialize user in the store
-            const userId = initializeUser('ad-manager', formData.email, formData.phone, formData.userType);
+            const userId = initializeUser('ad-manager', formData.email, formData.phone, 'business');
 
             // Here you would typically register the ad manager
             await new Promise(resolve => setTimeout(resolve, 1000));
 
             toast.success('Registration successful!', 'Please verify your email to continue.');
             navigate('/onboarding/ad-manager/verify-email', {
-                state: { email: formData.email, userType: formData.userType, userId }
+                state: { email: formData.email, userId }
             });
         } catch (error: unknown) {
             const errorMessage = error && typeof error === 'object' && 'response' in error
@@ -142,47 +125,6 @@ export const AdManagerRegistrationForm: React.FC = () => {
 
             <Box as="form" onSubmit={handleSubmit} w="full">
                 <Stack gap={3}>
-                    {/* User Type */}
-                    <Box>
-                        <Text fontSize="xs" fontWeight="medium" color="grey.500" mb={1}>
-                            What type of user are you?
-                        </Text>
-                        <Select.Root
-                            size="sm"
-                            fontSize="xs"
-                            collection={userTypes}
-                            value={[formData.userType]}
-                            onValueChange={(details) => {
-                                setFormData(prev => ({ ...prev, userType: details.value[0] }));
-                                if (errors.userType) {
-                                    setErrors(prev => ({ ...prev, userType: undefined }));
-                                }
-                            }}
-                        >
-                            <Select.HiddenSelect name="userType" />
-                            <Select.Control>
-                                <Select.Trigger>
-                                    <Select.ValueText placeholder="Select user type" />
-                                </Select.Trigger>
-                                <Select.IndicatorGroup>
-                                    <Select.Indicator />
-                                </Select.IndicatorGroup>
-                            </Select.Control>
-                            <Portal>
-                                <Select.Positioner>
-                                    <Select.Content>
-                                        {userTypes.items.map((userType) => (
-                                            <Select.Item fontSize="xs" item={userType} key={userType.value}>
-                                                {userType.label}
-                                                <Select.ItemIndicator />
-                                            </Select.Item>
-                                        ))}
-                                    </Select.Content>
-                                </Select.Positioner>
-                            </Portal>
-                        </Select.Root>
-                    </Box>
-
                     {/* Email Address */}
                     <Box>
                         <Text fontSize="xs" fontWeight="medium" color="grey.500" mb={1}>

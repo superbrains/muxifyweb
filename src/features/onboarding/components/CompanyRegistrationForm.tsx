@@ -9,9 +9,6 @@ import {
     VStack,
     HStack,
     Link,
-    Select,
-    Portal,
-    createListCollection,
 } from '@chakra-ui/react';
 import { PhoneInput } from 'react-international-phone';
 import 'react-international-phone/style.css';
@@ -22,18 +19,7 @@ import { authService } from '@/features/auth/services/authService';
 import { useUserStore } from '@/app/store/useUserStore';
 import { getApiErrorMessage } from '@/shared/lib/errorUtils';
 
-// Collections for select options
-const companyTypes = createListCollection({
-    items: [
-        { label: "Record Label", value: "record_label" },
-        { label: "Distribution Company", value: "distribution" },
-        { label: "Music Publisher", value: "publisher" },
-        { label: "Management Company", value: "management" },
-    ],
-});
-
 interface CompanyRegistrationData {
-    userType: string;
     email: string;
     phone: string;
     password: string;
@@ -41,7 +27,6 @@ interface CompanyRegistrationData {
 }
 
 interface CompanyRegistrationErrors {
-    userType?: string;
     email?: string;
     phone?: string;
     password?: string;
@@ -50,7 +35,6 @@ interface CompanyRegistrationErrors {
 
 export const CompanyRegistrationForm: React.FC = () => {
     const [formData, setFormData] = useState<CompanyRegistrationData>({
-        userType: 'record_label',
         email: '',
         phone: '',
         password: '',
@@ -113,7 +97,6 @@ export const CompanyRegistrationForm: React.FC = () => {
 
         setLoading(true);
         try {
-            // Register with the backend API (record_label role for companies)
             const result = await authService.register({
                 email: formData.email,
                 password: formData.password,
@@ -121,15 +104,13 @@ export const CompanyRegistrationForm: React.FC = () => {
                 role: 'record_label',
             });
 
-            // Store user in global state
             login(result.user);
 
-            // Also initialize in user management store for onboarding flow
-            const userId = initializeUser('company', formData.email, formData.phone, formData.userType);
+            const userId = initializeUser('company', formData.email, formData.phone, 'record_label');
 
             toast.success('Registration successful!', 'Please verify your email to continue.');
             navigate('/onboarding/company/verify-email', {
-                state: { email: formData.email, userType: formData.userType, userId: result.user.id || userId }
+                state: { email: formData.email, userId: result.user.id || userId }
             });
         } catch (error: unknown) {
             const errorMessage = getApiErrorMessage(error, 'Registration failed. Please try again.');
@@ -152,47 +133,6 @@ export const CompanyRegistrationForm: React.FC = () => {
 
             <Box as="form" onSubmit={handleSubmit} w="full">
                 <Stack gap={3}>
-                    {/* User Type */}
-                    <Box>
-                        <Text fontSize="xs" fontWeight="medium" color="grey.500" mb={1}>
-                            What type of user are you?
-                        </Text>
-                        <Select.Root
-                            size="sm"
-                            fontSize="xs"
-                            collection={companyTypes}
-                            value={[formData.userType]}
-                            onValueChange={(details) => {
-                                setFormData(prev => ({ ...prev, userType: details.value[0] }));
-                                if (errors.userType) {
-                                    setErrors(prev => ({ ...prev, userType: undefined }));
-                                }
-                            }}
-                        >
-                            <Select.HiddenSelect name="userType" />
-                            <Select.Control>
-                                <Select.Trigger>
-                                    <Select.ValueText placeholder="Select user type" />
-                                </Select.Trigger>
-                                <Select.IndicatorGroup>
-                                    <Select.Indicator />
-                                </Select.IndicatorGroup>
-                            </Select.Control>
-                            <Portal>
-                                <Select.Positioner>
-                                    <Select.Content>
-                                        {companyTypes.items.map((userType) => (
-                                            <Select.Item fontSize="xs" item={userType} key={userType.value}>
-                                                {userType.label}
-                                                <Select.ItemIndicator />
-                                            </Select.Item>
-                                        ))}
-                                    </Select.Content>
-                                </Select.Positioner>
-                            </Portal>
-                        </Select.Root>
-                    </Box>
-
                     {/* Work Email */}
                     <Box>
                         <Text fontSize="xs" fontWeight="medium" color="grey.500" mb={1}>
