@@ -13,4 +13,12 @@ export const adminKeys = {
     tickets: <T>(query?: T) => ['admin', 'tickets', query ?? {}] as const,
     ticket: (id: string) => ['admin', 'ticket', id] as const,
     moderation: <T>(query?: T) => ['admin', 'moderation', query ?? {}] as const,
+    // Admin Management
+    myPermissions: ['admin', 'me', 'permissions'] as const,
+    permissionCatalog: ['admin', 'management', 'permissions'] as const,
+    roles: ['admin', 'management', 'roles'] as const,
+    admins: ['admin', 'management', 'admins'] as const,
+    adminDetail: (id: string) => ['admin', 'management', 'admin', id] as const,
+    invitations: ['admin', 'management', 'invitations'] as const,
+    audit: <T>(query?: T) => ['admin', 'management', 'audit', query ?? {}] as const,
 };

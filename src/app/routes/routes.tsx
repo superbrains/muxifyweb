@@ -62,6 +62,8 @@ const AdminUsersPage = lazy(() => import('@/features/admin/pages/UsersPage'));
 const AdminUserDetailPage = lazy(() => import('@/features/admin/pages/UserDetailPage'));
 const AdminSupportPage = lazy(() => import('@/features/admin/pages/SupportPage'));
 const AdminSettingsPage = lazy(() => import('@/features/admin/pages/AdminSettingsPage'));
+const AdminManagementPage = lazy(() => import('@/features/admin/pages/AdminManagementPage'));
+const AdminInviteAcceptPage = lazy(() => import('@/features/admin/pages/AdminInviteAcceptPage'));
 
 export const appRoutes: RouteObject[] = [
     { path: '/login', element: <Login /> },
@@ -86,6 +88,7 @@ export const appRoutes: RouteObject[] = [
     { path: '/onboarding/ad-manager/director-information', element: <AdManagerDirectorInformation /> },
     { path: '/onboarding/ad-manager/company-logo', element: <AdManagerCompanyLogo /> },
     { path: '/label/invite/accept', element: <InviteAcceptPage /> },
+    { path: '/admin/accept-invite', element: <AdminInviteAcceptPage /> },
     {
         path: '/',
         element: <ProtectedRoute />,
@@ -128,6 +131,7 @@ export const appRoutes: RouteObject[] = [
                     { path: '/admin/users', element: <AdminUsersPage /> },
                     { path: '/admin/users/:userId', element: <AdminUserDetailPage /> },
                     { path: '/admin/support', element: <AdminSupportPage /> },
+                    { path: '/admin/management', element: <AdminManagementPage /> },
                     { path: '/admin/settings', element: <AdminSettingsPage /> },
                 ],
             },
