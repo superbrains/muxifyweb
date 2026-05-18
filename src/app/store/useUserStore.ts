@@ -1,60 +1,58 @@
-import { useEffect, useState } from "react";
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
-import { indexedDbStorage } from "@/shared/lib/indexedDbStorage";
 import { tokenStorage } from "@app/lib/axiosInstance";
 import type { User } from "@shared/types/user";
+
+/**
+ * Session bootstrap status.
+ * - `loading`         — a JWT exists; `/users/me` is being fetched.
+ * - `authenticated`   — the current user is loaded.
+ * - `unauthenticated` — no valid session.
+ */
+export type AuthStatus = "loading" | "authenticated" | "unauthenticated";
 
 interface UserState {
   user: User | null;
   isAuthenticated: boolean;
+  /** Drives route gating in `ProtectedRoute` while `AuthBootstrap` runs. */
+  status: AuthStatus;
   setUser: (user: User | null) => void;
+  setStatus: (status: AuthStatus) => void;
   login: (user: User) => void;
   logout: () => void;
   updateUser: (updates: Partial<User>) => void;
 }
 
-export const useUserStore = create<UserState>()(
-  persist(
-    (set, get) => ({
-      user: null,
-      isAuthenticated: false,
-      setUser: (user) => set({ user, isAuthenticated: !!user }),
-      login: (user) => set({ user, isAuthenticated: true }),
-      logout: () => {
-        tokenStorage.clearTokens();
-        set({ user: null, isAuthenticated: false });
-      },
-      updateUser: (updates) => {
-        const currentUser = get().user;
-        if (currentUser) {
-          set({ user: { ...currentUser, ...updates } });
-        }
-      },
+/**
+ * Single source of truth for the signed-in user.
+ *
+ * Deliberately NOT persisted: the JWT in `localStorage` is the only durable
+ * session marker, and `AuthBootstrap` re-fetches `/users/me` on every app boot.
+ * Persisting the user object to IndexedDB previously caused two bugs — a stale
+ * *previous* user surviving into the next session, and a Zustand rehydration
+ * race that clobbered the freshly-logged-in user. Keeping this store purely
+ * in-memory removes both.
+ */
+export const useUserStore = create<UserState>()((set, get) => ({
+  user: null,
+  isAuthenticated: false,
+  status: tokenStorage.getAccessToken() ? "loading" : "unauthenticated",
+  setUser: (user) =>
+    set({
+      user,
+      isAuthenticated: !!user,
+      status: user ? "authenticated" : "unauthenticated",
     }),
-    {
-      name: "user-storage",
-      storage: indexedDbStorage,
-      partialize: (state) => ({
-        user: state.user,
-        isAuthenticated: state.isAuthenticated,
-      }),
+  setStatus: (status) => set({ status }),
+  login: (user) =>
+    set({ user, isAuthenticated: true, status: "authenticated" }),
+  logout: () => {
+    tokenStorage.clearTokens();
+    set({ user: null, isAuthenticated: false, status: "unauthenticated" });
+  },
+  updateUser: (updates) => {
+    const currentUser = get().user;
+    if (currentUser) {
+      set({ user: { ...currentUser, ...updates } });
     }
-  )
-);
-
-export const useUserStoreHydrated = (): boolean => {
-  const [hydrated, setHydrated] = useState(useUserStore.persist.hasHydrated());
-
-  useEffect(() => {
-    const unsubFinish = useUserStore.persist.onFinishHydration(() =>
-      setHydrated(true)
-    );
-    if (useUserStore.persist.hasHydrated()) setHydrated(true);
-    return () => {
-      unsubFinish();
-    };
-  }, []);
-
-  return hydrated;
-};
+  },
+}));

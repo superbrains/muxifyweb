@@ -23,6 +23,8 @@ export interface AlbumManageTrackDto {
   status: TrackProcessingStatus;
   processingError?: string | null;
   isPublished: boolean;
+  /** True when the track is withheld pending a duplicate-content review. */
+  heldForDuplicateReview: boolean;
   coverArtThumbnail?: string | null;
   hasCustomCover: boolean;
   isrc?: string | null;

@@ -15,16 +15,19 @@ import {
   FiAlertTriangle,
   FiChevronDown,
   FiChevronUp,
+  FiFlag,
   FiMoreVertical,
   FiTrash2,
   FiX,
 } from 'react-icons/fi';
-import { ArtistAutocomplete } from '@shared/components';
+import { ArtistAutocomplete, DisputeModal } from '@shared/components';
+import { toaster } from '@/components/ui/toaster-instance';
 import type {
   AlbumManageTrackDto,
   FeaturedArtistDto,
   FeaturedArtistInput,
 } from '../../types/album';
+import { trackService } from '../../services/trackService';
 import { formatDuration } from './format';
 
 interface TrackRowProps {
@@ -44,15 +47,19 @@ interface TrackRowProps {
 }
 
 const StatusBadge: React.FC<{ track: AlbumManageTrackDto }> = ({ track }) => {
-  const palette: Record<string, { bg: string; color: string; label: string }> = {
-    processing: { bg: 'orange.50', color: 'orange.700', label: 'Processing…' },
-    ready: track.isPublished
-      ? { bg: 'green.50', color: 'green.700', label: 'Published' }
-      : { bg: 'gray.100', color: 'gray.700', label: 'Ready · Draft' },
-    failed: { bg: 'red.50', color: 'red.700', label: 'Failed' },
-    deleted: { bg: 'gray.100', color: 'gray.500', label: 'Deleted' },
-  };
-  const cfg = palette[track.status] ?? palette.processing;
+  // A duplicate-review hold takes precedence: such a track is technically "ready"
+  // but withheld from publication, so the plain status palette would mislabel it.
+  const cfg = track.heldForDuplicateReview
+    ? { bg: 'yellow.100', color: 'yellow.800', label: 'Under review' }
+    : ({
+        processing: { bg: 'orange.50', color: 'orange.700', label: 'Processing…' },
+        ready: track.isPublished
+          ? { bg: 'green.50', color: 'green.700', label: 'Published' }
+          : { bg: 'gray.100', color: 'gray.700', label: 'Ready · Draft' },
+        failed: { bg: 'red.50', color: 'red.700', label: 'Failed' },
+        deleted: { bg: 'gray.100', color: 'gray.500', label: 'Deleted' },
+      }[track.status] ?? { bg: 'orange.50', color: 'orange.700', label: 'Processing…' });
+
   return (
     <Tag.Root size="sm" bg={cfg.bg} color={cfg.color} borderRadius="full" px={2}>
       <Tag.Label fontSize="10px" fontWeight="600" letterSpacing="0.04em">
@@ -77,6 +84,9 @@ export const TrackRow: React.FC<TrackRowProps> = ({
   const [titleDraft, setTitleDraft] = useState(track.title);
   const [savingTitle, setSavingTitle] = useState(false);
   const [pendingArtist, setPendingArtist] = useState(false);
+  const [disputeOpen, setDisputeOpen] = useState(false);
+  const [disputing, setDisputing] = useState(false);
+  const [disputeSubmitted, setDisputeSubmitted] = useState(false);
 
   const commitTitle = async () => {
     if (titleDraft.trim() === track.title) return;
@@ -85,6 +95,28 @@ export const TrackRow: React.FC<TrackRowProps> = ({
       await onUpdateTitle(titleDraft.trim());
     } finally {
       setSavingTitle(false);
+    }
+  };
+
+  const handleDispute = async (reason: string) => {
+    setDisputing(true);
+    try {
+      await trackService.disputeTrack(track.id, reason);
+      setDisputeSubmitted(true);
+      setDisputeOpen(false);
+      toaster.create({
+        title: 'Dispute submitted',
+        description: 'Our moderation team will review your track shortly.',
+        type: 'success',
+      });
+    } catch {
+      toaster.create({
+        title: 'Could not submit dispute',
+        description: 'Something went wrong. Please try again in a moment.',
+        type: 'error',
+      });
+    } finally {
+      setDisputing(false);
     }
   };
 
@@ -207,6 +239,44 @@ export const TrackRow: React.FC<TrackRowProps> = ({
             </HStack>
           )}
 
+          {track.heldForDuplicateReview && (
+            <VStack
+              align="stretch"
+              bg="yellow.50"
+              border="1px solid"
+              borderColor="yellow.200"
+              borderRadius="md"
+              px={3}
+              py={3}
+              mb={3}
+              gap={2}
+            >
+              <HStack color="yellow.800" fontSize="12px" align="flex-start">
+                <Box flexShrink={0} mt="2px">
+                  <FiAlertTriangle />
+                </Box>
+                <Text>
+                  This track is on hold — our duplicate-detection check flagged it as a
+                  possible duplicate, so it won't be published until a moderator reviews it.
+                  If you hold the rights to this track, you can dispute the flag.
+                </Text>
+              </HStack>
+              <HStack>
+                <Button
+                  size="xs"
+                  variant="outline"
+                  borderColor="yellow.300"
+                  color="yellow.800"
+                  _hover={{ bg: 'yellow.100' }}
+                  disabled={disputeSubmitted}
+                  onClick={() => setDisputeOpen(true)}
+                >
+                  <FiFlag /> {disputeSubmitted ? 'Dispute submitted' : 'Dispute this flag'}
+                </Button>
+              </HStack>
+            </VStack>
+          )}
+
           <Stack direction={{ base: 'column', md: 'row' }} gap={5}>
             {/* Featured artists */}
             <VStack align="stretch" flex="1" gap={2}>
@@ -301,6 +371,15 @@ export const TrackRow: React.FC<TrackRowProps> = ({
           )}
         </Box>
       )}
+
+      <DisputeModal
+        isOpen={disputeOpen}
+        onClose={() => setDisputeOpen(false)}
+        onSubmit={handleDispute}
+        contentTitle={track.title}
+        contentNoun="track"
+        isLoading={disputing}
+      />
     </Box>
   );
 };

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { tokenStorage } from '@app/lib/axiosInstance';
 import { useUserStore } from '@app/store/useUserStore';
 import { userService } from '@shared/services/userService';
@@ -7,20 +7,18 @@ import type { UserRole } from '@shared/types/user';
 
 /**
  * On app boot, if a JWT is present in storage, fetch the current user's
- * profile and hydrate the auth + onboarding stores. This is what keeps the
- * dashboard navbar showing the actual signed-in artist after a hard refresh
- * instead of falling back to seeded defaults.
+ * profile and populate the auth store. This is the single thing that makes the
+ * dashboard show the actual signed-in user after a hard refresh.
  *
- * Renders children unconditionally — hydration runs in the background. If
- * the token is invalid the axios interceptor handles redirecting to /login.
+ * Renders children unconditionally — hydration runs in the background and the
+ * session `status` on `useUserStore` (loading → authenticated/unauthenticated)
+ * is what `ProtectedRoute` gates on.
  */
 export const AuthBootstrap = ({ children }: { children: React.ReactNode }) => {
-    const [done, setDone] = useState(false);
-
     useEffect(() => {
         const token = tokenStorage.getAccessToken();
         if (!token) {
-            setDone(true);
+            useUserStore.getState().setStatus('unauthenticated');
             return;
         }
 
@@ -29,7 +27,9 @@ export const AuthBootstrap = ({ children }: { children: React.ReactNode }) => {
             .getCurrentUser()
             .then((profile) => {
                 if (cancelled) return;
+                // Onboarding store — used by the settings/profile screens.
                 useUserManagementStore.getState().hydrateFromProfile(profile);
+                // Identity store — the source of truth for the navbar/dashboard.
                 useUserStore.getState().setUser({
                     id: profile.id,
                     email: profile.email,
@@ -43,10 +43,11 @@ export const AuthBootstrap = ({ children }: { children: React.ReactNode }) => {
             })
             .catch((error) => {
                 if (cancelled) return;
+                // Token is invalid/expired — drop it and treat as signed out so
+                // ProtectedRoute redirects to /login instead of hanging.
                 console.warn('AuthBootstrap profile load failed', error);
-            })
-            .finally(() => {
-                if (!cancelled) setDone(true);
+                tokenStorage.clearTokens();
+                useUserStore.getState().setStatus('unauthenticated');
             });
 
         return () => {
@@ -54,9 +55,5 @@ export const AuthBootstrap = ({ children }: { children: React.ReactNode }) => {
         };
     }, []);
 
-    // We render children immediately so that the existing splash / route
-    // resolution stays responsive; hydration completes in the background and
-    // selectors re-render once the stores update.
-    void done;
     return <>{children}</>;
 };

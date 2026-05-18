@@ -70,6 +70,9 @@ export interface TrackDto {
   playCount: number;
   likeCount: number;
   isPublished: boolean;
+
+  /** True when the track is withheld pending a duplicate-content review. */
+  heldForDuplicateReview: boolean;
 }
 
 /**

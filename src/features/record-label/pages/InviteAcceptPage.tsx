@@ -6,6 +6,7 @@ import { useUserManagementStore } from '@/features/auth/store/useUserManagementS
 import { useChakraToast } from '@shared/hooks';
 import { recordLabelService } from '../services/recordLabelService';
 import { getApiErrorMessage } from '@/shared/lib/errorUtils';
+import { clearSession } from '@/features/auth/lib/logout';
 import type { InvitationLookupResponse } from '../types';
 
 type Phase =
@@ -25,7 +26,6 @@ const InviteAcceptPage: React.FC = () => {
     const toast = useChakraToast();
     const isAuthed = useUserStore((s) => s.isAuthenticated);
     const currentUser = useUserStore((s) => s.user);
-    const logout = useUserStore((s) => s.logout);
     const { initializeUser, setInvitationContext } = useUserManagementStore();
 
     const token = params.get('token') || '';
@@ -115,7 +115,8 @@ const InviteAcceptPage: React.FC = () => {
     };
 
     const handleSignOutAndRetry = () => {
-        logout();
+        // Clears tokens + user synchronously; SignalR teardown finishes async.
+        void clearSession();
         // After clearing auth state, the lookup re-resolves to signin-required.
         setPhase('signin-required');
     };

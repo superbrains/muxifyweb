@@ -15,25 +15,28 @@ import { MdMenu } from 'react-icons/md';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { NotificationIcon, SearchIcon, LogoutIcon, HeadphoneIcon, Setting2Icon } from '../icons/CustomIcons';
 import { useWindowWidth } from '../hooks/useWindowsWidth';
-import { useAuthedImageSrc } from '../hooks/useAuthedImageSrc';
+import { UserAvatar } from './UserAvatar';
 import { NotificationDropdown } from '@/features/notifications';
 import { useNotificationStore } from '@/features/notifications/store/useNotificationStore';
-import { useUserManagementStore, type ArtistOnboardingData, type CompanyOnboardingData, type AdManagerOnboardingData } from '@/features/auth/store/useUserManagementStore';
-import { useAuthStore } from '@/features/auth/store/useAuthStore';
+import { useUserStore } from '@app/store/useUserStore';
+import { logoutAndRedirect } from '@/features/auth/lib/logout';
+import type { UserRole } from '@shared/types/user';
 
 interface NavbarProps {
     isCollapsed: boolean;
-    userName?: string;
-    userRole?: string;
-    userAvatar?: string;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({
-    isCollapsed,
-    userName = '',
-    userRole = '',
-    userAvatar,
-}) => {
+const ROLE_LABELS: Record<UserRole, string> = {
+    fan: 'Fan',
+    artist: 'Artist',
+    dj: 'DJ',
+    creator: 'Creator',
+    record_label: 'Record Label',
+    ad_manager: 'Ad Manager',
+    admin: 'Administrator',
+};
+
+export const Navbar: React.FC<NavbarProps> = ({ isCollapsed }) => {
     const location = useLocation();
     const navigate = useNavigate();
     const bgColor = 'white';
@@ -66,67 +69,14 @@ export const Navbar: React.FC<NavbarProps> = ({
         };
     }, [connectSignalR, disconnectSignalR, fetchUnreadCount]);
 
-    // Get user data from store
-    const { getCurrentUserData, getCurrentUserType } = useUserManagementStore();
-    const userData = getCurrentUserData();
-    const userType = getCurrentUserType();
-
-    // Extract user info based on user type
-    const displayName = userData
-        ? (userType === 'artist'
-            ? (userData as ArtistOnboardingData).fullName || (userData as ArtistOnboardingData).performingName || userName
-            : userType === 'company'
-                ? (userData as CompanyOnboardingData).companyName || (userData as CompanyOnboardingData).legalCompanyName || userName
-                : (userData as AdManagerOnboardingData).fullName || userName)
-        : userName;
-
-    const displayRole = userData
-        ? (userType === 'artist'
-            ? (userData as ArtistOnboardingData).userType === 'artist' ? 'Artist'
-                : (userData as ArtistOnboardingData).userType === 'creator' ? 'Creator'
-                    : (userData as ArtistOnboardingData).userType === 'dj' ? 'DJ'
-                        : (userData as ArtistOnboardingData).userType === 'podcaster' ? 'Podcaster'
-                            : userRole
-            : userType === 'company'
-                ? (userData as CompanyOnboardingData).userType === 'record_label' ? 'Record Label'
-                    : (userData as CompanyOnboardingData).userType === 'distribution' ? 'Distribution Company'
-                        : (userData as CompanyOnboardingData).userType === 'publisher' ? 'Music Publisher'
-                            : (userData as CompanyOnboardingData).userType === 'management' ? 'Management Company'
-                                : 'Company'
-                : userType === 'ad-manager'
-                    ? 'Ad Manager'
-                    : userRole)
-        : userRole;
-
-    const rawAvatar = userData
-        ? (userType === 'artist'
-            ? (userData as ArtistOnboardingData).displayPicture
-            : userType === 'company'
-                ? (userData as CompanyOnboardingData).labelLogo
-                : (userData as AdManagerOnboardingData).companyLogo)
-        : userAvatar;
-    // Avatars stored on the backend come back as /api/v1/media/... proxy paths
-    // that need a JWT; resolve them to blob URLs the browser can render.
-    const displayAvatar = useAuthedImageSrc(rawAvatar);
+    // The signed-in user — the single source of truth, populated by the login
+    // flow and by AuthBootstrap on every app boot, for every role.
+    const user = useUserStore((s) => s.user);
+    const displayName = user?.name?.trim() ?? '';
+    const displayRole = user?.role ? ROLE_LABELS[user.role] : '';
 
     const handleLogout = async () => {
-        // Disconnect from SignalR
-        await disconnectSignalR();
-
-        // Clear user management store
-        const { clearAllUsers } = useUserManagementStore.getState();
-        clearAllUsers();
-
-        // Clear auth store
-        const { logout } = useAuthStore.getState();
-        logout();
-
-        // Clear notification store (optional, but good practice)
-        const { clearAllNotifications } = useNotificationStore.getState();
-        clearAllNotifications();
-
-        console.log('Logout clicked - All user data cleared');
-        navigate('/login');
+        await logoutAndRedirect(navigate);
     };
 
     // Get page title based on current route
@@ -266,23 +216,13 @@ export const Navbar: React.FC<NavbarProps> = ({
                             h="auto"
                         >
                             <HStack gap={3}>
-                                <Box
-                                    width={8}
-                                    height={8}
-                                    borderRadius="full"
+                                <UserAvatar
+                                    name={displayName}
+                                    src={user?.avatar}
+                                    size="sm"
                                     bg="red.500"
                                     color="white"
-                                    display="flex"
-                                    alignItems="center"
-                                    justifyContent="center"
-                                    fontSize="sm"
-                                    fontWeight="bold"
-                                    backgroundImage={displayAvatar ? `url(${displayAvatar})` : undefined}
-                                    backgroundSize="cover"
-                                    backgroundPosition="center"
-                                >
-                                    {!displayAvatar && displayName?.charAt(0).toUpperCase()}
-                                </Box>
+                                />
                                 {showFullNavbar && (
                                     <VStack gap={1} align="start">
                                         <Text

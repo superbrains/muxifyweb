@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Box, Button, Flex, HStack, Text, VStack } from '@chakra-ui/react';
 import { FiPlus, FiSend, FiZap } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
-import { useAuthStore } from '@/features/auth/store/useAuthStore';
+import { useUserStore } from '@app/store/useUserStore';
 import {
     useUserManagementStore,
     type CompanyOnboardingData,
@@ -27,7 +27,7 @@ const STATUS_PILL: Record<
 
 export const DashboardHero: React.FC<DashboardHeroProps> = ({ verificationStatus }) => {
     const navigate = useNavigate();
-    const user = useAuthStore((s) => s.user);
+    const user = useUserStore((s) => s.user);
     const { getCurrentUserData, getCurrentUserType } = useUserManagementStore();
     const [inviteOpen, setInviteOpen] = useState(false);
     const [payoutOpen, setPayoutOpen] = useState(false);

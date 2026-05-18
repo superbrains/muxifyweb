@@ -62,6 +62,12 @@ export const trackService = {
     await axiosInstance.delete(`/music/${id}`);
   },
 
+  /** Dispute a duplicate-detection hold on a track. The reason is sent to moderators. */
+  disputeTrack: async (id: string, reason: string): Promise<TrackDto> => {
+    const response = await axiosInstance.post<TrackDto>(`/music/${id}/dispute`, { reason });
+    return response.data;
+  },
+
   // Re-exported here so consumers don't need to import from two places.
   toFeaturedArtistDto: (raw: unknown): FeaturedArtistDto => raw as FeaturedArtistDto,
 };

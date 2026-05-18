@@ -23,7 +23,7 @@ import {
 import { userService } from '@/shared/services/userService';
 import type { UpdateProfileRequest } from '@/features/onboarding/types';
 import { getApiErrorMessage } from '@/shared/lib/errorUtils';
-import { useAuthedImageSrc } from '@/shared/hooks/useAuthedImageSrc';
+import { UserAvatar } from '@/shared/components';
 
 type ProfileFormData = {
     fullName: string;
@@ -140,7 +140,6 @@ export const ProfileTab: React.FC = () => {
     const companyLabelLogo = userType === 'company' && isCompanyData(userData) ? userData.labelLogo : undefined;
     const adManagerLogo = userType === 'ad-manager' && isAdManagerData(userData) ? userData.companyLogo : undefined;
     const rawProfileImage = artistDisplayPicture || companyLabelLogo || adManagerLogo;
-    const profileImage = useAuthedImageSrc(rawProfileImage);
     
     // Update form data when user data changes
     useEffect(() => {
@@ -260,26 +259,17 @@ export const ProfileTab: React.FC = () => {
             <HStack justify="space-between" align="start">
                 <HStack gap={4}>
                     <Box
-                        width={12}
-                        height={12}
-                        borderRadius="full"
-                        bg="gray.200"
-                        backgroundImage={profileImage ? `url(${profileImage})` : undefined}
-                        backgroundSize="cover"
-                        backgroundPosition="center"
-                        display="flex"
-                        alignItems="center"
-                        justifyContent="center"
-                        color="gray.600"
-                        fontSize="sm"
-                        fontWeight="bold"
                         cursor={isEditing ? 'pointer' : 'default'}
                         onClick={handlePhotoClick}
                         title={isEditing ? 'Click to change your photo' : undefined}
                     >
-                        {!profileImage
-                            ? (formData.fullName?.charAt(0).toUpperCase() || 'U')
-                            : null}
+                        <UserAvatar
+                            name={formData.fullName}
+                            src={rawProfileImage}
+                            size="lg"
+                            bg="gray.200"
+                            color="gray.600"
+                        />
                     </Box>
                     <input
                         ref={fileInputRef}
