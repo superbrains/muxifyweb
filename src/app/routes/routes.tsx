@@ -61,6 +61,7 @@ const VerificationCenterPage = lazy(() => import('@/features/admin/pages/Verific
 const AdminUsersPage = lazy(() => import('@/features/admin/pages/UsersPage'));
 const AdminUserDetailPage = lazy(() => import('@/features/admin/pages/UserDetailPage'));
 const AdminSupportPage = lazy(() => import('@/features/admin/pages/SupportPage'));
+const AdminSettingsPage = lazy(() => import('@/features/admin/pages/AdminSettingsPage'));
 
 export const appRoutes: RouteObject[] = [
     { path: '/login', element: <Login /> },
@@ -127,6 +128,7 @@ export const appRoutes: RouteObject[] = [
                     { path: '/admin/users', element: <AdminUsersPage /> },
                     { path: '/admin/users/:userId', element: <AdminUserDetailPage /> },
                     { path: '/admin/support', element: <AdminSupportPage /> },
+                    { path: '/admin/settings', element: <AdminSettingsPage /> },
                 ],
             },
         ],

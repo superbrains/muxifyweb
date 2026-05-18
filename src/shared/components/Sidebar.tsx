@@ -66,6 +66,7 @@ const adminNavItems: NavItem[] = [
     { icon: VerifyIcon, label: 'Verifications', path: '/admin/verifications' },
     { icon: FansAndSubscribersIcon, label: 'Users', path: '/admin/users' },
     { icon: HeadphoneIcon, label: 'Support', path: '/admin/support' },
+    { icon: Setting2Icon, label: 'Settings', path: '/admin/settings' },
 ];
 
 export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed }) => {
