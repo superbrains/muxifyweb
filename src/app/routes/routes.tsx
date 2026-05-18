@@ -2,6 +2,7 @@ import { lazy } from 'react';
 import type { RouteObject } from 'react-router-dom';
 import ProtectedRoute from './ProtectedRoute';
 import DashboardRouter from './DashboardRouter';
+import AdminRoute from './AdminRoute';
 
 // Lazy imports
 const Login = lazy(() => import('@auth/pages/Login'));
@@ -54,6 +55,12 @@ const SplitEditorPage = lazy(() => import('@/features/record-label/pages/SplitEd
 const PayoutsPage = lazy(() => import('@/features/record-label/pages/PayoutsPage'));
 const CompanySettingsPage = lazy(() => import('@/features/record-label/pages/CompanySettingsPage'));
 const InviteAcceptPage = lazy(() => import('@/features/record-label/pages/InviteAcceptPage'));
+// Super Admin
+const AdminOverviewPage = lazy(() => import('@/features/admin/pages/AdminOverviewPage'));
+const VerificationCenterPage = lazy(() => import('@/features/admin/pages/VerificationCenterPage'));
+const AdminUsersPage = lazy(() => import('@/features/admin/pages/UsersPage'));
+const AdminUserDetailPage = lazy(() => import('@/features/admin/pages/UserDetailPage'));
+const AdminSupportPage = lazy(() => import('@/features/admin/pages/SupportPage'));
 
 export const appRoutes: RouteObject[] = [
     { path: '/login', element: <Login /> },
@@ -111,6 +118,17 @@ export const appRoutes: RouteObject[] = [
             { path: '/ads/spending', element: <AdsSpending /> },
             { path: '/ads/wallet', element: <AdsWallet /> },
             { path: '/ads', element: <AdsEmptyState /> },
+            // Super Admin routes (role-gated by AdminRoute)
+            {
+                element: <AdminRoute />,
+                children: [
+                    { path: '/admin', element: <AdminOverviewPage /> },
+                    { path: '/admin/verifications', element: <VerificationCenterPage /> },
+                    { path: '/admin/users', element: <AdminUsersPage /> },
+                    { path: '/admin/users/:userId', element: <AdminUserDetailPage /> },
+                    { path: '/admin/support', element: <AdminSupportPage /> },
+                ],
+            },
         ],
     },
 ];

@@ -24,9 +24,12 @@ import {
     AdLibraryIcon,
     ArtistIcon,
     Setting2Icon,
+    VerifyIcon,
+    HeadphoneIcon,
 } from '@/shared/icons/CustomIcons';
 import { useWindowWidth } from '../hooks/useWindowsWidth';
 import { useUserType } from '@/features/auth/hooks/useUserType';
+import { useIsAdmin } from '@app/hooks/useIsAdmin';
 
 interface SidebarProps {
     isCollapsed: boolean;
@@ -58,12 +61,20 @@ const recordLabelNavItems: NavItem[] = [
     { icon: Setting2Icon, label: 'Settings', path: '/label/settings' },
 ];
 
+const adminNavItems: NavItem[] = [
+    { icon: DashboardIcon, label: 'Overview', path: '/admin' },
+    { icon: VerifyIcon, label: 'Verifications', path: '/admin/verifications' },
+    { icon: FansAndSubscribersIcon, label: 'Users', path: '/admin/users' },
+    { icon: HeadphoneIcon, label: 'Support', path: '/admin/support' },
+];
+
 export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed }) => {
     const navigate = useNavigate();
     const location = useLocation();
     const { toggleCollapse, setMobileOpen, isMobileOpen } = useSidebarStore();
     const [isInitialRender, setIsInitialRender] = React.useState(true);
     const { isRecordLabel, isAdManager } = useUserType();
+    const isAdmin = useIsAdmin();
 
     const bgColor = 'white';
     const borderColor = 'gray.200';
@@ -91,6 +102,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed }) => {
 
     // Get the appropriate nav items based on user type
     const getNavItems = () => {
+        if (isAdmin) return adminNavItems;
         if (isAdManager) return adManagerNavItems;
         if (isRecordLabel) return recordLabelNavItems;
         return artistNavItems;
