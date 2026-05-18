@@ -22,6 +22,7 @@ import { IoClose } from "react-icons/io5";
 import { useUserType } from '@/features/auth/hooks/useUserType';
 import { ArtistDropdown } from '@/shared/components/ArtistDropdown';
 import { earningsService } from '@/features/earnings-and-royalty/services/earningsService';
+import type { ArtistPayoutDto } from '@/features/earnings-and-royalty/types';
 
 export const Payments: React.FC = () => {
     const { isRecordLabel } = useUserType();
@@ -37,6 +38,12 @@ export const Payments: React.FC = () => {
 
     const [isInitialLoading, setIsInitialLoading] = useState(true);
 
+    // Whether the artist is signed to a record label. Label-managed artists
+    // cannot self-initiate payouts (the label triggers them); they can only
+    // view their payouts and initiate withdrawals of their balance.
+    const [isLabelManaged, setIsLabelManaged] = useState(false);
+    const [labelPayouts, setLabelPayouts] = useState<ArtistPayoutDto[]>([]);
+
     // Fetch payout methods and earnings balance on mount
     useEffect(() => {
         const loadData = async () => {
@@ -47,6 +54,16 @@ export const Payments: React.FC = () => {
                 const summaryResponse = await earningsService.getSummary();
                 if (summaryResponse.data) {
                     setEarningBalance(summaryResponse.data.availableForWithdrawalDisplay);
+
+                    const labelManaged = summaryResponse.data.isLabelManaged;
+                    setIsLabelManaged(labelManaged);
+
+                    // Label-managed artists see a read-only list of payouts
+                    // their record label triggered for them.
+                    if (labelManaged) {
+                        const payoutsResponse = await earningsService.getArtistPayouts();
+                        setLabelPayouts(payoutsResponse.data.payouts ?? []);
+                    }
                 }
             } catch (error) {
                 console.error('Failed to load payment data:', error);
@@ -126,8 +143,10 @@ export const Payments: React.FC = () => {
         setPayoutAmount('');
 
         toaster.create({
-            title: 'Payout Initiated',
-            description: 'Your payout request has been submitted',
+            title: isLabelManaged ? 'Withdrawal Initiated' : 'Payout Initiated',
+            description: isLabelManaged
+                ? 'Your withdrawal request has been submitted'
+                : 'Your payout request has been submitted',
             type: 'success',
             duration: 3000,
         });
@@ -143,6 +162,10 @@ export const Payments: React.FC = () => {
         const formattedDate = date.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
         return `${time} - ${formattedDate}`;
     };
+
+    // Label-managed artists initiate a withdrawal; independent artists process a payout.
+    const moneyOutVerb = isLabelManaged ? 'Withdraw Earnings' : 'Quick Payout';
+    const moneyOutAction = isLabelManaged ? 'Initiate Withdrawal' : 'Continue';
 
     // Show loading spinner during initial load
     if (isInitialLoading) {
@@ -200,7 +223,7 @@ export const Payments: React.FC = () => {
                                 flexDirection="column"
                             >
                                 <Text fontSize="sm" fontWeight="semibold" color="gray.900" mb={6} textAlign="center">
-                                    Quick Payout
+                                    {moneyOutVerb}
                                 </Text>
                                 <Box flex="1" display="flex" flexDirection="column" justifyContent="center" alignItems="center">
                                     <EmptyWalletIcon boxSize={12} mx="auto" mb={3} />
@@ -308,7 +331,7 @@ export const Payments: React.FC = () => {
                                         loadingText="Processing..."
                                         disabled={!payoutAmount}
                                     >
-                                        Continue
+                                        {moneyOutAction}
                                     </Button>
                                 </VStack>
                             </Box>
@@ -316,105 +339,105 @@ export const Payments: React.FC = () => {
                     </VStack>
 
                     {/* Right Section */}
-                    <VStack align="stretch" gap={4}>
-                        {payoutHistory.length === 0 ? (
-                            <Box
-                                border="1px solid"
-                                borderColor="gray.200"
-                                borderRadius="md"
-                                p={4}
-                                minH="400px"
-                                display="flex"
-                                flexDirection="column"
-                            >
-                                <Text fontSize="sm" fontWeight="semibold" color="gray.900" mb={6} textAlign="center">
-                                    Payout History
-                                </Text>
-                                <Box flex="1" display="flex" flexDirection="column" justifyContent="center" alignItems="center">
-                                    <Receipt2Icon boxSize={12} mx="auto" mb={3} />
-                                    <Text fontSize="xs" color="gray.500">
-                                        No transaction history
+                    {isLabelManaged ? (
+                        <LabelPayoutsPanel payouts={labelPayouts} formatCurrency={formatCurrency} formatDate={formatDate} />
+                    ) : (
+                        <VStack align="stretch" gap={4}>
+                            {payoutHistory.length === 0 ? (
+                                <Box
+                                    border="1px solid"
+                                    borderColor="gray.200"
+                                    borderRadius="md"
+                                    p={4}
+                                    minH="400px"
+                                    display="flex"
+                                    flexDirection="column"
+                                >
+                                    <Text fontSize="sm" fontWeight="semibold" color="gray.900" mb={6} textAlign="center">
+                                        Payout History
                                     </Text>
+                                    <Box flex="1" display="flex" flexDirection="column" justifyContent="center" alignItems="center">
+                                        <Receipt2Icon boxSize={12} mx="auto" mb={3} />
+                                        <Text fontSize="xs" color="gray.500">
+                                            No transaction history
+                                        </Text>
+                                    </Box>
                                 </Box>
-                            </Box>
-                        ) : (
-                            <Box
-                                border="1px solid"
-                                borderColor="gray.200"
-                                borderRadius="md"
-                                p={6}
-                            >
-                                <Text fontSize="sm" fontWeight="semibold" color="gray.900" mb={4}>
-                                    Payout History
-                                </Text>
-                                <VStack align="stretch" maxH="600px" overflowY="auto">
-                                    {payoutHistory.map((item) => (
-                                        <>
-                                            <Box
-                                                key={item.id}
-                                            >
-                                                <HStack justify="space-between" align="start">
-                                                    <HStack gap={3}>
-                                                        <Box
-                                                            w={8}
-                                                            h={8}
-                                                            borderRadius="full"
-                                                            bg={item.status === 'success' ? 'primary.100' : 'red.50'}
-                                                            display="flex"
-                                                            alignItems="center"
-                                                            justifyContent="center"
-                                                        >
-                                                            <Icon
-                                                                as={item.status === 'success' ? FaCheck : IoClose}
-                                                                boxSize={4}
-                                                                color="primary.500"
-                                                            />
-                                                        </Box>
-                                                        <VStack align="start" gap={0}>
-                                                            <Text fontSize="xs" fontWeight="medium" color="gray.900">
-                                                                {item.accountName}
+                            ) : (
+                                <Box
+                                    border="1px solid"
+                                    borderColor="gray.200"
+                                    borderRadius="md"
+                                    p={6}
+                                >
+                                    <Text fontSize="sm" fontWeight="semibold" color="gray.900" mb={4}>
+                                        Payout History
+                                    </Text>
+                                    <VStack align="stretch" maxH="600px" overflowY="auto">
+                                        {payoutHistory.map((item) => (
+                                            <React.Fragment key={item.id}>
+                                                <Box>
+                                                    <HStack justify="space-between" align="start">
+                                                        <HStack gap={3}>
+                                                            <Box
+                                                                w={8}
+                                                                h={8}
+                                                                borderRadius="full"
+                                                                bg={item.status === 'success' ? 'primary.100' : 'red.50'}
+                                                                display="flex"
+                                                                alignItems="center"
+                                                                justifyContent="center"
+                                                            >
+                                                                <Icon
+                                                                    as={item.status === 'success' ? FaCheck : IoClose}
+                                                                    boxSize={4}
+                                                                    color="primary.500"
+                                                                />
+                                                            </Box>
+                                                            <VStack align="start" gap={0}>
+                                                                <Text fontSize="xs" fontWeight="medium" color="gray.900">
+                                                                    {item.accountName}
+                                                                </Text>
+                                                                <Text fontSize="xs" color="gray.500">
+                                                                    {item.accountNumber} - {item.bankName}
+                                                                </Text>
+                                                            </VStack>
+                                                        </HStack>
+                                                        <VStack align="end" gap={0}>
+                                                            <Text
+                                                                fontSize="13px"
+                                                                fontWeight="medium"
+                                                                color={item.status === 'success' ? 'primary.500' : 'gray.400'}
+                                                            >
+                                                                {item.status === 'success' ? '-' : ''}{formatCurrency(item.amount)}
                                                             </Text>
-                                                            <Text fontSize="xs" color="gray.500">
-                                                                {item.accountNumber} - {item.bankName}
+                                                            <Text fontSize="xs" color="gray.400">
+                                                                {formatDate(item.date)}
                                                             </Text>
-
                                                         </VStack>
                                                     </HStack>
-                                                    <VStack align="end" gap={0}>
-                                                        <Text
-                                                            fontSize="13px"
-                                                            fontWeight="medium"
-                                                            color={item.status === 'success' ? 'primary.500' : 'gray.400'}
-                                                        >
-                                                            {item.status === 'success' ? '-' : ''}{formatCurrency(item.amount)}
-                                                        </Text>
-                                                        <Text fontSize="xs" color="gray.400">
-                                                            {formatDate(item.date)}
-                                                        </Text>
-                                                    </VStack>
-                                                </HStack>
-                                            </Box>
-                                            <hr />
-                                        </>
+                                                </Box>
+                                                <hr />
+                                            </React.Fragment>
+                                        ))}
+                                    </VStack>
+                                </Box>
+                            )}
 
-                                    ))}
-                                </VStack>
-                            </Box>
-                        )}
-
-                        {payoutHistory.length > 0 && (
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                fontSize="xs"
-                                fontWeight="medium"
-                                color="gray.700"
-                                _hover={{ bg: 'gray.50' }}
-                            >
-                                See All
-                            </Button>
-                        )}
-                    </VStack>
+                            {payoutHistory.length > 0 && (
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    fontSize="xs"
+                                    fontWeight="medium"
+                                    color="gray.700"
+                                    _hover={{ bg: 'gray.50' }}
+                                >
+                                    See All
+                                </Button>
+                            )}
+                        </VStack>
+                    )}
                 </Grid>
 
             </Box>
@@ -445,6 +468,107 @@ export const Payments: React.FC = () => {
                 onClose={handleSuccessClose}
                 onDone={handleSuccessClose}
             />
+        </Box>
+    );
+};
+
+// ----------------------------------------------------------------------------
+// Read-only panel showing the payouts a record label triggered for the artist.
+// ----------------------------------------------------------------------------
+interface LabelPayoutsPanelProps {
+    payouts: ArtistPayoutDto[];
+    formatCurrency: (amount: number) => string;
+    formatDate: (dateString: string) => string;
+}
+
+const isSettledStatus = (status: string) => status === 'Paid';
+const isFailedStatus = (status: string) => status === 'Failed' || status === 'Cancelled';
+
+const LabelPayoutsPanel: React.FC<LabelPayoutsPanelProps> = ({ payouts, formatCurrency, formatDate }) => {
+    if (payouts.length === 0) {
+        return (
+            <Box
+                border="1px solid"
+                borderColor="gray.200"
+                borderRadius="md"
+                p={4}
+                minH="400px"
+                display="flex"
+                flexDirection="column"
+            >
+                <Text fontSize="sm" fontWeight="semibold" color="gray.900" mb={6} textAlign="center">
+                    Payouts
+                </Text>
+                <Box flex="1" display="flex" flexDirection="column" justifyContent="center" alignItems="center">
+                    <Receipt2Icon boxSize={12} mx="auto" mb={3} />
+                    <Text fontSize="xs" color="gray.500">
+                        Your label has not issued any payouts yet
+                    </Text>
+                </Box>
+            </Box>
+        );
+    }
+
+    return (
+        <Box border="1px solid" borderColor="gray.200" borderRadius="md" p={6}>
+            <Text fontSize="sm" fontWeight="semibold" color="gray.900" mb={1}>
+                Payouts
+            </Text>
+            <Text fontSize="xs" color="gray.500" mb={4}>
+                Issued by your record label
+            </Text>
+            <VStack align="stretch" maxH="600px" overflowY="auto">
+                {payouts.map((item) => {
+                    const settled = isSettledStatus(item.status);
+                    const failed = isFailedStatus(item.status);
+                    return (
+                        <React.Fragment key={item.id}>
+                            <Box>
+                                <HStack justify="space-between" align="start">
+                                    <HStack gap={3}>
+                                        <Box
+                                            w={8}
+                                            h={8}
+                                            borderRadius="full"
+                                            bg={settled ? 'primary.100' : failed ? 'red.50' : 'gray.100'}
+                                            display="flex"
+                                            alignItems="center"
+                                            justifyContent="center"
+                                        >
+                                            <Icon
+                                                as={failed ? IoClose : FaCheck}
+                                                boxSize={4}
+                                                color={failed ? 'red.500' : 'primary.500'}
+                                            />
+                                        </Box>
+                                        <VStack align="start" gap={0}>
+                                            <Text fontSize="xs" fontWeight="medium" color="gray.900">
+                                                {item.status}
+                                            </Text>
+                                            <Text fontSize="xs" color="gray.500">
+                                                Net {formatCurrency(item.netAmountDisplay)}
+                                            </Text>
+                                        </VStack>
+                                    </HStack>
+                                    <VStack align="end" gap={0}>
+                                        <Text
+                                            fontSize="13px"
+                                            fontWeight="medium"
+                                            color={settled ? 'primary.500' : 'gray.500'}
+                                        >
+                                            {formatCurrency(item.amountDisplay)}
+                                        </Text>
+                                        <Text fontSize="xs" color="gray.400">
+                                            {formatDate(item.initiatedAt)}
+                                        </Text>
+                                    </VStack>
+                                </HStack>
+                            </Box>
+                            <hr />
+                        </React.Fragment>
+                    );
+                })}
+            </VStack>
         </Box>
     );
 };

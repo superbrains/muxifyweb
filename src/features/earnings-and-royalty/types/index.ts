@@ -32,6 +32,10 @@ export interface EarningsSummaryDto {
   earningsThisMonth: number;
   earningsLastMonth: number;
   growthPercentage: number;
+
+  // True when the artist is signed to a record label. Label-managed artists
+  // cannot self-initiate payouts (the label triggers them); they only view payouts.
+  isLabelManaged: boolean;
 }
 
 // ============================================================================
@@ -111,6 +115,37 @@ export interface WithdrawalDto {
 
 export interface WithdrawalHistoryDto {
   withdrawals: WithdrawalDto[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+
+// ============================================================================
+// Artist Payout DTOs (label-triggered payouts, read-only for the recipient)
+// ============================================================================
+
+export type PayoutStatus = "Pending" | "Processing" | "Paid" | "Failed" | "Cancelled";
+
+export interface ArtistPayoutDto {
+  id: string;
+  batchId: string;
+  amountMinor: number;
+  amountDisplay: number;
+  muxifyFeeMinor: number;
+  muxifyFeeDisplay: number;
+  netAmountMinor: number;
+  netAmountDisplay: number;
+  currency: string;
+  status: PayoutStatus;
+  reference?: string;
+  initiatedAt: string;
+  completedAt?: string;
+  failureReason?: string;
+}
+
+export interface ArtistPayoutHistoryDto {
+  payouts: ArtistPayoutDto[];
   totalCount: number;
   page: number;
   pageSize: number;

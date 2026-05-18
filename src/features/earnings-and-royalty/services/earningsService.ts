@@ -6,6 +6,7 @@ import type {
   WithdrawalRequest,
   WithdrawalResponse,
   WithdrawalHistoryDto,
+  ArtistPayoutHistoryDto,
   PaginationOptions,
   EarningsOverview,
   DashboardAnalyticsDto,
@@ -66,6 +67,18 @@ export const earningsService = {
     const { page = 1, pageSize = 20 } = options;
     return api.get<WithdrawalHistoryDto>(
       `${EARNINGS_BASE_PATH}/withdrawals?page=${page}&pageSize=${pageSize}`
+    );
+  },
+
+  /**
+   * Get paginated, read-only list of label-triggered payouts where the
+   * current artist is the recipient
+   * @param options - Pagination options (page, pageSize)
+   */
+  getArtistPayouts: (options: PaginationOptions = {}) => {
+    const { page = 1, pageSize = 20 } = options;
+    return api.get<ArtistPayoutHistoryDto>(
+      `${EARNINGS_BASE_PATH}/payouts?page=${page}&pageSize=${pageSize}`
     );
   },
 
