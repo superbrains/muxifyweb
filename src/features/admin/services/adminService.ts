@@ -80,6 +80,9 @@ export const adminService = {
     activateUser: async (userId: string): Promise<void> => {
         await api.post(`${BASE}/users/${userId}/activate`);
     },
+    changeUserRole: async (userId: string, role: string): Promise<void> => {
+        await api.put(`${BASE}/users/${userId}/role`, { role });
+    },
 
     /* ----------------------------- Support tickets --------------------------- */
     getTickets: async (query: TicketQuery): Promise<TicketPageDto> => {

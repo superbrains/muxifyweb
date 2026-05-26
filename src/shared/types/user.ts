@@ -3,6 +3,7 @@ export type UserRole =
   | "artist"
   | "dj"
   | "creator"
+  | "podcaster"
   | "record_label"
   | "ad_manager"
   | "admin";

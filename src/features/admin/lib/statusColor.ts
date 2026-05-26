@@ -114,6 +114,7 @@ export const roleLabel = (role: string): string => {
         artist: 'Artist',
         dj: 'DJ',
         creator: 'Creator',
+        podcaster: 'Podcaster',
         record_label: 'Record Label',
         ad_manager: 'Ad Manager',
         fan: 'Fan',

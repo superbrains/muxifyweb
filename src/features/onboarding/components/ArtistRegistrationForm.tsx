@@ -14,12 +14,22 @@ import { PhoneInput } from 'react-international-phone';
 import 'react-international-phone/style.css';
 import { useChakraToast } from '@shared/hooks';
 import { PasswordInput } from "@/components/ui/password-input";
-import { useUserManagementStore } from '@/features/auth/store/useUserManagementStore';
+import { useUserManagementStore, type ArtistSubType } from '@/features/auth/store/useUserManagementStore';
 import { authService } from '@/features/auth/services/authService';
 import { useUserStore } from '@/app/store/useUserStore';
 import { getApiErrorMessage } from '@/shared/lib/errorUtils';
 
+type CreatorRole = 'artist' | 'creator' | 'dj' | 'podcaster';
+
+const CREATOR_ROLE_OPTIONS: ReadonlyArray<{ value: CreatorRole; label: string }> = [
+    { value: 'artist', label: 'Artist' },
+    { value: 'creator', label: 'Creator' },
+    { value: 'dj', label: 'DJ' },
+    { value: 'podcaster', label: 'Podcaster' },
+];
+
 interface ArtistRegistrationData {
+    role: CreatorRole | '';
     email: string;
     phone: string;
     password: string;
@@ -27,6 +37,7 @@ interface ArtistRegistrationData {
 }
 
 interface ArtistRegistrationErrors {
+    role?: string;
     email?: string;
     phone?: string;
     password?: string;
@@ -35,6 +46,7 @@ interface ArtistRegistrationErrors {
 
 export const ArtistRegistrationForm: React.FC = () => {
     const [formData, setFormData] = useState<ArtistRegistrationData>({
+        role: '',
         email: '',
         phone: '',
         password: '',
@@ -66,6 +78,10 @@ export const ArtistRegistrationForm: React.FC = () => {
 
     const validateForm = (): boolean => {
         const newErrors: ArtistRegistrationErrors = {};
+
+        if (!formData.role) {
+            newErrors.role = 'Please select what kind of creator you are';
+        }
 
         if (!formData.email) {
             newErrors.email = 'Email is required';
@@ -102,12 +118,12 @@ export const ArtistRegistrationForm: React.FC = () => {
                 email: formData.email,
                 password: formData.password,
                 phone: formData.phone,
-                role: 'artist',
+                role: formData.role as CreatorRole,
             });
 
             login(result.user);
 
-            const userId = initializeUser('artist', formData.email, formData.phone, 'artist');
+            const userId = initializeUser('artist', formData.email, formData.phone, formData.role as ArtistSubType);
 
             toast.success('Registration successful!', 'Please verify your email to continue.');
             navigate('/onboarding/artist/verify-email', {
@@ -134,6 +150,39 @@ export const ArtistRegistrationForm: React.FC = () => {
 
             <Box as="form" onSubmit={handleSubmit} w="full">
                 <Stack gap={3}>
+                    {/* Role */}
+                    <Box>
+                        <Text fontSize="xs" fontWeight="medium" color="grey.500" mb={1}>
+                            I am a...
+                        </Text>
+                        <select
+                            name="role"
+                            value={formData.role}
+                            onChange={handleChange}
+                            style={{
+                                width: '100%',
+                                height: '36px',
+                                fontSize: '12px',
+                                padding: '0 10px',
+                                borderRadius: '6px',
+                                backgroundColor: '#f7fafc',
+                                border: `1px solid ${errors.role ? '#fc8181' : 'transparent'}`,
+                                color: formData.role ? 'inherit' : '#a0aec0',
+                                outline: 'none',
+                            }}
+                        >
+                            <option value="" disabled>Select your creator type…</option>
+                            {CREATOR_ROLE_OPTIONS.map((opt) => (
+                                <option key={opt.value} value={opt.value}>{opt.label}</option>
+                            ))}
+                        </select>
+                        {errors.role && (
+                            <Text color="red.500" fontSize="xs" mt={0.5}>
+                                {errors.role}
+                            </Text>
+                        )}
+                    </Box>
+
                     {/* Email */}
                     <Box>
                         <Text fontSize="xs" fontWeight="medium" color="grey.500" mb={1}>

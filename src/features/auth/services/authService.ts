@@ -13,7 +13,7 @@ export interface RegisterRequest {
   password: string;
   name?: string;
   phone?: string;
-  role?: "artist" | "dj" | "creator" | "record_label";
+  role?: "artist" | "dj" | "creator" | "podcaster" | "record_label";
   invitationToken?: string;
 }
 

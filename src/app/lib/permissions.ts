@@ -46,6 +46,17 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission> = {
     canAddArtists: false,
     canViewSettings: true,
   },
+  podcaster: {
+    canUploadMusic: true,
+    canUploadVideo: true,
+    canViewEarnings: true,
+    canViewLeaderboard: true,
+    canViewFans: true,
+    canViewSales: true,
+    canViewPayments: true,
+    canAddArtists: false,
+    canViewSettings: true,
+  },
   record_label: {
     canUploadMusic: true,
     canUploadVideo: true,

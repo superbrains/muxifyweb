@@ -7,6 +7,7 @@ import { AnimatedTabs, ConfirmModal } from '@shared/components';
 import { StatusBadge } from '../components/StatusBadge';
 import { ReasonDialog } from '../components/ReasonDialog';
 import { UserDetailHeader } from '../components/users/UserDetailHeader';
+import { ChangeUserRoleModal } from '../components/users/ChangeUserRoleModal';
 import { useActivateUser, useSuspendUser, useUser } from '../hooks/useUsers';
 import { verificationStatusStyle } from '../lib/statusColor';
 import { adminDateTime, formatCount, formatMinorAmount } from '../lib/format';
@@ -113,6 +114,7 @@ const UserDetailPage: React.FC = () => {
     const [tab, setTab] = React.useState('profile');
     const [suspendOpen, setSuspendOpen] = React.useState(false);
     const [activateOpen, setActivateOpen] = React.useState(false);
+    const [roleOpen, setRoleOpen] = React.useState(false);
 
     const suspend = useSuspendUser();
     const activate = useActivateUser();
@@ -150,6 +152,7 @@ const UserDetailPage: React.FC = () => {
                         user={data}
                         onSuspend={() => setSuspendOpen(true)}
                         onActivate={() => setActivateOpen(true)}
+                        onChangeRole={() => setRoleOpen(true)}
                         actionPending={suspend.isPending || activate.isPending}
                     />
 
@@ -202,6 +205,12 @@ const UserDetailPage: React.FC = () => {
                         confirmText="Reactivate"
                         confirmColor="blue"
                         isLoading={activate.isPending}
+                    />
+
+                    <ChangeUserRoleModal
+                        isOpen={roleOpen}
+                        onClose={() => setRoleOpen(false)}
+                        user={data}
                     />
                 </>
             )}

@@ -9,6 +9,7 @@ interface UserDetailHeaderProps {
     user: AdminUserDetailDto;
     onSuspend: () => void;
     onActivate: () => void;
+    onChangeRole: () => void;
     actionPending?: boolean;
 }
 
@@ -17,9 +18,11 @@ export const UserDetailHeader: React.FC<UserDetailHeaderProps> = ({
     user,
     onSuspend,
     onActivate,
+    onChangeRole,
     actionPending,
 }) => {
     const suspended = user.status === 'Suspended';
+    const isAdmin = user.role === 'admin';
 
     return (
         <Box bg="white" borderRadius="xl" border="1px solid" borderColor="gray.100" p={5}>
@@ -64,21 +67,35 @@ export const UserDetailHeader: React.FC<UserDetailHeaderProps> = ({
                     </VStack>
                 </HStack>
 
-                <Button
-                    size="sm"
-                    fontSize="xs"
-                    fontWeight="medium"
-                    borderRadius="10px"
-                    onClick={suspended ? onActivate : onSuspend}
-                    disabled={actionPending}
-                    bg={suspended ? '#16A34A' : 'white'}
-                    color={suspended ? 'white' : '#C53030'}
-                    borderWidth={suspended ? '0' : '1px'}
-                    borderColor="#FECACA"
-                    _hover={{ bg: suspended ? '#15803D' : '#FEF2F2' }}
-                >
-                    {suspended ? 'Reactivate account' : 'Suspend account'}
-                </Button>
+                <HStack gap={2}>
+                    <Button
+                        size="sm"
+                        fontSize="xs"
+                        fontWeight="medium"
+                        borderRadius="10px"
+                        variant="outline"
+                        onClick={onChangeRole}
+                        disabled={actionPending || isAdmin}
+                        title={isAdmin ? 'Admin role changes go through Admin Management.' : undefined}
+                    >
+                        Change role
+                    </Button>
+                    <Button
+                        size="sm"
+                        fontSize="xs"
+                        fontWeight="medium"
+                        borderRadius="10px"
+                        onClick={suspended ? onActivate : onSuspend}
+                        disabled={actionPending}
+                        bg={suspended ? '#16A34A' : 'white'}
+                        color={suspended ? 'white' : '#C53030'}
+                        borderWidth={suspended ? '0' : '1px'}
+                        borderColor="#FECACA"
+                        _hover={{ bg: suspended ? '#15803D' : '#FEF2F2' }}
+                    >
+                        {suspended ? 'Reactivate account' : 'Suspend account'}
+                    </Button>
+                </HStack>
             </HStack>
         </Box>
     );

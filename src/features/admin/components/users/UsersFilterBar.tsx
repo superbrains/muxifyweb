@@ -14,6 +14,7 @@ const ROLE_OPTIONS = [
     { value: 'artist', label: 'Artists' },
     { value: 'dj', label: 'DJs' },
     { value: 'creator', label: 'Creators' },
+    { value: 'podcaster', label: 'Podcasters' },
     { value: 'record_label', label: 'Record Labels' },
     { value: 'ad_manager', label: 'Ad Managers' },
     { value: 'fan', label: 'Fans' },

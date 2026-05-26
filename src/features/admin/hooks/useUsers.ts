@@ -70,3 +70,22 @@ export const useActivateUser = () => {
         },
     });
 };
+
+export const useChangeUserRole = () => {
+    const qc = useQueryClient();
+    const toast = useChakraToast();
+    return useMutation({
+        mutationFn: ({ userId, role }: { userId: string; role: string }) =>
+            adminService.changeUserRole(userId, role),
+        onSuccess: (_data, { userId }) => {
+            toast.success('Role updated', 'The user has been reassigned to their new role.');
+            invalidateUserViews(qc, userId);
+        },
+        onError: (err) => {
+            toast.error(
+                'Could not change role',
+                getApiErrorMessage(err, 'Please try again.'),
+            );
+        },
+    });
+};
