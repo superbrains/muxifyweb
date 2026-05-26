@@ -28,6 +28,8 @@ const AdManagerDirectorInformation = lazy(() => import('@onboarding/pages/AdMana
 const AdManagerCompanyLogo = lazy(() => import('@onboarding/pages/AdManagerCompanyLogo'));
 const Upload = lazy(() => import('@upload/pages/Upload'));
 const Review = lazy(() => import('@upload/pages/Review'));
+const UploadSplitsPage = lazy(() => import('@upload/pages/UploadSplitsPage'));
+const UploadRightsPage = lazy(() => import('@upload/pages/UploadRightsPage'));
 const NewAlbumPage = lazy(() => import('@uploadMusic/pages/NewAlbumPage'));
 const AlbumEditor = lazy(() => import('@uploadMusic/pages/AlbumEditor'));
 const EarningsAndRoyalty = lazy(() => import('@earningRoyalty/pages/EarningsAndRoyalty'));
@@ -101,6 +103,8 @@ export const appRoutes: RouteObject[] = [
             { path: '/label/payouts', element: <PayoutsPage /> },
             { path: '/label/settings', element: <CompanySettingsPage /> },
             { path: '/upload', element: <Upload /> },
+            { path: '/upload/splits', element: <UploadSplitsPage /> },
+            { path: '/upload/rights', element: <UploadRightsPage /> },
             { path: '/upload/review', element: <Review /> },
             { path: '/upload/album/new', element: <NewAlbumPage /> },
             { path: '/upload/album/:id', element: <AlbumEditor /> },

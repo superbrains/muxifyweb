@@ -4,6 +4,7 @@ import {
     Box,
     Button,
     Input,
+    NativeSelect,
     Stack,
     Text,
     VStack,
@@ -155,27 +156,29 @@ export const ArtistRegistrationForm: React.FC = () => {
                         <Text fontSize="xs" fontWeight="medium" color="grey.500" mb={1}>
                             I am a...
                         </Text>
-                        <select
-                            name="role"
-                            value={formData.role}
-                            onChange={handleChange}
-                            style={{
-                                width: '100%',
-                                height: '36px',
-                                fontSize: '12px',
-                                padding: '0 10px',
-                                borderRadius: '6px',
-                                backgroundColor: '#f7fafc',
-                                border: `1px solid ${errors.role ? '#fc8181' : 'transparent'}`,
-                                color: formData.role ? 'inherit' : '#a0aec0',
-                                outline: 'none',
-                            }}
+                        <NativeSelect.Root
+                            size="sm"
+                            variant="subtle"
                         >
-                            <option value="" disabled>Select your creator type…</option>
-                            {CREATOR_ROLE_OPTIONS.map((opt) => (
-                                <option key={opt.value} value={opt.value}>{opt.label}</option>
-                            ))}
-                        </select>
+                            <NativeSelect.Field
+                                name="role"
+                                value={formData.role}
+                                onChange={handleChange}
+                                fontSize="xs"
+                                color={formData.role ? 'inherit' : 'gray.400'}
+                                borderColor={errors.role ? 'red.300' : 'transparent'}
+                                _focus={{
+                                    borderColor: 'primary.500',
+                                    boxShadow: '0 0 0 1px #f94444',
+                                }}
+                            >
+                                <option value="" disabled>Select your creator type…</option>
+                                {CREATOR_ROLE_OPTIONS.map((opt) => (
+                                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                ))}
+                            </NativeSelect.Field>
+                            <NativeSelect.Indicator />
+                        </NativeSelect.Root>
                         {errors.role && (
                             <Text color="red.500" fontSize="xs" mt={0.5}>
                                 {errors.role}

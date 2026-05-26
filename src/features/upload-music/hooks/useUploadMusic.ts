@@ -10,6 +10,9 @@ import { getApiErrorMessage } from '@shared/lib/errorUtils';
 import { useUploadProgressTracker } from '@shared/lib/uploadProgress';
 import type { UploadProgressDetail } from '@shared/types/upload';
 import type { TrackDto, TrackListDto } from '../types';
+import { useUserType } from '@/features/auth/hooks/useUserType';
+
+const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
 interface UseUploadMusicReturn {
   uploadMusic: (data: UploadMusicData) => Promise<TrackDto | null>;
@@ -34,6 +37,11 @@ export const useUploadMusic = (): UseUploadMusicReturn => {
     updateTrack: updateTrackInStore,
   } = useUploadMusicStore();
   const toast = useChakraToast();
+  const { isDJ, isPodcaster } = useUserType();
+
+  // Noun used in user-facing toasts. The music upload pipeline is shared
+  // across Artists (Track), DJs (Mix), and Podcasters (Episode).
+  const mediaNoun = isDJ ? 'mix' : isPodcaster ? 'episode' : 'track';
 
   const uploadMusic = useCallback(
     async (data: UploadMusicData): Promise<TrackDto | null> => {
@@ -66,7 +74,7 @@ export const useUploadMusic = (): UseUploadMusicReturn => {
 
         toast.success(
           'Upload successful!',
-          'Your track has been uploaded successfully.'
+          `Your ${mediaNoun} has been uploaded successfully.`
         );
 
         setTimeout(() => {
@@ -87,7 +95,7 @@ export const useUploadMusic = (): UseUploadMusicReturn => {
         setLoading(false);
       }
     },
-    [addTrack, addUpload, removeUpload, updateUpload, toast, tracker]
+    [addTrack, addUpload, removeUpload, updateUpload, toast, tracker, mediaNoun]
   );
 
   const deleteTrack = useCallback(
@@ -96,8 +104,8 @@ export const useUploadMusic = (): UseUploadMusicReturn => {
         await uploadMusicService.deleteTrack(id);
         removeTrack(id);
         toast.success(
-          'Track deleted',
-          'The track has been deleted successfully.'
+          `${capitalize(mediaNoun)} deleted`,
+          `The ${mediaNoun} has been deleted successfully.`
         );
       } catch (error: unknown) {
         const errorMessage = getApiErrorMessage(error, 'Something went wrong');
@@ -105,7 +113,7 @@ export const useUploadMusic = (): UseUploadMusicReturn => {
         throw error;
       }
     },
-    [removeTrack, toast]
+    [removeTrack, toast, mediaNoun]
   );
 
   const loadTracks = useCallback(
@@ -142,8 +150,8 @@ export const useUploadMusic = (): UseUploadMusicReturn => {
         updateTrackInStore(id, updatedTrack as unknown as Parameters<typeof updateTrackInStore>[1]);
 
         toast.success(
-          'Track updated',
-          'The track has been updated successfully.'
+          `${capitalize(mediaNoun)} updated`,
+          `The ${mediaNoun} has been updated successfully.`
         );
 
         return updatedTrack;
@@ -153,7 +161,7 @@ export const useUploadMusic = (): UseUploadMusicReturn => {
         return null;
       }
     },
-    [updateTrackInStore, toast]
+    [updateTrackInStore, toast, mediaNoun]
   );
 
   return {

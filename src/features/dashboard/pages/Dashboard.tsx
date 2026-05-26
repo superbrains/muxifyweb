@@ -19,6 +19,7 @@ import { AddUserIcon, CalendarIcon, GiftIcon, MusicFilledIcon, MusicIconOutlined
 import BackgroundImg from '@/assets/images/Background.png';
 import { AuthedImage } from '@/shared/components/AuthedImage';
 import { useWindowWidth } from '@/shared/hooks/useWindowsWidth';
+import { useUserType } from '@/features/auth/hooks/useUserType';
 import { useDashboard } from '../hooks/useDashboard';
 import { formatCurrency } from '@shared/lib';
 import { leaderboardService } from '@/features/leaderboard/services/leaderboardService';
@@ -47,6 +48,7 @@ const formatNumber = (num: number): string => {
 export const Dashboard: React.FC = () => {
     const navigate = useNavigate();
     const { windowWidth } = useWindowWidth();
+    const { isDJ, isPodcaster, isCreator } = useUserType();
     const {
         statsDto,
         analyticsDto,
@@ -54,6 +56,12 @@ export const Dashboard: React.FC = () => {
         isLoading,
         error,
     } = useDashboard();
+
+    const publishCta = isDJ
+        ? { title: 'Create a Mix', subtitle: 'Upload your mixes for the world to reward you' }
+        : (isPodcaster || isCreator)
+            ? { title: 'Upload Video', subtitle: 'Upload your videos for the world to reward you' }
+            : { title: 'Publish Songs', subtitle: 'Upload your songs for the world to reward you' };
 
     // Top Gifters state
     const [topGifters, setTopGifters] = useState<TopGifterDto[]>([]);
@@ -588,10 +596,10 @@ export const Dashboard: React.FC = () => {
                         </Box>
                         <VStack align="center" gap={1}>
                             <Text fontSize="sm" color="white">
-                                Publish Songs 
+                                {publishCta.title}
                             </Text>
                             <Text textAlign="center" w="90%" color="white" fontSize="9px">
-                                Upload your songs for the world to reward you
+                                {publishCta.subtitle}
                             </Text>
                         </VStack>
                         <Button

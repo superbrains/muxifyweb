@@ -8,6 +8,7 @@ import { AlbumReview } from './AlbumReview';
 import { UploadSuccessPage } from './UploadSuccessPage';
 import { useUploadMusicStore } from '@uploadMusic/store/useUploadMusicStore';
 import { useUserType } from '@/features/auth/hooks/useUserType';
+import { shouldUseExtendedAudioWizard } from '@upload/lib/wizardFlow';
 import type { UploadProgressDetail } from '@shared/types/upload';
 
 interface MusicReviewProps {
@@ -37,7 +38,7 @@ export const MusicReview: React.FC<MusicReviewProps> = ({
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const { resetMix, resetAlbum, mix, album } = useUploadMusicStore();
-    const { isPodcaster, isDJ, isMusician } = useUserType();
+    const { isPodcaster, isDJ, isMusician, isArtist, isRecordLabel } = useUserType();
 
     // Build a short-lived blob URL for the cover art preview shown in the modal.
     // Object URLs leak if not revoked, so cleanup on change/unmount.
@@ -90,16 +91,16 @@ export const MusicReview: React.FC<MusicReviewProps> = ({
                 { id: 'album', label: 'Album' },
             ];
         }
-        // Default
+        // Default (Artist) — "Mix" is reserved for DJs.
         return [
-            { id: 'mix', label: 'Mix' },
+            { id: 'track', label: 'Track' },
             { id: 'album', label: 'Album' },
         ];
     };
-    
+
     const subTabs = getSubTabs();
-    
-    // Map podcast tabs to internal tabs
+
+    // Map display tab id -> internal store tab id ('mix' | 'album').
     const mapTabId = (tabId: string) => {
         if (isPodcaster) {
             return tabId === 'episode' ? 'mix' : 'album';
@@ -107,15 +108,21 @@ export const MusicReview: React.FC<MusicReviewProps> = ({
         if (isMusician) {
             return tabId === 'single' ? 'mix' : 'album';
         }
+        if (!isDJ) {
+            return tabId === 'track' ? 'mix' : 'album';
+        }
         return tabId;
     };
-    
+
     const mapInternalToDisplay = (internalTab: string) => {
         if (isPodcaster) {
             return internalTab === 'mix' ? 'episode' : 'topic';
         }
         if (isMusician) {
             return internalTab === 'mix' ? 'single' : 'album';
+        }
+        if (!isDJ) {
+            return internalTab === 'mix' ? 'track' : 'album';
         }
         return internalTab;
     };
@@ -198,6 +205,17 @@ export const MusicReview: React.FC<MusicReviewProps> = ({
                     onClick={() => {
                         const mixId = searchParams.get('mixId');
                         const albumId = searchParams.get('albumId');
+                        const usesWizard = shouldUseExtendedAudioWizard(
+                            { isArtist, isRecordLabel },
+                            albumTab,
+                            'music',
+                        );
+                        // When the extended audio wizard is active and this is
+                        // a fresh upload, the previous step is Rights & Metadata.
+                        if (usesWizard && !mixId && !albumId) {
+                            navigate('/upload/rights');
+                            return;
+                        }
                         let uploadUrl = '/upload';
                         if (mixId) {
                             uploadUrl = `/upload?mixId=${mixId}`;

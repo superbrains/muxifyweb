@@ -8,6 +8,7 @@ import { AlbumTab } from './AlbumTab';
 import { useUploadStore } from '@upload/store/useUploadStore';
 import { useUploadMusicStore } from '../store/useUploadMusicStore';
 import { useUserType } from '@/features/auth/hooks/useUserType';
+import { shouldUseExtendedAudioWizard } from '@upload/lib/wizardFlow';
 
 interface UploadFile {
     id: string;
@@ -55,8 +56,8 @@ const sponsorshipOptions = [
 export const MusicUploadTab: React.FC<MusicUploadTabProps> = ({ albumTab, setAlbumTab }) => {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
-    const { isPodcaster, isDJ, isMusician } = useUserType();
-    
+    const { isPodcaster, isDJ, isMusician, isArtist, isRecordLabel } = useUserType();
+
     // Get sub tabs based on user type
     const getSubTabs = () => {
         if (isPodcaster) {
@@ -77,16 +78,16 @@ export const MusicUploadTab: React.FC<MusicUploadTabProps> = ({ albumTab, setAlb
                 { id: 'album', label: 'Album' },
             ];
         }
-        // Default
+        // Default (Artist) — "Mix" is reserved for DJs.
         return [
-            { id: 'mix', label: 'Mix' },
+            { id: 'track', label: 'Track' },
             { id: 'album', label: 'Album' },
         ];
     };
-    
+
     const subTabs = getSubTabs();
-    
-    // Map podcast/musician tabs to internal tabs
+
+    // Map display tab id -> internal store tab id ('mix' | 'album').
     const mapTabId = (tabId: string) => {
         if (isPodcaster) {
             return tabId === 'episode' ? 'mix' : 'album';
@@ -94,15 +95,21 @@ export const MusicUploadTab: React.FC<MusicUploadTabProps> = ({ albumTab, setAlb
         if (isMusician) {
             return tabId === 'single' ? 'mix' : 'album';
         }
+        if (!isDJ) {
+            return tabId === 'track' ? 'mix' : 'album';
+        }
         return tabId;
     };
-    
+
     const mapInternalToDisplay = (internalTab: string) => {
         if (isPodcaster) {
             return internalTab === 'mix' ? 'episode' : 'topic';
         }
         if (isMusician) {
             return internalTab === 'mix' ? 'single' : 'album';
+        }
+        if (!isDJ) {
+            return internalTab === 'mix' ? 'track' : 'album';
         }
         return internalTab;
     };
@@ -194,11 +201,18 @@ export const MusicUploadTab: React.FC<MusicUploadTabProps> = ({ albumTab, setAlb
         setReviewReleaseYear(mix.releaseYear);
 
         const mixId = searchParams.get('mixId');
-        let reviewUrl = '/upload/review';
+        const usesWizard =
+            !isEditing &&
+            shouldUseExtendedAudioWizard(
+                { isArtist, isRecordLabel },
+                albumTab,
+                'music',
+            );
+        let nextUrl = usesWizard ? '/upload/splits' : '/upload/review';
         if (isEditing && editingId && mixId) {
-            reviewUrl += `?mixId=${mixId}`;
+            nextUrl += `?mixId=${mixId}`;
         }
-        navigate(reviewUrl);
+        navigate(nextUrl);
     };
 
     const handleSaveChanges = () => {

@@ -26,6 +26,17 @@ export interface UploadMusicData {
   description?: string;
   file: File;
   coverArt?: File;
+  // Rights & Metadata (Artist/Record Label audio wizard)
+  isrc?: string;
+  isrcIsProvisional?: boolean;
+  upc?: string;
+  iswc?: string;
+  // Royalty splits as compact rows: { recipientUserId, recipientRole, percentBps }
+  splits?: Array<{
+    recipientUserId: string;
+    recipientRole: string;
+    percentBps: number;
+  }>;
 }
 
 export interface UploadProgress {
@@ -58,6 +69,13 @@ export const uploadMusicService = {
     if (data.releaseDate) formData.append('releaseDate', data.releaseDate);
     if (data.description) formData.append('description', data.description);
     if (data.coverArt) formData.append('coverArt', data.coverArt);
+    if (data.isrc) formData.append('isrc', data.isrc);
+    if (data.isrcIsProvisional) formData.append('isrcIsProvisional', 'true');
+    if (data.upc) formData.append('upc', data.upc);
+    if (data.iswc) formData.append('iswc', data.iswc);
+    if (data.splits && data.splits.length > 0) {
+      formData.append('splits', JSON.stringify(data.splits));
+    }
 
     const response = await axiosInstance.post<TrackDto>('/music/upload', formData, {
       headers: {

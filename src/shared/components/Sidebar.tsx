@@ -42,11 +42,11 @@ interface NavItem {
     path: string;
 }
 
-const artistNavItems: NavItem[] = [
+const buildArtistNavItems = (musicVideosLabel: string): NavItem[] => [
     { icon: DashboardIcon, label: 'Dashboard', path: '/' },
     { icon: LeaderboardIcon, label: 'Leaderboard', path: '/leaderboard' },
     { icon: EarningsAndRoyaltyIcon, label: 'Earnings & Royalty', path: '/earning-royalty' },
-    { icon: MusicIcon, label: 'Music/Videos', path: '/music-videos' },
+    { icon: MusicIcon, label: musicVideosLabel, path: '/music-videos' },
     { icon: SalesIcon, label: 'Sales Report', path: '/sales-report' },
     { icon: FansAndSubscribersIcon, label: 'Fans & Subscribers', path: '/fans-subscribers' },
     { icon: PaymentsIcon, label: 'Payments', path: '/payments' },
@@ -75,7 +75,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed }) => {
     const location = useLocation();
     const { toggleCollapse, setMobileOpen, isMobileOpen } = useSidebarStore();
     const [isInitialRender, setIsInitialRender] = React.useState(true);
-    const { isRecordLabel, isAdManager } = useUserType();
+    const { isRecordLabel, isAdManager, isPodcaster, isCreator } = useUserType();
+    const musicVideosLabel = isPodcaster || isCreator ? 'Video' : 'Music/Videos';
     const isAdmin = useIsAdmin();
 
     const bgColor = 'white';
@@ -107,7 +108,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed }) => {
         if (isAdmin) return adminNavItems;
         if (isAdManager) return adManagerNavItems;
         if (isRecordLabel) return recordLabelNavItems;
-        return artistNavItems;
+        return buildArtistNavItems(musicVideosLabel);
     };
 
     const currentNavItems = getNavItems();

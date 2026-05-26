@@ -1,6 +1,8 @@
 import { create } from "zustand";
 import type { MusicTrack } from "@shared/types";
 import type { UploadProgress } from "../types/uploadMusic.d";
+import type { MixRights, MixSplitRow } from "@/features/upload/types/wizard";
+import { EMPTY_MIX_RIGHTS } from "@/features/upload/types/wizard";
 
 // UI-level types for local upload session (separate from persisted MusicTrack)
 interface UploadFile {
@@ -33,6 +35,8 @@ interface MixSliceState {
   allowSponsorship: string[];
   releaseYear: string;
   uploads: UploadProgress[];
+  splits: MixSplitRow[];
+  rights: MixRights;
 }
 
 interface AlbumSliceState {
@@ -82,6 +86,12 @@ interface UploadMusicState {
   mixSetUnlockCost: (value: string[]) => void;
   mixSetAllowSponsorship: (value: string[]) => void;
   mixSetReleaseYear: (value: string) => void;
+  mixSetSplits: (splits: MixSplitRow[]) => void;
+  mixSetRights: (rights: MixRights) => void;
+  mixSetIsrc: (value: string) => void;
+  mixSetIsrcProvisional: (provisional: boolean) => void;
+  mixSetUpc: (value: string) => void;
+  mixSetIswc: (value: string) => void;
   mixAddUpload: (upload: UploadProgress) => void;
   mixUpdateUpload: (fileId: string, updates: Partial<UploadProgress>) => void;
   mixRemoveUpload: (fileId: string) => void;
@@ -150,6 +160,8 @@ export const useUploadMusicStore = create<UploadMusicState>((set) => ({
     allowSponsorship: ["yes"],
     releaseYear: "",
     uploads: [],
+    splits: [],
+    rights: { ...EMPTY_MIX_RIGHTS },
   },
   album: {
     tracks: [],
@@ -227,6 +239,29 @@ export const useUploadMusicStore = create<UploadMusicState>((set) => ({
     set((state) => ({ mix: { ...state.mix, allowSponsorship: value } })),
   mixSetReleaseYear: (value) =>
     set((state) => ({ mix: { ...state.mix, releaseYear: value } })),
+  mixSetSplits: (splits) =>
+    set((state) => ({ mix: { ...state.mix, splits } })),
+  mixSetRights: (rights) =>
+    set((state) => ({ mix: { ...state.mix, rights } })),
+  mixSetIsrc: (value) =>
+    set((state) => ({
+      mix: { ...state.mix, rights: { ...state.mix.rights, isrc: value } },
+    })),
+  mixSetIsrcProvisional: (provisional) =>
+    set((state) => ({
+      mix: {
+        ...state.mix,
+        rights: { ...state.mix.rights, isrcIsProvisional: provisional },
+      },
+    })),
+  mixSetUpc: (value) =>
+    set((state) => ({
+      mix: { ...state.mix, rights: { ...state.mix.rights, upc: value } },
+    })),
+  mixSetIswc: (value) =>
+    set((state) => ({
+      mix: { ...state.mix, rights: { ...state.mix.rights, iswc: value } },
+    })),
   mixAddUpload: (upload) =>
     set((state) => ({
       mix: { ...state.mix, uploads: [...state.mix.uploads, upload] },
@@ -260,6 +295,8 @@ export const useUploadMusicStore = create<UploadMusicState>((set) => ({
         allowSponsorship: ["yes"],
         releaseYear: "",
         uploads: [],
+        splits: [],
+        rights: { ...EMPTY_MIX_RIGHTS },
       },
     })),
 

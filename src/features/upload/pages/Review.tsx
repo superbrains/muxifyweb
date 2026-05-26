@@ -115,6 +115,18 @@ export const Review: React.FC = () => {
                         releaseDate,
                         file: audioFile,
                         coverArt: mix.coverArt?.file,
+                        isrc: mix.rights.isrc || undefined,
+                        isrcIsProvisional: mix.rights.isrcIsProvisional || undefined,
+                        upc: mix.rights.upc || undefined,
+                        iswc: mix.rights.iswc || undefined,
+                        splits:
+                            mix.splits.length > 0
+                                ? mix.splits.map((s) => ({
+                                      recipientUserId: s.recipientUserId,
+                                      recipientRole: s.recipientRole,
+                                      percentBps: s.percentBps,
+                                  }))
+                                : undefined,
                     });
 
                     if (trackResult) {
