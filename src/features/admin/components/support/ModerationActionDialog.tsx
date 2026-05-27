@@ -59,30 +59,37 @@ const ACTIONS: Array<{
     label: string;
     description: string;
     destructive: boolean;
+    // True for terminal actions that close the report. Warn is intentionally
+    // non-terminal so the case stays open for revisits.
+    terminal: boolean;
 }> = [
     {
         value: 'dismiss',
         label: 'Dismiss report',
-        description: 'No violation — keep the content as is.',
+        description: 'No violation. For held content, this releases and publishes it. Closes the case.',
         destructive: false,
+        terminal: true,
     },
     {
         value: 'warn',
         label: 'Warn the owner',
-        description: 'Notify the content owner with a formal warning.',
+        description: 'Send a written warning to the owner. The case stays OPEN — held content remains on hold. Choose Dismiss or Remove later to decide the hold.',
         destructive: true,
+        terminal: false,
     },
     {
         value: 'remove',
         label: 'Remove content',
-        description: 'Take the reported content down from the platform.',
+        description: 'Take the content down permanently. Closes the case.',
         destructive: true,
+        terminal: true,
     },
     {
         value: 'suspend',
         label: 'Suspend the owner',
-        description: 'Remove the content and suspend the owner account.',
+        description: 'Take the content down AND suspend the owner account. Closes the case.',
         destructive: true,
+        terminal: true,
     },
 ];
 
@@ -166,6 +173,52 @@ export const ModerationActionDialog: React.FC<ModerationActionDialogProps> = ({
                                     </Text>
                                 )}
                             </Box>
+
+                            {/* Prior warning — if a moderator has already warned the owner on
+                                this case, show the warning note + timestamp so the next decision
+                                builds on the previous one rather than re-warning. */}
+                            {item?.warnedAt && (
+                                <Box
+                                    bg="purple.50"
+                                    border="1px solid"
+                                    borderColor="purple.200"
+                                    borderRadius="12px"
+                                    p={3.5}
+                                >
+                                    <HStack gap={2} mb={2}>
+                                        <Text fontSize="xs" fontWeight="700" color="purple.800" textTransform="uppercase" letterSpacing="0.04em">
+                                            Already warned
+                                        </Text>
+                                        <Text fontSize="10px" color="purple.700" ml="auto">
+                                            {new Date(item.warnedAt).toLocaleString()}
+                                        </Text>
+                                    </HStack>
+                                    {item.warningNote && (
+                                        <Text fontSize="xs" color="gray.800" lineHeight="1.6" whiteSpace="pre-wrap">
+                                            {item.warningNote}
+                                        </Text>
+                                    )}
+                                </Box>
+                            )}
+
+                            {/* Held-content notice — clarifies what each action will do to a
+                                held duplicate-detection upload. This is the exact ambiguity that
+                                surprised admins before: now the dialog spells it out. */}
+                            {item?.isAutomatedDuplicateReport && (
+                                <Box
+                                    bg="yellow.50"
+                                    border="1px solid"
+                                    borderColor="yellow.200"
+                                    borderRadius="12px"
+                                    p={3}
+                                >
+                                    <Text fontSize="xs" color="yellow.900" lineHeight="1.6">
+                                        <Text as="span" fontWeight="700">This upload is currently held.</Text>{' '}
+                                        Dismiss releases and publishes it. Remove or Suspend takes it down.
+                                        Warn keeps it on hold so you can decide later.
+                                    </Text>
+                                </Box>
+                            )}
 
                             {/* Artist's dispute note — surfaced PROMINENTLY at the top so the
                                 moderator can't decide without reading it. */}
@@ -375,10 +428,12 @@ export const ModerationActionDialog: React.FC<ModerationActionDialogProps> = ({
                                     {resolve.isPending ? (
                                         <HStack gap={2}>
                                             <Spinner size="xs" color="white" />
-                                            <Text>Resolving</Text>
+                                            <Text>{selected.terminal ? 'Resolving' : 'Sending'}</Text>
                                         </HStack>
-                                    ) : (
+                                    ) : selected.terminal ? (
                                         'Resolve report'
+                                    ) : (
+                                        'Send warning'
                                     )}
                                 </Button>
                             </HStack>

@@ -1,6 +1,6 @@
 import React from 'react';
 import { HStack, Icon, Stack, Tag, Text, VStack } from '@chakra-ui/react';
-import { FiFlag } from 'react-icons/fi';
+import { FiAlertCircle, FiFlag } from 'react-icons/fi';
 import { AdminError, AdminLoading } from '../AdminStateBlock';
 import { AdminTable, type AdminTableColumn } from '../AdminTable';
 import { Paginator } from '../Paginator';
@@ -100,6 +100,22 @@ export const ModerationPanel: React.FC = () => {
                                 </Tag.Label>
                             </Tag.Root>
                         )}
+                        {/* "Warned" badge — the admin has already warned the owner;
+                            the case is still open awaiting a final decision. */}
+                        {m.warnedAt && (
+                            <Tag.Root
+                                size="sm"
+                                bg="purple.50"
+                                color="purple.700"
+                                borderRadius="full"
+                                px={1.5}
+                            >
+                                <Icon as={FiAlertCircle} boxSize={2.5} mr={0.5} />
+                                <Tag.Label fontSize="9px" fontWeight="700" letterSpacing="0.04em">
+                                    WARNED
+                                </Tag.Label>
+                            </Tag.Root>
+                        )}
                         {m.isAutomatedDuplicateReport && m.duplicateTier && (
                             <Tag.Root
                                 size="sm"
@@ -149,6 +165,11 @@ export const ModerationPanel: React.FC = () => {
                     {m.disputedAt && (
                         <Text fontSize="10px" color="orange.700" fontWeight="500">
                             Disputed {adminRelative(m.disputedAt)}
+                        </Text>
+                    )}
+                    {m.warnedAt && (
+                        <Text fontSize="10px" color="purple.700" fontWeight="500">
+                            Warned {adminRelative(m.warnedAt)}
                         </Text>
                     )}
                 </VStack>

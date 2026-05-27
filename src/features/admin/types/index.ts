@@ -216,6 +216,12 @@ export interface ModerationItemDto {
     status: ModerationStatus;
     reportedAt: string;
 
+    /** When a moderator last issued a non-terminal warning, if any. */
+    warnedAt?: string | null;
+
+    /** The most recent warning note from a moderator, if any. */
+    warningNote?: string | null;
+
     // Duplicate-detection context (populated only for automated duplicate reports).
     /** True when the report was opened by the automated duplicate-detection screen. */
     isAutomatedDuplicateReport?: boolean;
