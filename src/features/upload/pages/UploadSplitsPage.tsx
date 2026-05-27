@@ -114,6 +114,7 @@ const UploadSplitsPage: React.FC = () => {
                     onChange={mixSetSplits}
                     self={user ? { id: user.id, name: user.name } : null}
                     resetTo={selfRow}
+                    pickerMode="global"
                 />
             </VStack>
 

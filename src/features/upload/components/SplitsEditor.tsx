@@ -37,6 +37,9 @@ import {
     RecipientPicker,
     type PickedRecipient,
 } from '@/features/record-label/components/RecipientPicker';
+import { CollaboratorPicker } from './CollaboratorPicker';
+
+export type SplitsPickerMode = 'roster' | 'global';
 
 export interface SplitsEditorProps {
     value: ReleaseSplitDto[];
@@ -52,6 +55,14 @@ export interface SplitsEditorProps {
      * artist 100%". When omitted, Reset is disabled.
      */
     resetTo?: ReleaseSplitDto | null;
+    /**
+     * Which picker dialog to open when the user clicks "Add recipient".
+     * - `'roster'` (default) — used by the Record Label post-upload editor.
+     *   Only the label's roster artists + the label itself are pickable.
+     * - `'global'` — used by the audio upload wizard. Searches every
+     *   Muxify creator account (Artist, DJ, Label, Podcaster).
+     */
+    pickerMode?: SplitsPickerMode;
 }
 
 export const SplitsEditor: React.FC<SplitsEditorProps> = ({
@@ -59,6 +70,7 @@ export const SplitsEditor: React.FC<SplitsEditorProps> = ({
     onChange,
     self,
     resetTo,
+    pickerMode = 'roster',
 }) => {
     const [pickerOpen, setPickerOpen] = useState(false);
 
@@ -291,13 +303,22 @@ export const SplitsEditor: React.FC<SplitsEditorProps> = ({
                 </HStack>
             </VStack>
 
-            <RecipientPicker
-                open={pickerOpen}
-                onClose={() => setPickerOpen(false)}
-                onSelect={handleAddRecipient}
-                excludedIds={usedIds}
-                labelSelf={self ?? null}
-            />
+            {pickerMode === 'global' ? (
+                <CollaboratorPicker
+                    open={pickerOpen}
+                    onClose={() => setPickerOpen(false)}
+                    onSelect={handleAddRecipient}
+                    excludedIds={usedIds}
+                />
+            ) : (
+                <RecipientPicker
+                    open={pickerOpen}
+                    onClose={() => setPickerOpen(false)}
+                    onSelect={handleAddRecipient}
+                    excludedIds={usedIds}
+                    labelSelf={self ?? null}
+                />
+            )}
         </>
     );
 };
