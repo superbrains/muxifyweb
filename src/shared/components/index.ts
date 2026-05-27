@@ -17,6 +17,7 @@ export { URLInput } from "./URLInput";
 export type { URLInputProps } from "./URLInput";
 export { ConfirmModal } from "./ConfirmModal";
 export { DisputeModal } from "./DisputeModal";
+export { DisputeForm } from "./DisputeForm";
 export { UploadProgressModal } from "./UploadProgressModal";
 export { ErrorBoundary } from "./ErrorBoundary";
 export { withErrorBoundary } from "./withErrorBoundary";

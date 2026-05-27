@@ -172,6 +172,8 @@ export const VideoTab: React.FC = () => {
                             plays={item.plays}
                             kind="video"
                             isDeleting={isDeleting === item.id}
+                            heldForDuplicateReview={item.heldForDuplicateReview}
+                            hasActiveDispute={item.hasActiveDispute}
                             onEdit={() => navigate(`/upload?videoId=${item.id}`)}
                             onOpen={() => navigate(`/music-videos/video/${item.id}`)}
                             onPlay={() => navigate(`/music-videos/video/${item.id}`)}
@@ -197,6 +199,8 @@ export const VideoTab: React.FC = () => {
                             kind="video"
                             showAlbumColumn={false}
                             isDeleting={isDeleting === item.id}
+                            heldForDuplicateReview={item.heldForDuplicateReview}
+                            hasActiveDispute={item.hasActiveDispute}
                             onEdit={() => navigate(`/upload?videoId=${item.id}`)}
                             onOpen={() => navigate(`/music-videos/video/${item.id}`)}
                             onPlay={() => navigate(`/music-videos/video/${item.id}`)}

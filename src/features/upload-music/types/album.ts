@@ -2,6 +2,8 @@
  * Album-management types — mirror backend AlbumDtos.cs.
  */
 
+import type { DuplicateMatchSummary } from '@shared/types/duplicateMatch';
+
 export type ReleaseTypeName = 'Single' | 'EP' | 'Album' | 'Mix' | 'Compilation';
 
 export type TrackProcessingStatus = 'processing' | 'ready' | 'failed' | 'deleted';
@@ -25,6 +27,8 @@ export interface AlbumManageTrackDto {
   isPublished: boolean;
   /** True when the track is withheld pending a duplicate-content review. */
   heldForDuplicateReview: boolean;
+  /** Dispute context (note + match details). Null when no match exists. */
+  duplicateMatch?: DuplicateMatchSummary | null;
   coverArtThumbnail?: string | null;
   hasCustomCover: boolean;
   isrc?: string | null;

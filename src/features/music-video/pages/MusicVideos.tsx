@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Box, Heading, HStack, Text, VStack } from '@chakra-ui/react';
 import { FiMusic, FiVideo } from 'react-icons/fi';
 import { AnimatedTabs } from '@shared/components';
@@ -6,10 +6,44 @@ import { MusicTab } from '../components/MusicTab';
 import { VideoTab } from '../components/VideoTab';
 import { useUserType } from '@/features/auth/hooks/useUserType';
 import { ArtistDropdown } from '@/shared/components/ArtistDropdown';
+import {
+    HeldContentSummaryBanner,
+    type HeldItemSummary,
+} from '@/features/moderation/components/HeldContentSummaryBanner';
+import { useMusicStore } from '../store/useMusicStore';
+import { useVideoStore } from '../store/useVideoStore';
 
 export const MusicVideos: React.FC = () => {
     const { isPodcaster, isCreator, isRecordLabel } = useUserType();
     const [activeTab, setActiveTab] = useState<'music' | 'video'>(isCreator ? 'video' : 'music');
+
+    // Aggregate held content across tracks and videos so the artist sees a single
+    // canonical "you have N uploads on hold" banner above the library — the most
+    // discoverable entry point into the dispute flow for users who never opened the
+    // email or notification.
+    const singles = useMusicStore((s) => s.singles);
+    const videoItems = useVideoStore((s) => s.videoItems);
+    const heldItems = useMemo<HeldItemSummary[]>(
+        () => [
+            ...singles
+                .filter((s) => s.heldForDuplicateReview)
+                .map((s) => ({
+                    id: s.id,
+                    title: s.title,
+                    contentType: 'track' as const,
+                    hasActiveDispute: s.hasActiveDispute,
+                })),
+            ...videoItems
+                .filter((v) => v.heldForDuplicateReview)
+                .map((v) => ({
+                    id: v.id,
+                    title: v.title,
+                    contentType: 'video' as const,
+                    hasActiveDispute: v.hasActiveDispute,
+                })),
+        ],
+        [singles, videoItems],
+    );
 
     // Get tabs based on user type
     const getMainTabs = () => {
@@ -58,6 +92,9 @@ export const MusicVideos: React.FC = () => {
                     Manage and preview everything you've published.
                 </Text>
             </VStack>
+
+            {/* Held-content summary — only renders when at least one upload is on hold. */}
+            <HeldContentSummaryBanner items={heldItems} />
 
             {/* Main Tabs */}
             <Box mb={6}>

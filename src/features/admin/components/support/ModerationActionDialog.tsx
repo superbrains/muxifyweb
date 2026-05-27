@@ -8,15 +8,51 @@ import {
     IconButton,
     Portal,
     Spinner,
+    Tag,
     Text,
     Textarea,
     VStack,
 } from '@chakra-ui/react';
 import { MdClose } from 'react-icons/md';
+import { FiArrowRight, FiFlag, FiInfo } from 'react-icons/fi';
+import { Link as RouterLink } from 'react-router-dom';
 import { useResolveModerationItem } from '../../hooks/useSupport';
 import type { ModerationAction, ModerationItemDto } from '../../types';
 
 const MIN_REASON_LENGTH = 10;
+
+function tierBg(tier: string): string {
+    switch (tier) {
+        case 'Exact':
+            return 'red.50';
+        case 'High':
+            return 'orange.50';
+        case 'Medium':
+            return 'yellow.50';
+        default:
+            return 'gray.100';
+    }
+}
+function tierFg(tier: string): string {
+    switch (tier) {
+        case 'Exact':
+            return 'red.700';
+        case 'High':
+            return 'orange.700';
+        case 'Medium':
+            return 'yellow.800';
+        default:
+            return 'gray.700';
+    }
+}
+
+// Maps a moderation report's contentType + a content GUID to the public detail page.
+// Only Track/Video are surfaced as live links; Comment/Profile have no detail page here.
+function matchedHref(contentType: string, contentId: string): string {
+    if (contentType === 'track') return `/music-videos/single/${contentId}`;
+    if (contentType === 'video') return `/music-videos/video/${contentId}`;
+    return '#';
+}
 
 const ACTIONS: Array<{
     value: ModerationAction;
@@ -99,7 +135,7 @@ export const ModerationActionDialog: React.FC<ModerationActionDialogProps> = ({
             <Portal>
                 <Dialog.Backdrop bg="blackAlpha.500" />
                 <Dialog.Positioner>
-                    <Dialog.Content maxW="480px" p={6} borderRadius="20px" position="relative">
+                    <Dialog.Content maxW="560px" p={6} borderRadius="20px" position="relative" maxH="90vh" overflowY="auto">
                         <IconButton
                             aria-label="Close"
                             variant="ghost"
@@ -130,6 +166,111 @@ export const ModerationActionDialog: React.FC<ModerationActionDialogProps> = ({
                                     </Text>
                                 )}
                             </Box>
+
+                            {/* Artist's dispute note — surfaced PROMINENTLY at the top so the
+                                moderator can't decide without reading it. */}
+                            {item?.artistDisputeNote && (
+                                <Box
+                                    bg="orange.50"
+                                    border="1px solid"
+                                    borderColor="orange.200"
+                                    borderRadius="12px"
+                                    p={3.5}
+                                >
+                                    <HStack gap={2} mb={2}>
+                                        <Icon as={FiFlag} boxSize={3.5} color="orange.600" />
+                                        <Text fontSize="xs" fontWeight="700" color="orange.800" textTransform="uppercase" letterSpacing="0.04em">
+                                            Artist disputed this flag
+                                        </Text>
+                                        {item.disputedAt && (
+                                            <Text fontSize="10px" color="orange.700" ml="auto">
+                                                {new Date(item.disputedAt).toLocaleString()}
+                                            </Text>
+                                        )}
+                                    </HStack>
+                                    <Text
+                                        fontSize="xs"
+                                        color="gray.800"
+                                        lineHeight="1.6"
+                                        whiteSpace="pre-wrap"
+                                    >
+                                        {item.artistDisputeNote}
+                                    </Text>
+                                </Box>
+                            )}
+
+                            {/* Duplicate-detection context — tier, score, matched content. Only
+                                shown for automated reports so the moderator can size up the case
+                                without leaving the dialog. */}
+                            {item?.isAutomatedDuplicateReport && (
+                                <Box
+                                    bg="gray.50"
+                                    border="1px solid"
+                                    borderColor="gray.200"
+                                    borderRadius="12px"
+                                    p={3.5}
+                                >
+                                    <HStack gap={2} mb={2}>
+                                        <Icon as={FiInfo} boxSize={3.5} color="gray.600" />
+                                        <Text fontSize="xs" fontWeight="700" color="gray.700" textTransform="uppercase" letterSpacing="0.04em">
+                                            Duplicate-detection context
+                                        </Text>
+                                    </HStack>
+                                    <VStack align="stretch" gap={1.5}>
+                                        {item.duplicateTier && (
+                                            <HStack gap={2}>
+                                                <Text fontSize="10px" color="gray.500" w="100px">Confidence</Text>
+                                                <Tag.Root size="sm" bg={tierBg(item.duplicateTier)} color={tierFg(item.duplicateTier)} borderRadius="full" px={2}>
+                                                    <Tag.Label fontSize="10px" fontWeight="700">{item.duplicateTier}</Tag.Label>
+                                                </Tag.Root>
+                                                {typeof item.duplicateScore === 'number' && (
+                                                    <Text fontSize="xs" color="gray.700" style={{ fontVariantNumeric: 'tabular-nums' }}>
+                                                        {Math.round(item.duplicateScore * 100)}%
+                                                    </Text>
+                                                )}
+                                            </HStack>
+                                        )}
+                                        {item.duplicateMatchedContentId && (
+                                            <HStack gap={2}>
+                                                <Text fontSize="10px" color="gray.500" w="100px">Matched against</Text>
+                                                <RouterLink
+                                                    to={matchedHref(item.contentType, item.duplicateMatchedContentId)}
+                                                    target="_blank"
+                                                >
+                                                    <HStack
+                                                        gap={1}
+                                                        color="primary.500"
+                                                        fontSize="xs"
+                                                        fontWeight="500"
+                                                        _hover={{ textDecoration: 'underline' }}
+                                                    >
+                                                        <Text>Open existing {item.contentType}</Text>
+                                                        <Icon as={FiArrowRight} boxSize={3} />
+                                                    </HStack>
+                                                </RouterLink>
+                                            </HStack>
+                                        )}
+                                        <HStack gap={2}>
+                                            <Text fontSize="10px" color="gray.500" w="100px">Suspect</Text>
+                                            <RouterLink
+                                                to={matchedHref(item.contentType, item.contentId)}
+                                                target="_blank"
+                                            >
+                                                <HStack
+                                                    gap={1}
+                                                    color="primary.500"
+                                                    fontSize="xs"
+                                                    fontWeight="500"
+                                                    _hover={{ textDecoration: 'underline' }}
+                                                >
+                                                    <Text>Open uploaded {item.contentType}</Text>
+                                                    <Icon as={FiArrowRight} boxSize={3} />
+                                                </HStack>
+                                            </RouterLink>
+                                        </HStack>
+                                    </VStack>
+                                </Box>
+                            )}
 
                             <VStack align="stretch" gap={2}>
                                 {ACTIONS.map((a) => {

@@ -3,6 +3,8 @@
  * Maps to backend DTOs from Muxify.Modules.Media.Application.DTOs
  */
 
+import type { DuplicateMatchSummary } from '@shared/types/duplicateMatch';
+
 // =============================================================================
 // Upload Request Types
 // =============================================================================
@@ -97,6 +99,15 @@ export interface VideoDto {
   viewCount: number;
   likeCount: number;
   isPublished: boolean;
+
+  /** True when the video is withheld pending a duplicate-content review. */
+  heldForDuplicateReview: boolean;
+
+  /**
+   * Summary of the duplicate-detection match — tier, score, matched-content reference,
+   * and the artist's prior dispute note if submitted. Null when no match exists.
+   */
+  duplicateMatch?: DuplicateMatchSummary | null;
 }
 
 /**

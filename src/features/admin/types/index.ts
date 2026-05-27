@@ -215,6 +215,20 @@ export interface ModerationItemDto {
     ownerName: string;
     status: ModerationStatus;
     reportedAt: string;
+
+    // Duplicate-detection context (populated only for automated duplicate reports).
+    /** True when the report was opened by the automated duplicate-detection screen. */
+    isAutomatedDuplicateReport?: boolean;
+    /** Confidence tier of the duplicate match ("Exact" | "High" | "Medium"). */
+    duplicateTier?: 'Exact' | 'High' | 'Medium' | 'Low' | null;
+    /** Similarity score of the duplicate match, 0..1. */
+    duplicateScore?: number | null;
+    /** Existing catalog track/video the flagged content matched. */
+    duplicateMatchedContentId?: string | null;
+    /** Artist's dispute explanation, if they have disputed the flag. */
+    artistDisputeNote?: string | null;
+    /** When the artist submitted their dispute, if any. */
+    disputedAt?: string | null;
 }
 
 export interface ModerationQuery {

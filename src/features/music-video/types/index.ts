@@ -20,6 +20,10 @@ export interface SingleItem {
   allowSponsorship: string[];
   releaseYear: string;
   createdAt: string;
+  /** True while the upload is held by the duplicate-detection screen. */
+  heldForDuplicateReview?: boolean;
+  /** True when the artist has already submitted a dispute on the active hold. */
+  hasActiveDispute?: boolean;
 }
 
 // Album Item structure
@@ -105,6 +109,10 @@ export interface VideoItem {
   unlockCost?: string[];
   allowSponsorship?: string[];
   createdAt: string;
+  /** True while the upload is held by the duplicate-detection screen. */
+  heldForDuplicateReview?: boolean;
+  /** True when the artist has already submitted a dispute on the active hold. */
+  hasActiveDispute?: boolean;
 }
 
 export interface MusicStoreState {

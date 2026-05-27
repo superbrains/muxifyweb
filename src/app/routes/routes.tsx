@@ -42,6 +42,7 @@ const MusicVideos = lazy(() => import('@musicVideo/pages/MusicVideos'));
 const SingleDetail = lazy(() => import('@musicVideo/pages/SingleDetail'));
 const AlbumDetail = lazy(() => import('@musicVideo/pages/AlbumDetail'));
 const VideoDetail = lazy(() => import('@musicVideo/pages/VideoDetail'));
+const DisputePage = lazy(() => import('@/features/moderation/pages/DisputePage'));
 const AdsDashboard = lazy(() => import('@ads/pages/AdsDashboard'));
 const AdsEmptyState = lazy(() => import('@ads/pages/AdsEmptyState'));
 const CreateCampaign = lazy(() => import('@ads/pages/CreateCampaign'));
@@ -118,6 +119,8 @@ export const appRoutes: RouteObject[] = [
             { path: '/music-videos/single/:id', element: <SingleDetail /> },
             { path: '/music-videos/album/:id', element: <AlbumDetail /> },
             { path: '/music-videos/video/:id', element: <VideoDetail /> },
+            // Backend deep-links email and notification CTAs to this exact path.
+            { path: '/disputes/:contentType/:contentId', element: <DisputePage /> },
             // Ad Manager routes
             { path: '/', element: <AdsDashboard /> },
             { path: '/ads/create-campaign', element: <CreateCampaign /> },

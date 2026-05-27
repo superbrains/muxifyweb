@@ -1,6 +1,7 @@
 import React from 'react';
 import { Box, Button, Flex, HStack, Icon, Spinner, Text, VStack } from '@chakra-ui/react';
-import { FiPlay, FiMusic, FiVideo } from 'react-icons/fi';
+import { FiAlertTriangle, FiArrowRight, FiPlay, FiMusic, FiVideo } from 'react-icons/fi';
+import { Link as RouterLink } from 'react-router-dom';
 import { Edit2Icon } from '@shared/icons/CustomIcons';
 import { CustomMenu } from '@/shared/components/CustomMenu';
 import { AuthedImage } from '@/shared/components/AuthedImage';
@@ -19,6 +20,10 @@ interface MediaGridCardProps {
     isDeleting?: boolean;
     /** When false on an album, render a "Draft" badge so artists can spot unpublished work. */
     isPublished?: boolean;
+    /** True while the upload is held by the duplicate-detection screen. */
+    heldForDuplicateReview?: boolean;
+    /** True when the artist has already submitted a dispute on the active hold. */
+    hasActiveDispute?: boolean;
     onEdit: () => void;
     onPlay?: () => void;
     onOpen?: () => void;
@@ -42,12 +47,21 @@ export const MediaGridCard: React.FC<MediaGridCardProps> = ({
     kind,
     isDeleting = false,
     isPublished,
+    heldForDuplicateReview,
+    hasActiveDispute,
     onEdit,
     onPlay,
     onOpen,
     onDelete,
 }) => {
     const showDraftBadge = kind === 'album' && isPublished === false;
+    // Albums aren't directly held — only their tracks are — so the under-review badge is only meaningful on single/video.
+    const showHeldBadge = heldForDuplicateReview && (kind === 'single' || kind === 'video');
+    const disputeHref = kind === 'single'
+        ? `/disputes/track/${id}`
+        : kind === 'video'
+            ? `/disputes/video/${id}`
+            : null;
     const handleShare = () => {
         const link = `${window.location.origin}/music-videos/${kind}/${id}`;
         if (navigator.share) {
@@ -232,6 +246,32 @@ export const MediaGridCard: React.FC<MediaGridCardProps> = ({
                         </Text>
                     </Box>
                 )}
+
+                {/* Under-review badge — shown for held single tracks / videos */}
+                {showHeldBadge && (
+                    <HStack
+                        position="absolute"
+                        top={2}
+                        left={2}
+                        bg="yellow.400"
+                        color="yellow.900"
+                        borderRadius="md"
+                        px={2}
+                        py={0.5}
+                        shadow="sm"
+                        gap={1}
+                    >
+                        <Icon as={FiAlertTriangle} boxSize={3} />
+                        <Text
+                            fontSize="10px"
+                            fontWeight="bold"
+                            textTransform="uppercase"
+                            letterSpacing="0.06em"
+                        >
+                            Under review
+                        </Text>
+                    </HStack>
+                )}
             </Box>
 
             {/* Body */}
@@ -280,6 +320,29 @@ export const MediaGridCard: React.FC<MediaGridCardProps> = ({
                     Edit
                 </Button>
             </HStack>
+
+            {/* Held-content footer strip — the dominant entry point to the dispute page from the library. */}
+            {showHeldBadge && disputeHref && (
+                <RouterLink to={disputeHref}>
+                    <HStack
+                        bg="yellow.50"
+                        borderTop="1px solid"
+                        borderColor="yellow.200"
+                        px={4}
+                        py={2.5}
+                        gap={2}
+                        cursor="pointer"
+                        _hover={{ bg: 'yellow.100' }}
+                        transition="background-color 0.15s ease"
+                    >
+                        <Icon as={FiAlertTriangle} boxSize={3.5} color="yellow.800" />
+                        <Text fontSize="11px" color="yellow.900" fontWeight="600" flex="1" truncate>
+                            {hasActiveDispute ? 'Dispute submitted · view status' : 'Review & dispute'}
+                        </Text>
+                        <Icon as={FiArrowRight} boxSize={3.5} color="yellow.800" />
+                    </HStack>
+                </RouterLink>
+            )}
         </Box>
     );
 };

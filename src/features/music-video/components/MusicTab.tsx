@@ -289,6 +289,9 @@ export const MusicTab: React.FC = () => {
                     {filteredItems.map((item) => {
                         const album = 'album' in item ? item.album : undefined;
                         const isPublished = 'isPublished' in item ? item.isPublished : undefined;
+                        // Dispute fields only exist on SingleItem; AlbumItem has no direct hold state.
+                        const heldForDuplicateReview = 'heldForDuplicateReview' in item ? item.heldForDuplicateReview : undefined;
+                        const hasActiveDispute = 'hasActiveDispute' in item ? item.hasActiveDispute : undefined;
                         return (
                             <MediaGridCard
                                 key={item.id}
@@ -302,6 +305,8 @@ export const MusicTab: React.FC = () => {
                                 kind={isSingleTab(activeTab) ? 'single' : 'album'}
                                 isDeleting={isDeleting === item.id}
                                 isPublished={isPublished}
+                                heldForDuplicateReview={heldForDuplicateReview}
+                                hasActiveDispute={hasActiveDispute}
                                 onEdit={() => onItemEdit(item)}
                                 onOpen={() => onItemOpen(item)}
                                 onPlay={() => onItemPlay(item)}
@@ -312,26 +317,32 @@ export const MusicTab: React.FC = () => {
                 </SimpleGrid>
             ) : (
                 <MediaTable showAlbumColumn={false}>
-                    {filteredItems.map((item) => (
-                        <MediaTableRow
-                            key={item.id}
-                            id={item.id}
-                            thumbnail={item.coverArt}
-                            title={item.title}
-                            artist={item.artist}
-                            releaseDate={formatRelease(item.releaseDate)}
-                            plays={item.plays}
-                            unlocks={item.unlocks}
-                            gifts={item.gifts}
-                            kind={isSingleTab(activeTab) ? 'single' : 'album'}
-                            showAlbumColumn={false}
-                            isDeleting={isDeleting === item.id}
-                            onEdit={() => onItemEdit(item)}
-                            onOpen={() => onItemOpen(item)}
-                            onPlay={() => onItemPlay(item)}
-                            onDelete={() => onItemDelete(item)}
-                        />
-                    ))}
+                    {filteredItems.map((item) => {
+                        const heldForDuplicateReview = 'heldForDuplicateReview' in item ? item.heldForDuplicateReview : undefined;
+                        const hasActiveDispute = 'hasActiveDispute' in item ? item.hasActiveDispute : undefined;
+                        return (
+                            <MediaTableRow
+                                key={item.id}
+                                id={item.id}
+                                thumbnail={item.coverArt}
+                                title={item.title}
+                                artist={item.artist}
+                                releaseDate={formatRelease(item.releaseDate)}
+                                plays={item.plays}
+                                unlocks={item.unlocks}
+                                gifts={item.gifts}
+                                kind={isSingleTab(activeTab) ? 'single' : 'album'}
+                                showAlbumColumn={false}
+                                isDeleting={isDeleting === item.id}
+                                heldForDuplicateReview={heldForDuplicateReview}
+                                hasActiveDispute={hasActiveDispute}
+                                onEdit={() => onItemEdit(item)}
+                                onOpen={() => onItemOpen(item)}
+                                onPlay={() => onItemPlay(item)}
+                                onDelete={() => onItemDelete(item)}
+                            />
+                        );
+                    })}
                 </MediaTable>
             )}
         </>

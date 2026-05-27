@@ -1,6 +1,7 @@
 import React from 'react';
 import { Box, Flex, HStack, Icon, Spinner, Table, Text } from '@chakra-ui/react';
-import { FiPlay, FiMusic, FiVideo } from 'react-icons/fi';
+import { FiAlertTriangle, FiArrowRight, FiPlay, FiMusic, FiVideo } from 'react-icons/fi';
+import { useNavigate } from 'react-router-dom';
 import { Edit2Icon } from '@shared/icons/CustomIcons';
 import { CustomMenu } from '@/shared/components/CustomMenu';
 import { AuthedImage } from '@/shared/components/AuthedImage';
@@ -19,6 +20,10 @@ interface MediaTableRowProps {
     kind: MediaKind;
     showAlbumColumn: boolean;
     isDeleting?: boolean;
+    /** True while the upload is held by the duplicate-detection screen. */
+    heldForDuplicateReview?: boolean;
+    /** True when the artist has already submitted a dispute on the active hold. */
+    hasActiveDispute?: boolean;
     onEdit: () => void;
     onPlay?: () => void;
     onOpen?: () => void;
@@ -40,11 +45,21 @@ export const MediaTableRow: React.FC<MediaTableRowProps> = ({
     kind,
     showAlbumColumn,
     isDeleting = false,
+    heldForDuplicateReview,
+    hasActiveDispute,
     onEdit,
     onPlay,
     onOpen,
     onDelete,
 }) => {
+    const navigate = useNavigate();
+    // Albums aren't directly held — only their tracks are — so only single/video carry the badge.
+    const showHeldBadge = heldForDuplicateReview && (kind === 'single' || kind === 'video');
+    const disputeHref = kind === 'single'
+        ? `/disputes/track/${id}`
+        : kind === 'video'
+            ? `/disputes/video/${id}`
+            : null;
     const handleShare = () => {
         const link = `${window.location.origin}/music-videos/${kind}/${id}`;
         if (navigator.share) navigator.share({ title, url: link }).catch(() => {});
@@ -129,6 +144,25 @@ export const MediaTableRow: React.FC<MediaTableRowProps> = ({
                 <Text fontSize="13px" fontWeight="600" color="gray.blue.800" truncate>
                     {title}
                 </Text>
+                {showHeldBadge && (
+                    <HStack
+                        gap={1}
+                        bg="yellow.50"
+                        border="1px solid"
+                        borderColor="yellow.200"
+                        color="yellow.900"
+                        px={1.5}
+                        py={0.5}
+                        borderRadius="full"
+                        display="inline-flex"
+                        mt={1}
+                    >
+                        <Icon as={FiAlertTriangle} boxSize={2.5} />
+                        <Text fontSize="10px" fontWeight="600" letterSpacing="0.02em">
+                            Under review
+                        </Text>
+                    </HStack>
+                )}
             </Table.Cell>
 
             {/* Artist */}
@@ -183,23 +217,50 @@ export const MediaTableRow: React.FC<MediaTableRowProps> = ({
             {/* Actions */}
             <Table.Cell py={3} textAlign="right">
                 <HStack justify="flex-end" gap={1}>
-                    <Box
-                        as="button"
-                        onClick={onEdit}
-                        color="primary.500"
-                        fontSize="12px"
-                        fontWeight="medium"
-                        h="28px"
-                        px={2}
-                        borderRadius="md"
-                        display="inline-flex"
-                        alignItems="center"
-                        gap={1}
-                        _hover={{ bg: 'primary.50' }}
-                    >
-                        <Icon as={Edit2Icon} boxSize={3.5} />
-                        Edit
-                    </Box>
+                    {showHeldBadge && disputeHref ? (
+                        <Box
+                            as="button"
+                            onClick={(e: React.MouseEvent) => {
+                                e.stopPropagation();
+                                navigate(disputeHref);
+                            }}
+                            color="yellow.900"
+                            bg="yellow.50"
+                            border="1px solid"
+                            borderColor="yellow.200"
+                            fontSize="12px"
+                            fontWeight="600"
+                            h="28px"
+                            px={2.5}
+                            borderRadius="md"
+                            display="inline-flex"
+                            alignItems="center"
+                            gap={1}
+                            _hover={{ bg: 'yellow.100' }}
+                        >
+                            <Icon as={FiAlertTriangle} boxSize={3.5} />
+                            {hasActiveDispute ? 'View dispute' : 'Dispute'}
+                            <Icon as={FiArrowRight} boxSize={3} />
+                        </Box>
+                    ) : (
+                        <Box
+                            as="button"
+                            onClick={onEdit}
+                            color="primary.500"
+                            fontSize="12px"
+                            fontWeight="medium"
+                            h="28px"
+                            px={2}
+                            borderRadius="md"
+                            display="inline-flex"
+                            alignItems="center"
+                            gap={1}
+                            _hover={{ bg: 'primary.50' }}
+                        >
+                            <Icon as={Edit2Icon} boxSize={3.5} />
+                            Edit
+                        </Box>
+                    )}
                     <CustomMenu options={menuOptions} />
                 </HStack>
             </Table.Cell>

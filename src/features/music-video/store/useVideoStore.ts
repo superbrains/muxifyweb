@@ -61,6 +61,10 @@ function videoDtoToVideoItem(video: VideoDto): VideoItem {
     unlockCost: [],
     allowSponsorship: [],
     createdAt: video.createdAt,
+    heldForDuplicateReview: video.heldForDuplicateReview,
+    // List endpoints don't load `duplicateMatch` (per backend `includeDispute: false`),
+    // so dispute presence is only known after the user drills into the dispute page.
+    hasActiveDispute: !!video.duplicateMatch?.disputedAtUtc,
   };
 }
 

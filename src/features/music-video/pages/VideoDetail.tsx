@@ -5,10 +5,16 @@ import { useVideoDetail } from '../hooks/useVideoDetail';
 import { LockPill } from '../components/LockPill';
 import { MuxifyVideoPlayer } from '@/features/player/components/MuxifyVideoPlayer';
 import { formatPlayCount } from '@shared/services/contentService';
+import { useOwnerVideo } from '@/features/moderation/hooks/useOwnerContent';
+import { HeldContentBanner } from '@/features/moderation/components/HeldContentBanner';
 
 export const VideoDetail: React.FC = () => {
     const { id = '' } = useParams<{ id: string }>();
     const { data, isLoading, error } = useVideoDetail(id);
+
+    const ownerVideo = useOwnerVideo(id);
+    const showHeldBanner = !!ownerVideo.data?.heldForDuplicateReview;
+    const hasDispute = !!ownerVideo.data?.duplicateMatch?.disputedAtUtc;
 
     return (
         <Box p={{ base: 4, md: 8, lg: 10 }} maxW="1280px" mx="auto">
@@ -20,6 +26,13 @@ export const VideoDetail: React.FC = () => {
                 <Text color="red.500">Failed to load video.</Text>
             ) : data ? (
                 <VStack align="stretch" gap={6}>
+                    {showHeldBanner && (
+                        <HeldContentBanner
+                            contentType="video"
+                            contentId={id}
+                            hasDispute={hasDispute}
+                        />
+                    )}
                     <MuxifyVideoPlayer
                         videoId={data.id}
                         thumbnail={data.thumbnailUrl}

@@ -1,18 +1,15 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import {
     Dialog,
-    Button,
-    Text,
-    Textarea,
-    VStack,
-    HStack,
     Box,
     Icon,
     IconButton,
-    Spinner,
+    Text,
+    VStack,
 } from '@chakra-ui/react';
 import { MdClose } from 'react-icons/md';
 import { FiFlag } from 'react-icons/fi';
+import { DisputeForm } from './DisputeForm';
 
 interface DisputeModalProps {
     isOpen: boolean;
@@ -26,11 +23,10 @@ interface DisputeModalProps {
     isLoading?: boolean;
 }
 
-const MIN_REASON_LENGTH = 10;
-
 /**
  * Modal for an artist to dispute a duplicate-detection flag on held content.
- * Mirrors ConfirmModal's layout so it stays consistent with the rest of the app.
+ * Composes the shared <DisputeForm> so the validation and copy stay in lockstep
+ * with the standalone /disputes page.
  */
 export const DisputeModal: React.FC<DisputeModalProps> = ({
     isOpen,
@@ -40,16 +36,6 @@ export const DisputeModal: React.FC<DisputeModalProps> = ({
     contentNoun = 'upload',
     isLoading = false,
 }) => {
-    const [reason, setReason] = useState('');
-
-    // Clear the draft whenever the modal is closed.
-    useEffect(() => {
-        if (!isOpen) setReason('');
-    }, [isOpen]);
-
-    const trimmed = reason.trim();
-    const tooShort = trimmed.length < MIN_REASON_LENGTH;
-
     return (
         <Dialog.Root open={isOpen} onOpenChange={(e) => !e.open && onClose()}>
             <Dialog.Backdrop />
@@ -100,68 +86,11 @@ export const DisputeModal: React.FC<DisputeModalProps> = ({
                             </Text>
                         </VStack>
 
-                        <Box>
-                            <Text fontSize="xs" fontWeight="600" color="gray.700" mb={1.5}>
-                                Why is this not an infringing duplicate?
-                            </Text>
-                            <Textarea
-                                value={reason}
-                                onChange={(e) => setReason(e.target.value)}
-                                placeholder="e.g. This is my own original recording, or I hold a valid licence / distribution agreement for it."
-                                rows={5}
-                                fontSize="sm"
-                                resize="vertical"
-                                disabled={isLoading}
-                                borderColor="gray.300"
-                                _focus={{ borderColor: 'primary.500', boxShadow: '0 0 0 1px #f94444' }}
-                            />
-                            <Text fontSize="11px" color="gray.500" mt={1}>
-                                Please give us at least a sentence so the team can act on it.
-                            </Text>
-                        </Box>
-
-                        <HStack gap={3} w="full" justify="flex-end" pt={1}>
-                            <Button
-                                onClick={onClose}
-                                variant="outline"
-                                borderColor="gray.300"
-                                color="gray.700"
-                                size="md"
-                                fontSize="sm"
-                                fontWeight="medium"
-                                px={6}
-                                borderRadius="md"
-                                _hover={{ bg: 'gray.50', borderColor: 'gray.400' }}
-                                disabled={isLoading}
-                            >
-                                Cancel
-                            </Button>
-                            <Button
-                                bg="#f94444"
-                                color="white"
-                                size="md"
-                                fontSize="sm"
-                                fontWeight="medium"
-                                px={6}
-                                borderRadius="md"
-                                onClick={() => onSubmit(trimmed)}
-                                disabled={isLoading || tooShort}
-                                _hover={{ bg: '#e53939' }}
-                                _disabled={{ opacity: 0.5, cursor: 'not-allowed' }}
-                                display="flex"
-                                alignItems="center"
-                                gap={2}
-                            >
-                                {isLoading ? (
-                                    <>
-                                        <Spinner size="sm" color="white" />
-                                        <Text>Submitting…</Text>
-                                    </>
-                                ) : (
-                                    'Submit dispute'
-                                )}
-                            </Button>
-                        </HStack>
+                        <DisputeForm
+                            onSubmit={onSubmit}
+                            onCancel={onClose}
+                            isLoading={isLoading}
+                        />
                     </VStack>
                 </Dialog.Content>
             </Dialog.Positioner>

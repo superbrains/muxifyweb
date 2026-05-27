@@ -13,6 +13,8 @@ import {
 } from '@chakra-ui/react';
 import {
   FiAlertTriangle,
+  FiArrowRight,
+  FiCheckCircle,
   FiChevronDown,
   FiChevronUp,
   FiFlag,
@@ -20,6 +22,7 @@ import {
   FiTrash2,
   FiX,
 } from 'react-icons/fi';
+import { Link as RouterLink } from 'react-router-dom';
 import { ArtistAutocomplete, DisputeModal } from '@shared/components';
 import { toaster } from '@/components/ui/toaster-instance';
 import type {
@@ -27,7 +30,7 @@ import type {
   FeaturedArtistDto,
   FeaturedArtistInput,
 } from '../../types/album';
-import { trackService } from '../../services/trackService';
+import { useDisputeTrack } from '@/features/moderation/hooks/useDispute';
 import { formatDuration } from './format';
 
 interface TrackRowProps {
@@ -85,8 +88,14 @@ export const TrackRow: React.FC<TrackRowProps> = ({
   const [savingTitle, setSavingTitle] = useState(false);
   const [pendingArtist, setPendingArtist] = useState(false);
   const [disputeOpen, setDisputeOpen] = useState(false);
-  const [disputing, setDisputing] = useState(false);
-  const [disputeSubmitted, setDisputeSubmitted] = useState(false);
+
+  // `useDisputeTrack` invalidates the album cache on success — `track.duplicateMatch`
+  // refreshes with `disputedAtUtc` and the "Dispute submitted" state renders without
+  // needing a parallel local boolean.
+  const disputeMutation = useDisputeTrack(track.id);
+  const disputedAt = track.duplicateMatch?.disputedAtUtc ?? null;
+  const hasDispute = !!disputedAt;
+  const disputeHref = `/disputes/track/${track.id}`;
 
   const commitTitle = async () => {
     if (titleDraft.trim() === track.title) return;
@@ -99,10 +108,8 @@ export const TrackRow: React.FC<TrackRowProps> = ({
   };
 
   const handleDispute = async (reason: string) => {
-    setDisputing(true);
     try {
-      await trackService.disputeTrack(track.id, reason);
-      setDisputeSubmitted(true);
+      await disputeMutation.mutateAsync(reason);
       setDisputeOpen(false);
       toaster.create({
         title: 'Dispute submitted',
@@ -115,8 +122,6 @@ export const TrackRow: React.FC<TrackRowProps> = ({
         description: 'Something went wrong. Please try again in a moment.',
         type: 'error',
       });
-    } finally {
-      setDisputing(false);
     }
   };
 
@@ -258,21 +263,50 @@ export const TrackRow: React.FC<TrackRowProps> = ({
                 <Text>
                   This track is on hold — our duplicate-detection check flagged it as a
                   possible duplicate, so it won't be published until a moderator reviews it.
-                  If you hold the rights to this track, you can dispute the flag.
+                  {hasDispute
+                    ? ' Your dispute is on file — track the case from the full dispute page.'
+                    : ' If you hold the rights to this track, you can dispute the flag.'}
                 </Text>
               </HStack>
-              <HStack>
-                <Button
-                  size="xs"
-                  variant="outline"
-                  borderColor="yellow.300"
-                  color="yellow.800"
-                  _hover={{ bg: 'yellow.100' }}
-                  disabled={disputeSubmitted}
-                  onClick={() => setDisputeOpen(true)}
-                >
-                  <FiFlag /> {disputeSubmitted ? 'Dispute submitted' : 'Dispute this flag'}
-                </Button>
+              <HStack gap={2} flexWrap="wrap">
+                {hasDispute ? (
+                  <HStack
+                    gap={1.5}
+                    bg="green.50"
+                    border="1px solid"
+                    borderColor="green.200"
+                    color="green.800"
+                    fontSize="11px"
+                    fontWeight="600"
+                    borderRadius="full"
+                    px={2.5}
+                    py={1}
+                  >
+                    <FiCheckCircle />
+                    <Text>Dispute submitted</Text>
+                  </HStack>
+                ) : (
+                  <Button
+                    size="xs"
+                    variant="outline"
+                    borderColor="yellow.300"
+                    color="yellow.800"
+                    _hover={{ bg: 'yellow.100' }}
+                    onClick={() => setDisputeOpen(true)}
+                  >
+                    <FiFlag /> Dispute this flag
+                  </Button>
+                )}
+                <RouterLink to={disputeHref}>
+                  <Button
+                    size="xs"
+                    variant="ghost"
+                    color="yellow.900"
+                    _hover={{ bg: 'yellow.100' }}
+                  >
+                    See full details <FiArrowRight />
+                  </Button>
+                </RouterLink>
               </HStack>
             </VStack>
           )}
@@ -378,7 +412,7 @@ export const TrackRow: React.FC<TrackRowProps> = ({
         onSubmit={handleDispute}
         contentTitle={track.title}
         contentNoun="track"
-        isLoading={disputing}
+        isLoading={disputeMutation.isPending}
       />
     </Box>
   );

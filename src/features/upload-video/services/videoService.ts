@@ -201,6 +201,16 @@ export const videoService = {
   },
 
   /**
+   * Dispute a duplicate-detection hold on a video. The reason is attached to the
+   * open moderation case and surfaced to moderators for review.
+   * POST /api/v1/video/{id}/dispute
+   */
+  disputeVideo: async (id: string, reason: string): Promise<VideoDto> => {
+    const response = await axiosInstance.post<VideoDto>(`/video/${id}/dispute`, { reason });
+    return response.data;
+  },
+
+  /**
    * Upload thumbnail for an existing video
    */
   uploadThumbnail: async (

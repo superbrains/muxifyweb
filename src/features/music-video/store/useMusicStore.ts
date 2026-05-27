@@ -99,6 +99,10 @@ function trackDtoToSingleItem(track: TrackDto): SingleItem {
       ? new Date(track.releaseDate).getFullYear().toString()
       : new Date(track.createdAt).getFullYear().toString(),
     createdAt: track.createdAt,
+    heldForDuplicateReview: track.heldForDuplicateReview,
+    // List endpoints don't load `duplicateMatch` (per backend `includeDispute: false`),
+    // so we can't know dispute status from listings — only that a hold exists.
+    hasActiveDispute: !!track.duplicateMatch?.disputedAtUtc,
   };
 }
 
