@@ -21,4 +21,23 @@ export const adminKeys = {
     adminDetail: (id: string) => ['admin', 'management', 'admin', id] as const,
     invitations: ['admin', 'management', 'invitations'] as const,
     audit: <T>(query?: T) => ['admin', 'management', 'audit', query ?? {}] as const,
+    // Finance
+    finance: {
+        root: ['admin', 'finance'] as const,
+        overview: (range: unknown) => ['admin', 'finance', 'overview', range] as const,
+        transactions: (query: unknown) => ['admin', 'finance', 'transactions', query] as const,
+        transaction: (id: string) => ['admin', 'finance', 'transaction', id] as const,
+        fanLedger: (userId: string, query: unknown) => ['admin', 'finance', 'fan', userId, query] as const,
+        earnings: (query: unknown) => ['admin', 'finance', 'earnings', query] as const,
+        creatorEarnings: (artistId: string, query: unknown) =>
+            ['admin', 'finance', 'creator', artistId, 'earnings', query] as const,
+        creatorSplits: (artistId: string) => ['admin', 'finance', 'creator', artistId, 'splits'] as const,
+        gifts: (query: unknown) => ['admin', 'finance', 'gifts', query] as const,
+        unlocks: (query: unknown) => ['admin', 'finance', 'unlocks', query] as const,
+        withdrawals: (query: unknown) => ['admin', 'finance', 'withdrawals', query] as const,
+        withdrawal: (id: string) => ['admin', 'finance', 'withdrawal', id] as const,
+        payouts: (query: unknown) => ['admin', 'finance', 'payouts', query] as const,
+        payout: (id: string) => ['admin', 'finance', 'payout', id] as const,
+        reconciliation: (range: unknown) => ['admin', 'finance', 'reconciliation', range] as const,
+    },
 };

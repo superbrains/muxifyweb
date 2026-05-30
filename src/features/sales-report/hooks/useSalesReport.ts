@@ -21,6 +21,8 @@ export interface GiftBreakdownItem {
   count: number;
   totalValue: number;
   displayValue: string;
+  /** Uploaded gift image (media-proxy URL), when the gift has one configured. */
+  imageUrl?: string;
 }
 
 export interface SalesReportData {
@@ -77,6 +79,11 @@ const mapTimeFilterToTopTracksPeriod = (filter: TimeFilter): TopTracksPeriod => 
  * Extract gift type from description or type field
  */
 const extractGiftType = (sale: RecentSaleDto): string => {
+  // Prefer the gift type the backend resolved from the gift config.
+  if (sale.giftType) {
+    return sale.giftType.toLowerCase();
+  }
+
   // Try to extract gift type from description (e.g., "Gift: Donut")
   const descMatch = sale.description?.match(/Gift:\s*(\w+)/i);
   if (descMatch) {
@@ -91,7 +98,7 @@ const extractGiftType = (sale: RecentSaleDto): string => {
  * Aggregate gift sales into breakdown
  */
 const aggregateGiftBreakdown = (giftSales: RecentSaleDto[]): GiftBreakdownItem[] => {
-  const breakdownMap = new Map<string, { count: number; totalValue: number }>();
+  const breakdownMap = new Map<string, { count: number; totalValue: number; imageUrl?: string }>();
 
   giftSales.forEach((sale) => {
     const giftType = extractGiftType(sale);
@@ -99,6 +106,8 @@ const aggregateGiftBreakdown = (giftSales: RecentSaleDto[]): GiftBreakdownItem[]
     breakdownMap.set(giftType, {
       count: existing.count + 1,
       totalValue: existing.totalValue + sale.amountDisplay,
+      // Keep the first configured image we see for this gift type.
+      imageUrl: existing.imageUrl ?? sale.giftImageUrl,
     });
   });
 
@@ -107,6 +116,7 @@ const aggregateGiftBreakdown = (giftSales: RecentSaleDto[]): GiftBreakdownItem[]
     count: data.count,
     totalValue: data.totalValue,
     displayValue: data.totalValue.toLocaleString(),
+    imageUrl: data.imageUrl,
   }));
 };
 

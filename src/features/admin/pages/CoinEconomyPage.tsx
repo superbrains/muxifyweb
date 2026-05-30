@@ -6,6 +6,7 @@ import {
     HStack,
     Icon,
     IconButton,
+    Image,
     Portal,
     SimpleGrid,
     Spinner,
@@ -13,11 +14,15 @@ import {
     Input,
     VStack,
 } from '@chakra-ui/react';
-import { MdClose } from 'react-icons/md';
+import { MdClose, MdAddPhotoAlternate } from 'react-icons/md';
 import { AdminPageHeader } from '../components/AdminPageHeader';
 import { AdminError, AdminLoading } from '../components/AdminStateBlock';
 import { AdminTable, type AdminTableColumn } from '../components/AdminTable';
 import { ConfirmModal } from '@shared/components';
+import { useChakraToast } from '@shared/hooks';
+import { useAuthedImageSrc } from '@/shared/hooks/useAuthedImageSrc';
+import { compressImage } from '@/shared/lib/fileUtils';
+import { coinEconomyService } from '../services/coinEconomyService';
 import {
     useAvailableGiftTypes,
     useCoinEconomySettings,
@@ -501,7 +506,7 @@ const GiftsTab: React.FC = () => {
             header: 'Gift',
             render: (g) => (
                 <HStack gap={2}>
-                    <Text fontSize="md">{g.icon}</Text>
+                    <GiftImage icon={g.icon} />
                     <Box>
                         <Text fontSize="xs" fontWeight="semibold" color="gray.800">
                             {g.name}
@@ -624,6 +629,116 @@ const GiftsTab: React.FC = () => {
     );
 };
 
+/** True when an icon value is an uploaded image (URL/proxy path) rather than a legacy emoji. */
+const isGiftImageUrl = (icon?: string | null): boolean =>
+    typeof icon === 'string' && (icon.startsWith('http') || icon.startsWith('/'));
+
+/** Renders a gift's icon: an uploaded image (via the JWT media proxy) or a legacy emoji fallback. */
+const GiftImage: React.FC<{ icon?: string | null; size?: number }> = ({ icon, size = 28 }) => {
+    const resolved = useAuthedImageSrc(isGiftImageUrl(icon) ? (icon as string) : undefined);
+    if (isGiftImageUrl(icon)) {
+        return (
+            <Box
+                w={`${size}px`}
+                h={`${size}px`}
+                borderRadius="md"
+                overflow="hidden"
+                bg="gray.100"
+                flexShrink={0}
+            >
+                {resolved && <Image src={resolved} alt="gift" w="full" h="full" objectFit="cover" />}
+            </Box>
+        );
+    }
+    return <Text fontSize="md">{icon}</Text>;
+};
+
+/** Click-to-upload gift image field with preview. Stores the returned media-proxy URL in `value`. */
+const GiftImageField: React.FC<{ value: string; onChange: (url: string) => void }> = ({ value, onChange }) => {
+    const toast = useChakraToast();
+    const fileRef = React.useRef<HTMLInputElement>(null);
+    const [uploading, setUploading] = React.useState(false);
+    const [localPreview, setLocalPreview] = React.useState<string | null>(null);
+    const resolved = useAuthedImageSrc(isGiftImageUrl(value) ? value : undefined);
+    const isLegacyEmoji = !!value && !isGiftImageUrl(value);
+    const previewSrc = localPreview ?? (isGiftImageUrl(value) ? resolved : undefined);
+
+    const onFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        e.target.value = '';
+        if (!file) return;
+        if (!file.type.startsWith('image/')) {
+            toast.error('Invalid file type', 'Please select an image file.');
+            return;
+        }
+        if (file.size > 2 * 1024 * 1024) {
+            toast.error('File too large', 'Please select an image smaller than 2MB.');
+            return;
+        }
+        try {
+            setLocalPreview(await compressImage(file, 256, 256, 0.8));
+        } catch {
+            /* preview is best-effort */
+        }
+        setUploading(true);
+        try {
+            const { imageUrl } = await coinEconomyService.uploadGiftImage(file);
+            onChange(imageUrl);
+        } catch {
+            toast.error('Upload failed', 'Could not upload the gift image. Please try again.');
+            setLocalPreview(null);
+        } finally {
+            setUploading(false);
+        }
+    };
+
+    return (
+        <HStack gap={3} align="center">
+            <Box
+                position="relative"
+                w="64px"
+                h="64px"
+                borderRadius="md"
+                border="1px dashed"
+                borderColor="gray.300"
+                bg="gray.50"
+                display="flex"
+                alignItems="center"
+                justifyContent="center"
+                cursor="pointer"
+                overflow="hidden"
+                flexShrink={0}
+                onClick={() => fileRef.current?.click()}
+            >
+                {uploading ? (
+                    <Spinner size="sm" color={ACCENT} />
+                ) : previewSrc ? (
+                    <Image src={previewSrc} alt="gift" w="full" h="full" objectFit="cover" />
+                ) : isLegacyEmoji ? (
+                    <Text fontSize="2xl">{value}</Text>
+                ) : (
+                    <Icon as={MdAddPhotoAlternate} boxSize={6} color="gray.400" />
+                )}
+            </Box>
+            <VStack align="start" gap={0.5}>
+                <Button size="xs" variant="outline" onClick={() => fileRef.current?.click()} loading={uploading}>
+                    {isGiftImageUrl(value) || isLegacyEmoji ? 'Change image' : 'Upload image'}
+                </Button>
+                <Text fontSize="10px" color="gray.500">
+                    PNG, JPG or WebP · ≤ 2MB
+                </Text>
+            </VStack>
+            <input
+                ref={fileRef}
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                style={{ display: 'none' }}
+                onChange={onFile}
+            />
+        </HStack>
+    );
+};
+
 const GiftDialog: React.FC<{
     rate: number;
     gift: AdminGiftType | null;
@@ -703,12 +818,12 @@ const GiftDialog: React.FC<{
                         </select>
                     )}
                 </FieldRow>
+                <FieldRow label="Gift image">
+                    <GiftImageField value={icon} onChange={setIcon} />
+                </FieldRow>
                 <SimpleGrid columns={2} gap={3}>
                     <FieldRow label="Name">
                         <Input value={name} onChange={(e) => setName(e.target.value)} size="sm" />
-                    </FieldRow>
-                    <FieldRow label="Icon (emoji)">
-                        <Input value={icon} onChange={(e) => setIcon(e.target.value)} size="sm" />
                     </FieldRow>
                     <FieldRow label="Coin cost">
                         <Input type="number" value={coinCost} onChange={(e) => setCoinCost(e.target.value)} size="sm" />

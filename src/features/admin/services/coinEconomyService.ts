@@ -66,4 +66,12 @@ export const coinEconomyService = {
     async setGiftTypeActive(id: string, active: boolean): Promise<void> {
         await api.post(`${BASE}/gifts/${id}/${active ? 'activate' : 'deactivate'}`);
     },
+
+    /** Uploads a gift image and returns the media-proxy URL to store on the gift's `icon`. */
+    async uploadGiftImage(file: File): Promise<{ imageUrl: string }> {
+        const formData = new FormData();
+        formData.append('file', file);
+        const { data } = await api.post<{ imageUrl: string }>(`${BASE}/gifts/image`, formData);
+        return data;
+    },
 };

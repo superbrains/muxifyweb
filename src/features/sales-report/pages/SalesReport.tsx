@@ -8,9 +8,11 @@ import {
     Grid,
     Button,
     Icon,
+    Image,
     Spinner,
     chakra,
 } from '@chakra-ui/react';
+import { useAuthedImageSrc } from '@/shared/hooks/useAuthedImageSrc';
 import { AnimatedTabs } from '@shared/components';
 import Chart from 'react-apexcharts';
 import {
@@ -41,6 +43,22 @@ const GIFT_ICONS: Record<string, React.ElementType> = {
 const getGiftIcon = (giftType: string): React.ElementType => {
     const normalizedType = giftType.toLowerCase();
     return GIFT_ICONS[normalizedType] || GIFT_ICONS.default;
+};
+
+/**
+ * Renders a gift's configured image (via the JWT media proxy) when one exists,
+ * otherwise falls back to the hardcoded SVG icon for that gift type.
+ */
+const GiftBreakdownIcon: React.FC<{ imageUrl?: string; fallback: React.ElementType }> = ({ imageUrl, fallback }) => {
+    const resolved = useAuthedImageSrc(imageUrl);
+    if (imageUrl) {
+        return (
+            <Box boxSize={10} borderRadius="md" overflow="hidden" bg="gray.100">
+                {resolved && <Image src={resolved} alt="gift" w="full" h="full" objectFit="contain" />}
+            </Box>
+        );
+    }
+    return <Icon as={fallback} boxSize={10} />;
 };
 
 export const SalesReport: React.FC = () => {
@@ -74,6 +92,7 @@ export const SalesReport: React.FC = () => {
 
         return giftBreakdown.map((item) => ({
             icon: getGiftIcon(item.type),
+            imageUrl: item.imageUrl,
             badge: `X${item.count}`,
             value: item.displayValue,
         }));
@@ -455,10 +474,8 @@ export const SalesReport: React.FC = () => {
                             {giftingData.map((item, index) => (
                                 <VStack key={index} align="center" gap={1.5}>
                                     <Box position="relative" display="flex" alignItems="end" justifyContent="center">
-                                        <Box
-
-                                        >
-                                            <Icon as={item.icon} boxSize={10} />
+                                        <Box>
+                                            <GiftBreakdownIcon imageUrl={item.imageUrl} fallback={item.icon} />
                                         </Box>
                                         <Text
                                             position="absolute"

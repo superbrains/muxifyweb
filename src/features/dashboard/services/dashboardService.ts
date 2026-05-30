@@ -36,6 +36,10 @@ export interface RecentSaleDto {
   trackId?: string;
   trackTitle?: string;
   trackCoverArtUrl?: string;
+  /** For gift sales: the gift type (e.g. "Heart"). */
+  giftType?: string;
+  /** For gift sales: the configured gift image (media-proxy URL). */
+  giftImageUrl?: string;
   transactionDate: string;
 }
 
