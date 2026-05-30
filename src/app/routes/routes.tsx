@@ -66,6 +66,7 @@ const AdminUserDetailPage = lazy(() => import('@/features/admin/pages/UserDetail
 const AdminSupportPage = lazy(() => import('@/features/admin/pages/SupportPage'));
 const AdminSettingsPage = lazy(() => import('@/features/admin/pages/AdminSettingsPage'));
 const AdminManagementPage = lazy(() => import('@/features/admin/pages/AdminManagementPage'));
+const AdminCoinEconomyPage = lazy(() => import('@/features/admin/pages/CoinEconomyPage'));
 const AdminInviteAcceptPage = lazy(() => import('@/features/admin/pages/AdminInviteAcceptPage'));
 
 export const appRoutes: RouteObject[] = [
@@ -139,6 +140,7 @@ export const appRoutes: RouteObject[] = [
                     { path: '/admin/users/:userId', element: <AdminUserDetailPage /> },
                     { path: '/admin/support', element: <AdminSupportPage /> },
                     { path: '/admin/management', element: <AdminManagementPage /> },
+                    { path: '/admin/coin-economy', element: <AdminCoinEconomyPage /> },
                     { path: '/admin/settings', element: <AdminSettingsPage /> },
                 ],
             },

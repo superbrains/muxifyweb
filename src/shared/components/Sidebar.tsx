@@ -67,6 +67,7 @@ const adminNavItems: NavItem[] = [
     { icon: FansAndSubscribersIcon, label: 'Users', path: '/admin/users' },
     { icon: HeadphoneIcon, label: 'Support', path: '/admin/support' },
     { icon: ArtistIcon, label: 'Management', path: '/admin/management' },
+    { icon: WalletMoneyIcon, label: 'Coin Economy', path: '/admin/coin-economy' },
     { icon: Setting2Icon, label: 'Settings', path: '/admin/settings' },
 ];
 
