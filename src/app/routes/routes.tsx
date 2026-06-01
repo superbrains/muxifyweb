@@ -35,6 +35,7 @@ const AlbumEditor = lazy(() => import('@uploadMusic/pages/AlbumEditor'));
 const EarningsAndRoyalty = lazy(() => import('@earningRoyalty/pages/EarningsAndRoyalty'));
 const Leaderboard = lazy(() => import('@leaderboard/pages/Leaderboard'));
 const FansAndSubscribers = lazy(() => import('@fansSubscribers/pages/FansAndSubscribers'));
+const FanProfilePage = lazy(() => import('@fansSubscribers/pages/FanProfilePage'));
 const SalesReport = lazy(() => import('@salesReport/pages/SalesReport'));
 const Payments = lazy(() => import('@payments/pages/Payments'));
 const Settings = lazy(() => import('@settings/pages/Settings'));
@@ -115,6 +116,7 @@ export const appRoutes: RouteObject[] = [
             { path: '/earning-royalty', element: <EarningsAndRoyalty /> },
             { path: '/leaderboard', element: <Leaderboard /> },
             { path: '/fans-subscribers', element: <FansAndSubscribers /> },
+            { path: '/fans/:fanId', element: <FanProfilePage /> },
             { path: '/sales-report', element: <SalesReport /> },
             { path: '/payments', element: <Payments /> },
             { path: '/settings', element: <Settings /> },

@@ -8,26 +8,53 @@
 // ============================================
 
 /**
- * User badge earned through engagement
+ * User badge earned through engagement. Field names mirror the backend
+ * UserBadgeDto (AchievementDtos.cs) exactly.
  */
 export interface UserBadgeDto {
   id: string;
+  badgeId: string;
+  type: string;
   name: string;
   description?: string;
-  iconUrl?: string;
+  /** Slug (e.g. `badge-first-gift`) or media-proxy path / URL. */
+  icon: string;
+  /** Hex color (e.g. `#4CAF50`) used to render a medallion for slug icons. */
+  color: string;
+  points: number;
+  isRare: boolean;
   earnedAt: string;
+  artistName?: string;
+  isDisplayed?: boolean;
 }
 
 /**
- * User medal earned through gifting
+ * User medal earned through gifting. Mirrors backend UserMedalDto.
  */
 export interface UserMedalDto {
   id: string;
+  medalId: string;
+  tier: string;
   name: string;
   description?: string;
-  iconUrl?: string;
-  color?: string;
+  icon: string;
+  color: string;
   earnedAt: string;
+  coinsAtEarning: number;
+  artistName?: string;
+}
+
+/** Response for GET /fans/{id}/badges */
+export interface UserBadgeListDto {
+  badges: UserBadgeDto[];
+  totalCount: number;
+  totalPoints: number;
+}
+
+/** Response for GET /fans/{id}/medals */
+export interface UserMedalListDto {
+  medals: UserMedalDto[];
+  totalCount: number;
 }
 
 // ============================================
@@ -55,6 +82,8 @@ export interface FanPublicProfileDto {
   totalGiftValue: number;
   artistsSupportedCount: number;
   followingCount: number;
+  leaderboardRank?: number;
+  isVerified: boolean;
   featuredBadges: UserBadgeDto[];
   medals: UserMedalDto[];
 }
@@ -97,6 +126,28 @@ export interface FanActivityDto {
   giftType?: string;
   badgeName?: string;
   medalName?: string;
+  /** Proxied image (track cover / video thumb / artist avatar) for this row. */
+  relatedImageUrl?: string;
+}
+
+/**
+ * Artist a fan is following (GET /fans/{id}/followed-artists)
+ */
+export interface FollowedArtistDto {
+  artistId: string;
+  artistName?: string;
+  avatarUrl?: string;
+  followedAt: string;
+  notificationsEnabled: boolean;
+}
+
+/** Paginated list of followed artists */
+export interface FollowedArtistsListDto {
+  artists: FollowedArtistDto[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
 }
 
 /**

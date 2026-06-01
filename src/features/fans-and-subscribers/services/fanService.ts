@@ -4,6 +4,9 @@ import type {
   FanPublicProfileDto,
   FanActivityListDto,
   SupportedArtistsListDto,
+  FollowedArtistsListDto,
+  UserBadgeListDto,
+  UserMedalListDto,
 } from '../types';
 
 const FANS_BASE = '/fans';
@@ -81,6 +84,61 @@ export const fanService = {
       return response.data;
     } catch (error) {
       throw new Error(getApiErrorMessage(error, 'Failed to fetch supported artists'));
+    }
+  },
+
+  // ============================================
+  // Followed Artists
+  // ============================================
+
+  /**
+   * GET /api/v1/fans/{fanId}/followed-artists
+   */
+  async getFollowedArtists(
+    fanId: string,
+    page = 1,
+    pageSize = 20
+  ): Promise<FollowedArtistsListDto> {
+    try {
+      const response = await axiosInstance.get<FollowedArtistsListDto>(
+        `${FANS_BASE}/${fanId}/followed-artists`,
+        { params: { page, pageSize } }
+      );
+      return response.data;
+    } catch (error) {
+      throw new Error(getApiErrorMessage(error, 'Failed to fetch followed artists'));
+    }
+  },
+
+  // ============================================
+  // Achievements
+  // ============================================
+
+  /**
+   * GET /api/v1/fans/{fanId}/badges
+   */
+  async getFanBadges(fanId: string): Promise<UserBadgeListDto> {
+    try {
+      const response = await axiosInstance.get<UserBadgeListDto>(
+        `${FANS_BASE}/${fanId}/badges`
+      );
+      return response.data;
+    } catch (error) {
+      throw new Error(getApiErrorMessage(error, 'Failed to fetch badges'));
+    }
+  },
+
+  /**
+   * GET /api/v1/fans/{fanId}/medals
+   */
+  async getFanMedals(fanId: string): Promise<UserMedalListDto> {
+    try {
+      const response = await axiosInstance.get<UserMedalListDto>(
+        `${FANS_BASE}/${fanId}/medals`
+      );
+      return response.data;
+    } catch (error) {
+      throw new Error(getApiErrorMessage(error, 'Failed to fetch medals'));
     }
   },
 };
