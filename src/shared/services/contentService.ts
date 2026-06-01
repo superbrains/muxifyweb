@@ -91,6 +91,14 @@ export interface VideoDetailDto {
  */
 export interface StreamingUrlDto {
   url: string;
+  /**
+   * Relative path to the authenticated HLS proxy master playlist
+   * (e.g. `/api/v1/video/stream/{id}/master.m3u8`). Present only for videos that
+   * finished HLS transcoding. The browser must send the JWT on every segment/playlist
+   * request, so this is consumed via hls.js with an authed loader rather than the
+   * native <video> tag. Null when no HLS ladder exists (use `url` progressive fallback).
+   */
+  hlsUrl?: string | null;
   expiresAt: string;
   quality: string;
   format: string;

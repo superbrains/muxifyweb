@@ -1,7 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Box, Flex, Icon, IconButton, Spinner, Text } from '@chakra-ui/react';
 import { FiPlay, FiPause, FiVolume2, FiVolumeX, FiMaximize, FiVideo } from 'react-icons/fi';
+import Hls from 'hls.js';
 import { contentService, formatDuration } from '@shared/services/contentService';
+import { axiosInstance, ensureFreshAccessToken, tokenStorage } from '@app/lib/axiosInstance';
 import { usePlayerStore } from '../store/usePlayerStore';
 
 interface MuxifyVideoPlayerProps {
@@ -10,9 +12,26 @@ interface MuxifyVideoPlayerProps {
     title?: string;
 }
 
+/**
+ * Resolve a backend-relative API path (e.g. `/api/v1/video/stream/{id}/master.m3u8`)
+ * to an absolute URL on the API origin. The path already carries the `/api/v1` prefix,
+ * so we only need the scheme+host from the axios baseURL.
+ */
+const toAbsoluteApiUrl = (path: string): string => {
+    const baseURL = axiosInstance.defaults.baseURL ?? '';
+    try {
+        return new URL(baseURL).origin + path;
+    } catch {
+        return path;
+    }
+};
+
 export const MuxifyVideoPlayer: React.FC<MuxifyVideoPlayerProps> = ({ videoId, thumbnail, title }) => {
     const videoRef = useRef<HTMLVideoElement | null>(null);
-    const [streamUrl, setStreamUrl] = useState<string | null>(null);
+    const hlsRef = useRef<Hls | null>(null);
+    // Progressive MP4 (SAS) source — used for browsers without MSE (iOS Safari) and as a
+    // fallback when hls.js can't recover. HLS playback attaches via hls.js and leaves this null.
+    const [progressiveSrc, setProgressiveSrc] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [playing, setPlaying] = useState(false);
@@ -23,28 +42,103 @@ export const MuxifyVideoPlayer: React.FC<MuxifyVideoPlayerProps> = ({ videoId, t
     const pauseForVideo = usePlayerStore((s) => s.pauseForVideo);
 
     useEffect(() => {
+        const video = videoRef.current;
+        if (!video) return;
+
         let cancelled = false;
+        let hls: Hls | null = null;
+        // Cap forced token refreshes triggered by 401 segment errors so a dead refresh
+        // token can't spin the player in an infinite refresh→retry loop.
+        let tokenRetries = 0;
+
         setLoading(true);
         setError(null);
+        setProgressiveSrc(null);
 
-        contentService
-            .getVideoStreamUrl(videoId)
-            .then((res) => {
+        const fallbackToProgressive = (url: string) => {
+            if (cancelled) return;
+            hls?.destroy();
+            hls = null;
+            hlsRef.current = null;
+            setProgressiveSrc(url);
+            setLoading(false);
+        };
+
+        const attach = async () => {
+            let res;
+            try {
+                res = await contentService.getVideoStreamUrl(videoId);
+            } catch (err) {
+                if (!cancelled) {
+                    setError((err as Error).message ?? 'Failed to load video');
+                    setLoading(false);
+                }
+                return;
+            }
+            if (cancelled) return;
+
+            const masterUrl = res.hlsUrl ? toAbsoluteApiUrl(res.hlsUrl) : null;
+
+            // hls.js drives adaptive playback everywhere MSE exists (Chrome/Firefox/Edge and
+            // Safari on desktop). We deliberately do NOT use the browser's native HLS for the
+            // proxy URL: native players can't attach our Authorization header, so every
+            // segment would 401. iOS Safari (no MSE) therefore falls back to the progressive
+            // SAS MP4, which needs no header.
+            if (masterUrl && Hls.isSupported()) {
+                // Make sure the first playlist/segment requests carry a valid token.
+                await ensureFreshAccessToken();
                 if (cancelled) return;
-                // The backend returns a direct URL (SAS or proxy path).
-                // For .m3u8 the browser must support HLS natively (Safari) — adding
-                // hls.js for Chrome is left as a future enhancement.
-                setStreamUrl(res.url);
+
+                hls = new Hls({
+                    // Attach the JWT to every request (master, variant playlists, .ts segments)
+                    // — they all resolve back through the authenticated proxy endpoint.
+                    xhrSetup: (xhr) => {
+                        const token = tokenStorage.getAccessToken();
+                        if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+                    },
+                });
+                hlsRef.current = hls;
+
+                hls.on(Hls.Events.ERROR, (_evt, data) => {
+                    // Mid-playback token expiry (access tokens are short-lived): force a refresh
+                    // and resume loading. Bounded by tokenRetries to avoid a loop on a dead session.
+                    if (data.response?.code === 401 && tokenRetries < 2) {
+                        tokenRetries += 1;
+                        void ensureFreshAccessToken(Number.MAX_SAFE_INTEGER).then(() => {
+                            if (!cancelled) hls?.startLoad();
+                        });
+                        return;
+                    }
+
+                    if (!data.fatal) return;
+
+                    switch (data.type) {
+                        case Hls.ErrorTypes.NETWORK_ERROR:
+                            hls?.startLoad();
+                            break;
+                        case Hls.ErrorTypes.MEDIA_ERROR:
+                            hls?.recoverMediaError();
+                            break;
+                        default:
+                            // Unrecoverable — drop to the progressive MP4 so the user still plays.
+                            fallbackToProgressive(res!.url);
+                    }
+                });
+
+                hls.loadSource(masterUrl);
+                hls.attachMedia(video);
                 setLoading(false);
-            })
-            .catch((err) => {
-                if (cancelled) return;
-                setError((err as Error).message ?? 'Failed to load video');
-                setLoading(false);
-            });
+            } else {
+                fallbackToProgressive(res.url);
+            }
+        };
+
+        void attach();
 
         return () => {
             cancelled = true;
+            hls?.destroy();
+            hlsRef.current = null;
         };
     }, [videoId]);
 
@@ -119,23 +213,23 @@ export const MuxifyVideoPlayer: React.FC<MuxifyVideoPlayerProps> = ({ videoId, t
                 </Flex>
             )}
 
-            {streamUrl && (
-                <video
-                    ref={videoRef}
-                    src={streamUrl}
-                    poster={thumbnail}
-                    title={title}
-                    onPlay={() => {
-                        setPlaying(true);
-                        pauseForVideo();
-                    }}
-                    onPause={() => setPlaying(false)}
-                    onTimeUpdate={(e) => setPosition(e.currentTarget.currentTime)}
-                    onLoadedMetadata={(e) => setDuration(e.currentTarget.duration || 0)}
-                    onClick={togglePlay}
-                    style={{ display: 'block', width: '100%', height: '100%', cursor: 'pointer' }}
-                />
-            )}
+            {/* Always mounted so hls.js can attach to the element via the ref. The src is
+                only set for the progressive (non-HLS) path; in HLS mode hls.js feeds buffers. */}
+            <video
+                ref={videoRef}
+                src={progressiveSrc ?? undefined}
+                poster={thumbnail}
+                title={title}
+                onPlay={() => {
+                    setPlaying(true);
+                    pauseForVideo();
+                }}
+                onPause={() => setPlaying(false)}
+                onTimeUpdate={(e) => setPosition(e.currentTarget.currentTime)}
+                onLoadedMetadata={(e) => setDuration(e.currentTarget.duration || 0)}
+                onClick={togglePlay}
+                style={{ display: 'block', width: '100%', height: '100%', cursor: 'pointer' }}
+            />
 
             {/* Controls overlay */}
             <Box
