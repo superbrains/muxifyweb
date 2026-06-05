@@ -20,6 +20,8 @@ export const financeStatusStyle = (status?: string | null): StatusStyle => {
             return { ...GREEN, label };
         case 'Processing':
             return { ...BLUE, label };
+        case 'PendingLabelApproval':
+            return { ...AMBER, label: 'Awaiting label' };
         case 'Pending':
             return { ...AMBER, label };
         case 'Failed':

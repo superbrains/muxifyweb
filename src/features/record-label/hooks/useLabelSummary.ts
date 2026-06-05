@@ -13,6 +13,9 @@ export const labelKeys = {
     payouts: <T>(filters?: T) =>
         ['label', 'payouts', filters ?? {}] as const,
     payout: (id: string) => ['label', 'payout', id] as const,
+    ownBalance: ['label', 'own-balance'] as const,
+    withdrawalRequests: <T>(filters?: T) =>
+        ['label', 'withdrawal-requests', filters ?? {}] as const,
     analytics: <T>(range: T) =>
         ['label', 'analytics', range] as const,
 };

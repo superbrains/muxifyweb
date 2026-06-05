@@ -6,9 +6,11 @@ import type {
     InviteArtistRequest,
     InviteArtistResponse,
     LabelAnalyticsDto,
+    LabelOwnBalanceDto,
     LabelReleaseSummaryDto,
     LabelReleasesPageDto,
     LabelSummaryDto,
+    LabelWithdrawalRequestsPageDto,
     PayoutDto,
     ReleaseFilters,
     ReleaseSplitsDto,
@@ -17,6 +19,7 @@ import type {
     SetSplitsRequest,
     TriggerPayoutRequest,
     TriggerPayoutResponse,
+    WithdrawalRequestResultDto,
 } from '../types';
 
 const BASE = '/labels/me';
@@ -151,6 +154,38 @@ export const recordLabelService = {
             { headers: { 'Idempotency-Key': idempotencyKey } },
         );
         return data;
+    },
+
+    // Label's own split-aware balance + request (goes straight to admin)
+    getOwnPayoutBalance: async (): Promise<LabelOwnBalanceDto> => {
+        const { data } = await api.get<LabelOwnBalanceDto>(`${BASE}/payouts/own-balance`);
+        return data;
+    },
+    requestOwnPayout: async (amountMinor: number): Promise<WithdrawalRequestResultDto> => {
+        const { data } = await api.post<WithdrawalRequestResultDto>(
+            `${BASE}/payouts/request-own`,
+            { amountMinor },
+        );
+        return data;
+    },
+
+    // Withdrawal requests from roster artists awaiting this label's approval
+    getWithdrawalRequests: async (params?: {
+        status?: string;
+        page?: number;
+        pageSize?: number;
+    }): Promise<LabelWithdrawalRequestsPageDto> => {
+        const { data } = await api.get<LabelWithdrawalRequestsPageDto>(
+            `${BASE}/withdrawal-requests`,
+            { params },
+        );
+        return data;
+    },
+    approveWithdrawalRequest: async (id: string, note?: string): Promise<void> => {
+        await api.post(`${BASE}/withdrawal-requests/${id}/approve`, { note });
+    },
+    rejectWithdrawalRequest: async (id: string, reason: string): Promise<void> => {
+        await api.post(`${BASE}/withdrawal-requests/${id}/reject`, { reason });
     },
 
     // Analytics

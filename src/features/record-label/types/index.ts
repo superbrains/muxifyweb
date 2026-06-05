@@ -247,6 +247,63 @@ export interface TriggerPayoutResponse {
     batches: PayoutBatchSummary[];
 }
 
+// ---------------------------------------------------------------------------
+// Withdrawal request (pull) flow
+// ---------------------------------------------------------------------------
+
+/** Multi-stage status shared with the artist withdrawal flow (PascalCase from API). */
+export type WithdrawalRequestStatus =
+    | 'PendingLabelApproval'
+    | 'Pending'
+    | 'Processing'
+    | 'Completed'
+    | 'Failed'
+    | 'Cancelled'
+    | 'Rejected';
+
+export interface LabelWithdrawalRequestDto {
+    id: string;
+    artistUserId: string;
+    artistName: string;
+    artistEmail?: string;
+    amountMinor: number;
+    processingFeeMinor: number;
+    netAmountMinor: number;
+    currency: string;
+    status: WithdrawalRequestStatus;
+    bankName: string;
+    accountNumber: string;
+    accountName: string;
+    requestedAt: string;
+    labelDecisionAt?: string;
+    labelRejectionReason?: string;
+}
+
+export interface LabelWithdrawalRequestsPageDto {
+    items: LabelWithdrawalRequestDto[];
+    page: number;
+    pageSize: number;
+    total: number;
+}
+
+export interface LabelOwnBalanceDto {
+    currency: string;
+    totalNetShareMinor: number;
+    pendingMinor: number;
+    withdrawnMinor: number;
+    availableMinor: number;
+}
+
+export interface WithdrawalRequestResultDto {
+    success: boolean;
+    withdrawalId: string;
+    status: WithdrawalRequestStatus;
+    amountRequested: number;
+    processingFee: number;
+    netAmount: number;
+    message?: string;
+}
+
 /**
  * Frontend-side filters for the payouts list. Mirrors the backend query string
  * (`status`, `from`, `to`, `page`, `pageSize`). `search` is applied client-side

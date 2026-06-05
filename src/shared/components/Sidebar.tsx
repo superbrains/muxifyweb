@@ -58,6 +58,7 @@ const recordLabelNavItems: NavItem[] = [
     { icon: MusicIcon, label: 'Releases', path: '/label/releases' },
     { icon: EarningsAndRoyaltyIcon, label: 'Splits', path: '/label/splits' },
     { icon: PaymentsIcon, label: 'Payouts', path: '/label/payouts' },
+    { icon: WalletMoneyIcon, label: 'Requests', path: '/label/withdrawal-requests' },
     { icon: Setting2Icon, label: 'Settings', path: '/label/settings' },
 ];
 

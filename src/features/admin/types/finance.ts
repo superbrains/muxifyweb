@@ -164,6 +164,15 @@ export interface WithdrawalListItem {
     accountName?: string | null;
     requestedAt: string;
     completedAt?: string | null;
+
+    // Two-tier approval trail
+    requesterRole?: string;
+    labelUserId?: string | null;
+    labelName?: string | null;
+    labelDecisionAt?: string | null;
+    labelRejectionReason?: string | null;
+    rejectionReason?: string | null;
+    rejectedByRole?: string | null;
 }
 
 export interface WithdrawalDetail {

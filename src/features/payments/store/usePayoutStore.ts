@@ -1,6 +1,8 @@
 import { create } from "zustand";
 import { payoutService } from "../services/payoutService";
 import { getApiErrorMessage } from "@shared/lib/errorUtils";
+import { earningsService } from "@/features/earnings-and-royalty/services/earningsService";
+import type { WithdrawalResponse } from "@/features/earnings-and-royalty/types";
 import type {
   PayoutMethodDto,
   BankDto,
@@ -48,7 +50,7 @@ interface PayoutStore {
   setPayoutAccount: (account: PayoutAccount) => Promise<void>;
   addPayoutHistory: (payout: PayoutHistoryItem) => void;
   setEarningBalance: (balance: number) => void;
-  initiatePayout: (amount: number) => Promise<void>;
+  initiatePayout: (amount: number) => Promise<WithdrawalResponse | null>;
   clearError: () => void;
 }
 
@@ -349,42 +351,44 @@ export const usePayoutStore = create<PayoutStore>((set, get) => ({
     set({ earningBalance: balance });
   },
 
-  // Initiate payout (uses earningsService.requestWithdrawal)
+  // Initiate a withdrawal request. The backend resolves real bank details from the
+  // artist's default payout account and routes the request (label-managed artists go
+  // through their label first; independent artists go straight to admin).
   initiatePayout: async (amount: number) => {
     const { payoutAccount, earningBalance } = get();
     if (!payoutAccount) {
       set({ error: "No payout account configured" });
-      return;
+      return null;
     }
     if (amount > earningBalance) {
       set({ error: "Insufficient balance" });
-      return;
+      return null;
     }
 
     set({ isLoading: true, error: null });
     try {
-      // Note: The actual withdrawal uses earningsService.requestWithdrawal
-      // This store method is for UI state management
-      // In a real integration, you'd call earningsService here
-
-      // Add to history
-      const newPayout: PayoutHistoryItem = {
-        id: Date.now().toString(),
-        accountName: payoutAccount.accountName,
-        accountNumber: payoutAccount.accountNumber,
+      const response = await earningsService.requestWithdrawal({
+        amountInSmallestUnit: Math.round(amount * 100),
         bankName: payoutAccount.bankName,
-        amount,
-        status: "pending",
-        date: new Date().toISOString(),
-      };
+        accountNumber: payoutAccount.accountNumber,
+        accountName: payoutAccount.accountName,
+        bankCode: payoutAccount.bankCode,
+      });
 
-      get().addPayoutHistory(newPayout);
-      set({ isLoading: false });
-    } catch (error) {
+      // Optimistically reduce the visible available balance; the next summary fetch
+      // reconciles it against the server.
       set({
-        error: getApiErrorMessage(error, "Payout failed"),
+        earningBalance: Math.max(0, earningBalance - amount),
         isLoading: false,
       });
+
+      return response.data;
+    } catch (error) {
+      set({
+        error: getApiErrorMessage(error, "Withdrawal request failed"),
+        isLoading: false,
+      });
+      return null;
     }
   },
 

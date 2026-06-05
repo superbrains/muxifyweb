@@ -75,7 +75,16 @@ export interface EarningsHistoryDto {
 // Withdrawal DTOs
 // ============================================================================
 
-export type WithdrawalStatus = "pending" | "processing" | "completed" | "failed" | "cancelled";
+// Server serializes the WithdrawalStatus enum as PascalCase. PendingLabelApproval and
+// Rejected were added for the two-tier (artist → label → admin) approval flow.
+export type WithdrawalStatus =
+  | "PendingLabelApproval"
+  | "Pending"
+  | "Processing"
+  | "Completed"
+  | "Failed"
+  | "Cancelled"
+  | "Rejected";
 
 export interface WithdrawalRequest {
   amountInSmallestUnit: number;
@@ -111,6 +120,14 @@ export interface WithdrawalDto {
   requestedAt: string;
   completedAt?: string;
   gatewayMessage?: string;
+
+  // Two-tier approval trail
+  requesterRole: "Artist" | "Label";
+  isLabelManaged: boolean;
+  labelDecisionAt?: string;
+  labelRejectionReason?: string;
+  rejectionReason?: string;
+  rejectedByRole?: "Label" | "Admin";
 }
 
 export interface WithdrawalHistoryDto {
@@ -241,16 +258,40 @@ export function mapEarningsSummaryToOverview(dto: EarningsSummaryDto): EarningsO
 
 export function getWithdrawalStatusColor(status: WithdrawalStatus): string {
   switch (status) {
-    case "completed":
+    case "Completed":
       return "green";
-    case "pending":
-    case "processing":
+    case "PendingLabelApproval":
+    case "Pending":
+    case "Processing":
       return "yellow";
-    case "failed":
-    case "cancelled":
+    case "Failed":
+    case "Cancelled":
+    case "Rejected":
       return "red";
     default:
       return "gray";
+  }
+}
+
+// Human-friendly label for each multi-stage withdrawal status.
+export function getWithdrawalStatusLabel(status: WithdrawalStatus): string {
+  switch (status) {
+    case "PendingLabelApproval":
+      return "Pending Label Approval";
+    case "Pending":
+      return "Pending Admin Approval";
+    case "Processing":
+      return "Processing";
+    case "Completed":
+      return "Paid";
+    case "Rejected":
+      return "Rejected";
+    case "Failed":
+      return "Failed";
+    case "Cancelled":
+      return "Cancelled";
+    default:
+      return status;
   }
 }
 

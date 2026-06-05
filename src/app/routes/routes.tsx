@@ -57,6 +57,7 @@ const ReleasesPage = lazy(() => import('@/features/record-label/pages/ReleasesPa
 const SplitsPage = lazy(() => import('@/features/record-label/pages/SplitsPage'));
 const SplitEditorPage = lazy(() => import('@/features/record-label/pages/SplitEditorPage'));
 const PayoutsPage = lazy(() => import('@/features/record-label/pages/PayoutsPage'));
+const WithdrawalRequestsPage = lazy(() => import('@/features/record-label/pages/WithdrawalRequestsPage'));
 const CompanySettingsPage = lazy(() => import('@/features/record-label/pages/CompanySettingsPage'));
 const InviteAcceptPage = lazy(() => import('@/features/record-label/pages/InviteAcceptPage'));
 // Super Admin
@@ -106,6 +107,7 @@ export const appRoutes: RouteObject[] = [
             { path: '/label/splits', element: <SplitsPage /> },
             { path: '/label/splits/:trackId', element: <SplitEditorPage /> },
             { path: '/label/payouts', element: <PayoutsPage /> },
+            { path: '/label/withdrawal-requests', element: <WithdrawalRequestsPage /> },
             { path: '/label/settings', element: <CompanySettingsPage /> },
             { path: '/upload', element: <Upload /> },
             { path: '/upload/splits', element: <UploadSplitsPage /> },

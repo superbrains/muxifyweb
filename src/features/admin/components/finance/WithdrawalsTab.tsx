@@ -25,9 +25,11 @@ const PAGE_SIZE = 15;
 
 const STATUS_OPTIONS = [
     { value: 'All', label: 'All statuses' },
-    { value: 'Pending', label: 'Pending' },
+    { value: 'PendingLabelApproval', label: 'Awaiting label' },
+    { value: 'Pending', label: 'Pending (admin)' },
     { value: 'Processing', label: 'Processing' },
     { value: 'Completed', label: 'Completed' },
+    { value: 'Rejected', label: 'Rejected' },
     { value: 'Failed', label: 'Failed' },
     { value: 'Cancelled', label: 'Cancelled' },
 ];
@@ -50,10 +52,27 @@ function ActionButtons({ w, onAct }: { w: WithdrawalListItem; onAct: (id: string
     );
     return (
         <HStack gap={1.5} justify="flex-end">
+            {w.status === 'PendingLabelApproval' && (
+                <Text fontSize="10px" color="#92660C" fontStyle="italic">Awaiting label</Text>
+            )}
             {w.status === 'Pending' && (<>{btn('Approve', 'approve')}{btn('Reject', 'reject', true)}</>)}
             {w.status === 'Processing' && (<>{btn('Mark paid', 'markPaid')}{btn('Fail', 'reject', true)}</>)}
             {w.status === 'Failed' && (<>{btn('Retry', 'retry')}{btn('Reject', 'reject', true)}</>)}
         </HStack>
+    );
+}
+
+function RequesterCell({ w }: { w: WithdrawalListItem }) {
+    const isLabel = w.requesterRole === 'Label';
+    return (
+        <VStack align="start" gap={0}>
+            <Text fontSize="xs" fontWeight="medium" color={isLabel ? '#1D4ED8' : 'gray.700'}>
+                {isLabel ? 'Record Label' : 'Artist'}
+            </Text>
+            {w.labelName && (
+                <Text fontSize="10px" color="gray.500">via {w.labelName}</Text>
+            )}
+        </VStack>
     );
 }
 
@@ -73,6 +92,7 @@ export function WithdrawalsTab() {
 
     const columns: AdminTableColumn<WithdrawalListItem>[] = [
         { key: 'artist', header: 'Creator', render: (w) => <IdentityCell name={w.artistName} secondary={w.artistEmail ?? undefined} size="xs" /> },
+        { key: 'requester', header: 'Requester', render: (w) => <RequesterCell w={w} /> },
         { key: 'amount', header: 'Net amount', align: 'right', render: (w) => <Text fontSize="xs" fontWeight="semibold">{formatMinorAmount(w.netAmountMinor, w.currency)}</Text> },
         { key: 'bank', header: 'Bank', render: (w) => <Text fontSize="xs" color="gray.600">{w.bankName ?? '—'}{w.accountNumber ? ` ·••${w.accountNumber.slice(-4)}` : ''}</Text> },
         { key: 'status', header: 'Status', render: (w) => <StatusBadge style={financeStatusStyle(w.status)} /> },

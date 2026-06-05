@@ -14,6 +14,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { usePayouts } from '../hooks/usePayouts';
 import { useLabelSummary } from '../hooks/useLabelSummary';
 import { PayoutTriggerDialog } from '../components/PayoutTriggerDialog';
+import { RequestOwnPayoutDialog } from '../components/RequestOwnPayoutDialog';
 import { PayoutsKpiStrip } from '../components/PayoutsKpiStrip';
 import { PayoutsFilterBar } from '../components/PayoutsFilterBar';
 import { PayoutDetailDrawer } from '../components/PayoutDetailDrawer';
@@ -63,6 +64,7 @@ const PayoutsPage: React.FC = () => {
     );
 
     const [triggerOpen, setTriggerOpen] = React.useState(false);
+    const [requestOwnOpen, setRequestOwnOpen] = React.useState(false);
     const [detailId, setDetailId] = React.useState<string | null>(null);
 
     const { data: payouts, isLoading } = usePayouts(filters);
@@ -111,19 +113,34 @@ const PayoutsPage: React.FC = () => {
                         {headerSub}
                     </Text>
                 </Box>
-                <Button
-                    onClick={() => setTriggerOpen(true)}
-                    disabled={!canTrigger}
-                    bg="primary.500"
-                    color="white"
-                    size="sm"
-                    fontSize="xs"
-                    fontWeight="medium"
-                    borderRadius="10px"
-                    _hover={{ bg: 'primary.600' }}
-                >
-                    Trigger payout
-                </Button>
+                <HStack gap={2}>
+                    <Button
+                        onClick={() => setRequestOwnOpen(true)}
+                        variant="outline"
+                        size="sm"
+                        fontSize="xs"
+                        fontWeight="medium"
+                        borderRadius="10px"
+                        borderColor="gray.200"
+                        color="gray.700"
+                        _hover={{ bg: 'gray.50' }}
+                    >
+                        Request my payout
+                    </Button>
+                    <Button
+                        onClick={() => setTriggerOpen(true)}
+                        disabled={!canTrigger}
+                        bg="primary.500"
+                        color="white"
+                        size="sm"
+                        fontSize="xs"
+                        fontWeight="medium"
+                        borderRadius="10px"
+                        _hover={{ bg: 'primary.600' }}
+                    >
+                        Trigger payout
+                    </Button>
+                </HStack>
             </HStack>
 
             {!canTrigger && summary && (
@@ -263,6 +280,7 @@ const PayoutsPage: React.FC = () => {
             ) : null}
 
             <PayoutTriggerDialog open={triggerOpen} onClose={() => setTriggerOpen(false)} />
+            <RequestOwnPayoutDialog open={requestOwnOpen} onClose={() => setRequestOwnOpen(false)} />
             <PayoutDetailDrawer payoutId={detailId} onClose={() => setDetailId(null)} />
         </VStack>
     );
