@@ -80,6 +80,17 @@ export interface DashboardAnalyticsDto {
   newFollowers: number;
   totalGiftsReceived: number;
   totalContentUnlocks: number;
+  // Trend vs the immediately-preceding equal-length window (drives card labels)
+  earningsPercentChange: number;
+  earningsIsPositive: boolean;
+  playsPercentChange: number;
+  playsIsPositive: boolean;
+  followersPercentChange: number;
+  followersIsPositive: boolean;
+  giftsPercentChange: number;
+  giftsIsPositive: boolean;
+  unlocksPercentChange: number;
+  unlocksIsPositive: boolean;
 }
 
 // ============================================================================
@@ -159,7 +170,7 @@ export interface PerformanceData {
 // Type period options
 // ============================================================================
 
-export type AnalyticsPeriod = "7d" | "30d" | "90d" | "1y";
+export type AnalyticsPeriod = "7d" | "30d" | "90d" | "12m";
 export type TopTracksPeriod = "7d" | "30d" | "90d" | "all-time";
 
 // ============================================================================
@@ -221,11 +232,22 @@ export const dashboardService = {
     api.get<RecentSalesDto>(`/dashboard/recent-sales?take=${take}`),
 
   /**
-   * Get dashboard analytics with chart data
-   * @param period - Time period for analytics (7d, 30d, 90d, 1y)
+   * Get dashboard analytics with chart data.
+   * @param period - Preset time period (7d, 30d, 90d, 12m). Ignored when a custom
+   *   `from`/`to` range is supplied.
+   * @param from - Optional custom range start (YYYY-MM-DD).
+   * @param to - Optional custom range end (YYYY-MM-DD).
    */
-  getAnalytics: (period: AnalyticsPeriod = "7d") =>
-    api.get<DashboardAnalyticsDto>(`/dashboard/analytics?period=${period}`),
+  getAnalytics: (period: AnalyticsPeriod = "7d", from?: string, to?: string) => {
+    const params = new URLSearchParams();
+    if (from && to) {
+      params.set("from", from);
+      params.set("to", to);
+    } else {
+      params.set("period", period);
+    }
+    return api.get<DashboardAnalyticsDto>(`/dashboard/analytics?${params.toString()}`);
+  },
 
   /**
    * Get top performing tracks

@@ -108,6 +108,27 @@ export const useDashboard = () => {
   );
 
   /**
+   * Load analytics for an arbitrary custom date range (inclusive).
+   * @param from - range start, YYYY-MM-DD
+   * @param to - range end, YYYY-MM-DD
+   */
+  const loadAnalyticsRange = useCallback(
+    async (from: string, to: string) => {
+      try {
+        const response = await dashboardService.getAnalytics("7d", from, to);
+        setAnalyticsDto(response.data);
+        setPerformanceData(mapAnalyticsToPerformanceData(response.data));
+      } catch (error: unknown) {
+        toast.error(
+          "Failed to load analytics data",
+          getApiErrorMessage(error, "An unexpected error occurred")
+        );
+      }
+    },
+    [setAnalyticsDto, setPerformanceData, toast]
+  );
+
+  /**
    * Load top tracks for a specific period
    */
   const loadTopTracks = useCallback(
@@ -178,6 +199,7 @@ export const useDashboard = () => {
     // Actions
     loadDashboardData,
     loadAnalytics,
+    loadAnalyticsRange,
     loadTopTracks,
     refreshRecentSales,
     setSelectedPeriod,

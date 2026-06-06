@@ -50,7 +50,7 @@ const mapTimeFilterToPeriod = (filter: TimeFilter): AnalyticsPeriod => {
     case "monthly":
       return "90d";
     case "yearly":
-      return "1y";
+      return "12m";
     default:
       return "7d";
   }

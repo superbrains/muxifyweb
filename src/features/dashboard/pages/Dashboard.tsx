@@ -15,13 +15,15 @@ import { FaGift } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import Chart from 'react-apexcharts';
 import { ComposableMap, Geographies, Geography } from 'react-simple-maps';
-import { AddUserIcon, CalendarIcon, GiftIcon, MusicFilledIcon, MusicIconOutlinedIcon, PlayerIcon, SalesDashboardIcon, UploadIcon } from '@/shared/icons/CustomIcons';
+import { AddUserIcon, GiftIcon, MusicFilledIcon, MusicIconOutlinedIcon, PlayerIcon, SalesDashboardIcon, UploadIcon } from '@/shared/icons/CustomIcons';
 import BackgroundImg from '@/assets/images/Background.png';
 import { AuthedImage } from '@/shared/components/AuthedImage';
 import { useWindowWidth } from '@/shared/hooks/useWindowsWidth';
 import { useUserType } from '@/features/auth/hooks/useUserType';
 import { useDashboard } from '../hooks/useDashboard';
-import { formatCurrency } from '@shared/lib';
+import { formatNaira } from '@shared/lib';
+import { exportCsv } from '@/features/admin/lib/exportCsv';
+import { DashboardDateFilter, type DashboardDateSelection } from '../components/DashboardDateFilter';
 import { leaderboardService } from '@/features/leaderboard/services/leaderboardService';
 import type { TopGifterDto } from '@/features/leaderboard/types';
 import {
@@ -55,7 +57,55 @@ export const Dashboard: React.FC = () => {
         topTracksDto,
         isLoading,
         error,
+        loadAnalytics,
+        loadAnalyticsRange,
     } = useDashboard();
+
+    // Date-range filter selection (drives every metric card + chart).
+    const [rangeLabel, setRangeLabel] = useState('Last 7 Days');
+
+    const handleDateSelection = (selection: DashboardDateSelection) => {
+        setRangeLabel(selection.label);
+        if (selection.kind === 'preset') {
+            void loadAnalytics(selection.period);
+        } else if (selection.kind === 'today') {
+            const tzOffset = new Date().getTimezoneOffset() * 60000;
+            const today = new Date(Date.now() - tzOffset).toISOString().split('T')[0];
+            void loadAnalyticsRange(today, today);
+        } else {
+            void loadAnalyticsRange(selection.from, selection.to);
+        }
+    };
+
+    // Export the currently-visible metrics as a CSV the artist can open in Excel.
+    const handleExport = () => {
+        const rows: { metric: string; value: string }[] = [
+            { metric: 'Date Range', value: rangeLabel },
+            { metric: 'Total Earnings (NGN)', value: formatNaira(analyticsDto?.totalEarningsDisplay || 0, { compact: false }) },
+            { metric: 'Total Gifts', value: String(analyticsDto?.totalGiftsReceived ?? 0) },
+            { metric: 'Total Unlocked', value: String(analyticsDto?.totalContentUnlocks ?? 0) },
+            { metric: 'Total Plays', value: String(analyticsDto?.totalPlays ?? 0) },
+            { metric: 'New Fans/Followers', value: String(analyticsDto?.newFollowers ?? 0) },
+        ];
+
+        // Append the Top Earnings breakdown so the export is genuinely useful.
+        (topTracksDto?.tracks || []).forEach((track, index) => {
+            rows.push({
+                metric: `Top Earning #${index + 1}: ${track.title}`,
+                value: `${formatNaira(track.earningsDisplay, { compact: false })} (${track.playCount} plays)`,
+            });
+        });
+
+        const stamp = new Date().toISOString().split('T')[0];
+        exportCsv(
+            `muxify-dashboard-${stamp}.csv`,
+            [
+                { header: 'Metric', value: (r) => r.metric },
+                { header: 'Value', value: (r) => r.value },
+            ],
+            rows,
+        );
+    };
 
     const publishCta = isDJ
         ? { title: 'Create a Mix', subtitle: 'Upload your mixes for the world to reward you' }
@@ -441,26 +491,7 @@ export const Dashboard: React.FC = () => {
                         </Box>
 
                         <HStack gap={3}>
-                            <Button
-                                variant="outline"
-                                borderWidth="1px"
-                                borderColor="gray.blue.200"
-                                bg="white"
-                                size="xs"
-                                fontSize="10px"
-                                h="28px"
-                                _hover={{
-                                    bg: "gray.50",
-                                    borderColor: "gray.blue.300"
-                                }}
-                                rounded="5px"
-                                className='text-[#9cb1c5]'
-                                color="gray.blue.800"
-                                gap={2}
-                            >
-                                <CalendarIcon color="dark.800" boxSize={4} />
-                                Today
-                            </Button>
+                            <DashboardDateFilter label={rangeLabel} onApply={handleDateSelection} />
                             <Button
                                 variant="outline"
                                 borderWidth="1px"
@@ -474,7 +505,8 @@ export const Dashboard: React.FC = () => {
                                 }}
                                 rounded="5px"
                                 color="gray.blue.800"
-                                gap={2}>
+                                gap={2}
+                                onClick={handleExport}>
                                 <UploadIcon color="dark.800" boxSize={4} />
                                 Export
                             </Button>
@@ -490,13 +522,13 @@ export const Dashboard: React.FC = () => {
                                 <SalesDashboardIcon boxSize={6} />
                                 <VStack align="start" gap={1}>
                                     <Text fontSize="md" fontWeight="bold" color="gray.900">
-                                        {statsDto?.totalEarnings.formattedValue || formatCurrency(0)}
+                                        {formatNaira(analyticsDto?.totalEarningsDisplay || 0)}
                                     </Text>
                                     <Text fontSize="9px" color="gray.600">
                                         Total Earning
                                     </Text>
-                                    <Text fontSize="8px" color={statsDto?.totalEarnings.isPositiveChange ? "green.500" : "red.500"}>
-                                        {statsDto?.totalEarnings.isPositiveChange ? '+' : ''}{statsDto?.totalEarnings.percentChange.toFixed(1) || 0}% from yesterday
+                                    <Text fontSize="8px" color={analyticsDto?.earningsIsPositive ? "green.500" : "red.500"}>
+                                        {analyticsDto?.earningsIsPositive ? '+' : ''}{(analyticsDto?.earningsPercentChange ?? 0).toFixed(1)}% vs prev. period
                                     </Text>
                                 </VStack>
 
@@ -514,8 +546,8 @@ export const Dashboard: React.FC = () => {
                                     <Text fontSize="9px" color="gray.600">
                                         Total Gifts
                                     </Text>
-                                    <Text fontSize="8px" color="green.500">
-                                        This period
+                                    <Text fontSize="8px" color={analyticsDto?.giftsIsPositive ? "green.500" : "red.500"}>
+                                        {analyticsDto?.giftsIsPositive ? '+' : ''}{(analyticsDto?.giftsPercentChange ?? 0).toFixed(1)}% vs prev. period
                                     </Text>
                                 </VStack>
 
@@ -533,8 +565,8 @@ export const Dashboard: React.FC = () => {
                                     <Text fontSize="9px" color="gray.600">
                                         Total Unlocked
                                     </Text>
-                                    <Text fontSize="8px" color="green.500">
-                                        This period
+                                    <Text fontSize="8px" color={analyticsDto?.unlocksIsPositive ? "green.500" : "red.500"}>
+                                        {analyticsDto?.unlocksIsPositive ? '+' : ''}{(analyticsDto?.unlocksPercentChange ?? 0).toFixed(1)}% vs prev. period
                                     </Text>
                                 </VStack>
 
@@ -547,13 +579,13 @@ export const Dashboard: React.FC = () => {
                                 <PlayerIcon boxSize={6} />
                                 <VStack align="start" gap={1}>
                                     <Text fontSize="md" fontWeight="bold" color="gray.900">
-                                        {statsDto?.totalPlays.formattedValue || formatNumber(0)}
+                                        {formatNumber(analyticsDto?.totalPlays || 0)}
                                     </Text>
                                     <Text fontSize="9px" color="gray.600">
                                         Plays
                                     </Text>
-                                    <Text fontSize="8px" color={statsDto?.totalPlays.isPositiveChange ? "green.500" : "red.500"}>
-                                        {statsDto?.totalPlays.isPositiveChange ? '+' : ''}{statsDto?.totalPlays.percentChange.toFixed(1) || 0}% from yesterday
+                                    <Text fontSize="8px" color={analyticsDto?.playsIsPositive ? "green.500" : "red.500"}>
+                                        {analyticsDto?.playsIsPositive ? '+' : ''}{(analyticsDto?.playsPercentChange ?? 0).toFixed(1)}% vs prev. period
                                     </Text>
                                 </VStack>
 
@@ -572,13 +604,13 @@ export const Dashboard: React.FC = () => {
                                 <AddUserIcon boxSize={6} />
                                 <VStack align="start" gap={1}>
                                     <Text fontSize="md" fontWeight="bold" color="gray.900">
-                                        {statsDto?.totalFollowers.formattedValue || formatNumber(0)}
+                                        {formatNumber(analyticsDto?.newFollowers || 0)}
                                     </Text>
                                     <Text fontSize="9px" color="gray.600">
                                         New Fans/Followers
                                     </Text>
-                                    <Text fontSize="8px" color={statsDto?.totalFollowers.isPositiveChange ? "green.500" : "red.500"}>
-                                        {statsDto?.totalFollowers.isPositiveChange ? '+' : ''}{statsDto?.totalFollowers.percentChange.toFixed(1) || 0}% from yesterday
+                                    <Text fontSize="8px" color={analyticsDto?.followersIsPositive ? "green.500" : "red.500"}>
+                                        {analyticsDto?.followersIsPositive ? '+' : ''}{(analyticsDto?.followersPercentChange ?? 0).toFixed(1)}% vs prev. period
                                     </Text>
                                 </VStack>
                             </VStack>
@@ -729,7 +761,7 @@ export const Dashboard: React.FC = () => {
                                                 borderRadius="md"
                                                 display="inline-block"
                                             >
-                                                {formatCurrency(track.earningsDisplay)}
+                                                {formatNaira(track.earningsDisplay, { compact: false })}
                                             </Box>
                                         </Box>
                                     </Box>
@@ -767,7 +799,7 @@ export const Dashboard: React.FC = () => {
                                 <Text fontSize="9px" whiteSpace="nowrap" color="#7B91B0">Period Earnings</Text>
                             </HStack>
                             <Text fontSize="10px" fontWeight="bold" color="gray.900">
-                                {formatCurrency(analyticsDto?.totalEarningsDisplay || 0)}
+                                {formatNaira(analyticsDto?.totalEarningsDisplay || 0, { compact: false })}
                             </Text>
                         </VStack>
                         <Box
