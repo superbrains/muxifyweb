@@ -19,14 +19,14 @@ export const LeaderboardDemo: React.FC = () => {
                 <Text fontSize="lg" fontWeight="semibold" color="gray.800" mb={4}>
                     Music Leaderboard
                 </Text>
-                <MusicLeaderboard />
+                <MusicLeaderboard scope="global" />
             </Box>
 
             <Box>
                 <Text fontSize="lg" fontWeight="semibold" color="gray.800" mb={4}>
                     Video Leaderboard
                 </Text>
-                <VideoLeaderboard />
+                <VideoLeaderboard scope="global" />
             </Box>
         </VStack>
     );

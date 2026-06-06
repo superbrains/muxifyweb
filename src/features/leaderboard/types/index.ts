@@ -1,7 +1,13 @@
 /**
  * Leaderboard period options for filtering
  */
-export type LeaderboardPeriod = 'day' | 'week' | 'month' | 'all-time';
+export type LeaderboardPeriod = 'day' | 'week' | 'month' | 'year' | 'all-time';
+
+/**
+ * Leaderboard scope: 'mine' shows the logged-in artist/creator's own content
+ * and fans; 'global' shows the platform-wide ranking.
+ */
+export type LeaderboardScope = 'mine' | 'global';
 
 // ============================================
 // Top Gifters DTOs
@@ -392,4 +398,61 @@ export function mapMostSharedToEntry(content: MostSharedContentDto): Leaderboard
     avatarUrl: content.coverUrl,
     previousRank: content.previousRank,
   };
+}
+
+// ============================================
+// Top Singles DTOs
+// ============================================
+
+/**
+ * DTO for a top single (a track whose release type is Single) entry
+ */
+export interface TopSingleDto {
+  rank: number;
+  trackId: string;
+  title?: string;
+  artistName?: string;
+  artistId?: string;
+  coverUrl?: string;
+  playCount: number;
+  previousRank?: number;
+}
+
+/**
+ * DTO for top singles leaderboard response
+ */
+export interface TopSinglesLeaderboardDto {
+  entries: TopSingleDto[];
+  period: string;
+  lastUpdated?: string;
+}
+
+// ============================================
+// Most Gifted Content DTOs
+// ============================================
+
+/**
+ * DTO for a most-gifted content (track/video) entry
+ */
+export interface MostGiftedContentDto {
+  rank: number;
+  contentId: string;
+  contentType: 'track' | 'video';
+  title?: string;
+  artistName?: string;
+  artistId?: string;
+  coverUrl?: string;
+  totalGiftValue: number;
+  giftCount: number;
+  previousRank?: number;
+}
+
+/**
+ * DTO for most gifted content leaderboard response
+ */
+export interface MostGiftedContentLeaderboardDto {
+  entries: MostGiftedContentDto[];
+  period: string;
+  contentType?: string;
+  lastUpdated?: string;
 }
