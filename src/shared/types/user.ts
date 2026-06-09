@@ -6,6 +6,7 @@ export type UserRole =
   | "podcaster"
   | "record_label"
   | "ad_manager"
+  | "contributor"
   | "admin";
 
 export interface User {

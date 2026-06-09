@@ -37,6 +37,33 @@ export const useHasPermission = (permission: string): boolean => {
     return data.isSuperAdmin || data.permissions.includes(permission);
 };
 
+/**
+ * CR1 role-scope view of the signed-in admin. `canOperateOnRole(role)` mirrors
+ * the backend `AdminAccessSnapshot.CanOperateOnRole`: super admins and
+ * unrestricted staff see every role; scoped staff see only their `roleScope`.
+ * This is the UI-gating seam for the per-role pages/queues + SectionNav (the
+ * backend independently enforces true data scoping on every response).
+ */
+export const useRoleScope = () => {
+    const { data } = useMyPermissions();
+    const isSuperAdmin = data?.isSuperAdmin ?? false;
+    const isRoleScoped = !isSuperAdmin && (data?.isRoleScoped ?? false);
+    const roleScope = data?.roleScope ?? [];
+
+    const canOperateOnRole = (role: string): boolean =>
+        isSuperAdmin || !isRoleScoped || roleScope.includes(role);
+
+    /** True when the admin may see a nav item/page guarded by an optional role + permission. */
+    const canAccess = (opts: { role?: string; permission?: string }): boolean => {
+        if (isSuperAdmin) return true;
+        if (opts.role && !canOperateOnRole(opts.role)) return false;
+        if (opts.permission && !(data?.permissions.includes(opts.permission) ?? false)) return false;
+        return true;
+    };
+
+    return { isSuperAdmin, isRoleScoped, roleScope, canOperateOnRole, canAccess };
+};
+
 export const usePermissionCatalog = () =>
     useQuery({
         queryKey: adminKeys.permissionCatalog,

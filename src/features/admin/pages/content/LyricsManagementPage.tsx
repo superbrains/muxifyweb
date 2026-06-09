@@ -1,0 +1,347 @@
+import React from 'react';
+import {
+    Box,
+    Button,
+    Dialog,
+    HStack,
+    Input,
+    Portal,
+    Text,
+    Textarea,
+    VStack,
+} from '@chakra-ui/react';
+import { FiFileText, FiPlus } from 'react-icons/fi';
+import { Select } from '@shared/components';
+import {
+    AdminError,
+    AdminPageLayout,
+    ConfirmActionModal,
+    DataTable,
+    FilterBar,
+    IdentityCell,
+    StatusBadge,
+} from '../../components/ui';
+import type { DataColumn } from '../../components/ui';
+import { adminDate } from '../../lib/format';
+import { useHasPermission } from '../../hooks/useAdminManagement';
+import {
+    useApproveLyrics,
+    useCreateLyrics,
+    useLyrics,
+    useRejectLyrics,
+} from '../../hooks/useContent';
+import type { LyricsDto, LyricsQuery } from '../../types/content';
+
+const PAGE_SIZE = 15;
+
+const LYRICS_STATUS_OPTIONS = [
+    { value: 'All', label: 'All statuses' },
+    { value: 'Pending', label: 'Pending' },
+    { value: 'Approved', label: 'Approved' },
+    { value: 'Rejected', label: 'Rejected' },
+];
+
+const FORMAT_OPTIONS = [
+    { value: 'Plain', label: 'Plain text' },
+    { value: 'LRC', label: 'LRC (timed)' },
+];
+
+/* --------------------------------- Add form -------------------------------- */
+
+const AddLyricsModal: React.FC<{ open: boolean; onClose: () => void }> = ({ open, onClose }) => {
+    const create = useCreateLyrics();
+    const [trackId, setTrackId] = React.useState('');
+    const [content, setContent] = React.useState('');
+    const [language, setLanguage] = React.useState('en');
+    const [format, setFormat] = React.useState('Plain');
+
+    React.useEffect(() => {
+        if (open) {
+            setTrackId('');
+            setContent('');
+            setLanguage('en');
+            setFormat('Plain');
+        }
+    }, [open]);
+
+    const canSubmit = trackId.trim() && content.trim() && language.trim();
+
+    return (
+        <Dialog.Root open={open} onOpenChange={(e) => !e.open && onClose()} placement="center">
+            <Portal>
+                <Dialog.Backdrop bg="blackAlpha.500" />
+                <Dialog.Positioner>
+                    <Dialog.Content maxW="520px" p={6} borderRadius="20px">
+                        <VStack align="stretch" gap={4}>
+                            <Text fontSize="md" fontWeight="semibold" color="gray.900" fontFamily="Poppins">
+                                Add lyrics
+                            </Text>
+                            <Box>
+                                <Text fontSize="11px" fontWeight="semibold" color="gray.700" mb={1.5}>
+                                    Track ID
+                                </Text>
+                                <Input
+                                    value={trackId}
+                                    onChange={(e) => setTrackId(e.target.value)}
+                                    placeholder="Track GUID"
+                                    size="sm"
+                                    fontSize="xs"
+                                />
+                            </Box>
+                            <HStack gap={3} align="flex-end">
+                                <Box flex="1">
+                                    <Text fontSize="11px" fontWeight="semibold" color="gray.700" mb={1.5}>
+                                        Language
+                                    </Text>
+                                    <Input
+                                        value={language}
+                                        onChange={(e) => setLanguage(e.target.value)}
+                                        placeholder="e.g. en"
+                                        size="sm"
+                                        fontSize="xs"
+                                    />
+                                </Box>
+                                <Box flex="1">
+                                    <Text fontSize="11px" fontWeight="semibold" color="gray.700" mb={1.5}>
+                                        Format
+                                    </Text>
+                                    <Select
+                                        options={FORMAT_OPTIONS}
+                                        value={format}
+                                        onChange={(v) => setFormat(v as string)}
+                                        width="100%"
+                                    />
+                                </Box>
+                            </HStack>
+                            <Box>
+                                <Text fontSize="11px" fontWeight="semibold" color="gray.700" mb={1.5}>
+                                    Lyrics
+                                </Text>
+                                <Textarea
+                                    value={content}
+                                    onChange={(e) => setContent(e.target.value)}
+                                    placeholder="Paste the lyrics here…"
+                                    rows={8}
+                                    fontSize="xs"
+                                    resize="vertical"
+                                />
+                            </Box>
+                            <HStack gap={3} justify="flex-end" pt={1}>
+                                <Button
+                                    onClick={onClose}
+                                    variant="outline"
+                                    size="sm"
+                                    fontSize="xs"
+                                    borderRadius="10px"
+                                    disabled={create.isPending}
+                                >
+                                    Cancel
+                                </Button>
+                                <Button
+                                    bg="primary.500"
+                                    color="white"
+                                    size="sm"
+                                    fontSize="xs"
+                                    borderRadius="10px"
+                                    _hover={{ bg: 'primary.600' }}
+                                    disabled={!canSubmit || create.isPending}
+                                    onClick={() =>
+                                        create.mutate(
+                                            { trackId: trackId.trim(), content, format, language: language.trim() },
+                                            { onSuccess: onClose },
+                                        )
+                                    }
+                                >
+                                    Add lyrics
+                                </Button>
+                            </HStack>
+                        </VStack>
+                    </Dialog.Content>
+                </Dialog.Positioner>
+            </Portal>
+        </Dialog.Root>
+    );
+};
+
+/* ---------------------------------- Page ---------------------------------- */
+
+/** Lyrics management — review queue with approve/reject and an add-lyrics form. */
+const LyricsManagementPage: React.FC = () => {
+    const canManage = useHasPermission('ContentManage');
+    const [query, setQuery] = React.useState<LyricsQuery>({ page: 1, pageSize: PAGE_SIZE });
+    const [rejectTarget, setRejectTarget] = React.useState<LyricsDto | null>(null);
+    const [addOpen, setAddOpen] = React.useState(false);
+
+    const { data, isLoading, error } = useLyrics(query);
+    const approve = useApproveLyrics();
+    const reject = useRejectLyrics();
+
+    const isPending = (l: LyricsDto) => l.status.toLowerCase() === 'pending';
+
+    const columns: DataColumn<LyricsDto>[] = [
+        {
+            key: 'track',
+            header: 'Track',
+            render: (l) => (
+                <VStack align="start" gap={0.5} minW={0}>
+                    <Text fontSize="xs" fontWeight="semibold" color="gray.900" lineClamp={1}>
+                        {l.trackTitle}
+                    </Text>
+                    <Text fontSize="10px" color="gray.500">
+                        {l.language?.toUpperCase()} · {l.format} · {l.source}
+                    </Text>
+                </VStack>
+            ),
+        },
+        { key: 'owner', header: 'Owner', render: (l) => <IdentityCell name={l.ownerName} size="xs" /> },
+        {
+            key: 'status',
+            header: 'Status',
+            render: (l) => (
+                <VStack align="start" gap={0.5}>
+                    <StatusBadge status={l.status} />
+                    {l.rejectionReason && (
+                        <Text fontSize="10px" color="#C53030" lineClamp={2}>
+                            {l.rejectionReason}
+                        </Text>
+                    )}
+                </VStack>
+            ),
+        },
+        {
+            key: 'created',
+            header: 'Submitted',
+            render: (l) => (
+                <Text fontSize="xs" color="gray.500">
+                    {adminDate(l.createdAt)}
+                </Text>
+            ),
+        },
+        {
+            key: 'actions',
+            header: '',
+            align: 'right',
+            render: (l) => {
+                if (!canManage || !isPending(l)) return null;
+                return (
+                    <HStack gap={1.5} justify="flex-end">
+                        <Button
+                            size="xs"
+                            variant="outline"
+                            borderColor="gray.200"
+                            color="#0F7B5C"
+                            borderRadius="md"
+                            fontSize="11px"
+                            disabled={approve.isPending}
+                            onClick={() => approve.mutate(l.id)}
+                        >
+                            Approve
+                        </Button>
+                        <Button
+                            size="xs"
+                            variant="outline"
+                            borderColor="#FECACA"
+                            color="#C53030"
+                            borderRadius="md"
+                            fontSize="11px"
+                            disabled={reject.isPending}
+                            onClick={() => setRejectTarget(l)}
+                        >
+                            Reject
+                        </Button>
+                    </HStack>
+                );
+            },
+        },
+    ];
+
+    return (
+        <AdminPageLayout
+            title="Lyrics"
+            subtitle="Review submitted lyrics and add lyrics to tracks"
+            breadcrumbs={[{ label: 'Content' }, { label: 'Lyrics' }]}
+            actions={
+                canManage ? (
+                    <Button
+                        size="sm"
+                        bg="primary.500"
+                        color="white"
+                        fontSize="xs"
+                        borderRadius="10px"
+                        _hover={{ bg: 'primary.600' }}
+                        onClick={() => setAddOpen(true)}
+                    >
+                        <FiPlus /> Add lyrics
+                    </Button>
+                ) : undefined
+            }
+        >
+            <FilterBar
+                search={{
+                    value: query.search ?? '',
+                    onChange: (v) => setQuery((q) => ({ ...q, search: v || undefined, page: 1 })),
+                    placeholder: 'Search by track',
+                }}
+                filters={[
+                    {
+                        key: 'status',
+                        value: query.status ?? 'All',
+                        onChange: (v) =>
+                            setQuery((q) => ({ ...q, status: v === 'All' ? undefined : v, page: 1 })),
+                        options: LYRICS_STATUS_OPTIONS,
+                    },
+                ]}
+            />
+
+            {error ? (
+                <AdminError error={error} message="Could not load lyrics." />
+            ) : (
+                <DataTable
+                    columns={columns}
+                    rows={data?.items ?? []}
+                    rowKey={(l) => l.id}
+                    loading={isLoading && !data}
+                    emptyIcon={FiFileText}
+                    emptyTitle="No lyrics found"
+                    emptyDescription="Nothing matches the current filters."
+                    pagination={
+                        data
+                            ? {
+                                  page: data.page,
+                                  pageSize: data.pageSize,
+                                  total: data.total,
+                                  onPageChange: (page) => setQuery((q) => ({ ...q, page })),
+                              }
+                            : undefined
+                    }
+                />
+            )}
+
+            <ConfirmActionModal
+                isOpen={rejectTarget !== null}
+                onClose={() => setRejectTarget(null)}
+                onConfirm={(reason) =>
+                    rejectTarget &&
+                    reject.mutate(
+                        { id: rejectTarget.id, reason },
+                        { onSuccess: () => setRejectTarget(null) },
+                    )
+                }
+                title="Reject these lyrics"
+                message={
+                    rejectTarget
+                        ? `Reject the lyrics submitted for “${rejectTarget.trackTitle}”.`
+                        : undefined
+                }
+                reasonLabel="Rejection reason"
+                confirmText="Reject lyrics"
+                tone="danger"
+                isLoading={reject.isPending}
+            />
+
+            <AddLyricsModal open={addOpen} onClose={() => setAddOpen(false)} />
+        </AdminPageLayout>
+    );
+};
+
+export default LyricsManagementPage;

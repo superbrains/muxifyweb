@@ -34,6 +34,7 @@ const ROLE_LABELS: Record<UserRole, string> = {
     podcaster: 'Podcaster',
     record_label: 'Record Label',
     ad_manager: 'Ad Manager',
+    contributor: 'Contributor',
     admin: 'Administrator',
 };
 

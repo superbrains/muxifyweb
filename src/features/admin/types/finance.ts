@@ -275,8 +275,34 @@ export interface UnlockQuery extends DateRange {
 export interface WithdrawalQuery extends DateRange {
     status?: string;
     artistId?: string;
+    /** snake_case platform role (artist|dj|creator|podcaster|record_label|contributor). */
+    role?: string;
     search?: string;
     sort?: string;
+    page: number;
+    pageSize: number;
+}
+
+// ----- Maker-checker (dual-approval) -----
+
+export interface FinanceApprovalRequestDto {
+    id: string;
+    actionType: string;
+    targetType: string;
+    targetId: string;
+    summary: string;
+    requestedByUserId: string;
+    requestedByName: string;
+    status: string;
+    reviewedByUserId?: string | null;
+    reviewedByName?: string | null;
+    reviewedAt?: string | null;
+    rejectionReason?: string | null;
+    createdAt: string;
+}
+
+export interface ApprovalRequestQuery {
+    status?: string;
     page: number;
     pageSize: number;
 }
@@ -286,6 +312,55 @@ export interface PayoutQuery extends DateRange {
     batchId?: string;
     recipientUserId?: string;
     role?: string;
+    page: number;
+    pageSize: number;
+}
+
+// ----- Payouts group (Tower 15) — payout accounts + payout audit trail -----
+
+/** A saved bank/payout destination for a creator. `status` ∈ Pending|Active|Inactive|Failed. */
+export interface PayoutAccountDto {
+    id: string;
+    artistId: string;
+    artistName?: string | null;
+    bankName: string;
+    bankCode: string;
+    accountNumber: string;
+    accountName: string;
+    currency: string;
+    isDefault: boolean;
+    status: string;
+    nickname?: string | null;
+    verifiedAt?: string | null;
+    lastUsedAt?: string | null;
+    createdAt: string;
+}
+
+export interface PayoutAccountQuery {
+    status?: string;
+    artistId?: string;
+    search?: string;
+    page: number;
+    pageSize: number;
+}
+
+/**
+ * A payout-related admin action record. `action` is one of WithdrawalApproved |
+ * WithdrawalRejected | WithdrawalRetried | WithdrawalMarkedPaid | PayoutRetried |
+ * PayoutCancelled.
+ */
+export interface PayoutAuditEntryDto {
+    id: string;
+    actorName: string;
+    action: string;
+    targetType: string;
+    targetId?: string | null;
+    summary: string;
+    createdAt: string;
+}
+
+export interface PayoutAuditQuery extends DateRange {
+    action?: string;
     page: number;
     pageSize: number;
 }

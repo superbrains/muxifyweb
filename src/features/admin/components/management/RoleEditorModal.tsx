@@ -1,9 +1,12 @@
 import React from 'react';
-import { Box, Button, HStack, Input, Spinner, Text, Textarea } from '@chakra-ui/react';
+import { Box, Button, Flex, HStack, Input, Spinner, Text, Textarea } from '@chakra-ui/react';
 import { ManagementDialog } from './ManagementDialog';
 import { PermissionPicker } from './PermissionPicker';
 import { useCreateRole, useUpdateRole } from '../../hooks/useAdminManagement';
+import { PLATFORM_ROLES, type PlatformRole } from '../../config/adminRoles';
 import type { AdminRoleDto } from '../../services/adminManagementService';
+
+const PLATFORM_ROLE_LIST = Object.values(PLATFORM_ROLES);
 
 interface RoleEditorModalProps {
     isOpen: boolean;
@@ -18,6 +21,7 @@ export const RoleEditorModal: React.FC<RoleEditorModalProps> = ({ isOpen, onClos
     const [name, setName] = React.useState('');
     const [description, setDescription] = React.useState('');
     const [permissions, setPermissions] = React.useState<string[]>([]);
+    const [scopedRoles, setScopedRoles] = React.useState<string[]>([]);
 
     const createRole = useCreateRole();
     const updateRole = useUpdateRole();
@@ -28,14 +32,21 @@ export const RoleEditorModal: React.FC<RoleEditorModalProps> = ({ isOpen, onClos
         setName(role?.name ?? '');
         setDescription(role?.description ?? '');
         setPermissions(role?.permissions ?? []);
+        setScopedRoles(role?.scopedRoles ?? []);
     }, [isOpen, role]);
+
+    const toggleScopedRole = (key: PlatformRole) => {
+        setScopedRoles((prev) =>
+            prev.includes(key) ? prev.filter((r) => r !== key) : [...prev, key],
+        );
+    };
 
     const trimmedName = name.trim();
     const canSave = trimmedName.length >= 2 && permissions.length > 0 && !isPending;
 
     const handleSave = () => {
         if (!canSave) return;
-        const payload = { name: trimmedName, description: description.trim(), permissions };
+        const payload = { name: trimmedName, description: description.trim(), permissions, scopedRoles };
         if (isEdit && role) {
             updateRole.mutate({ roleId: role.id, payload }, { onSuccess: onClose });
         } else {
@@ -119,6 +130,47 @@ export const RoleEditorModal: React.FC<RoleEditorModalProps> = ({ isOpen, onClos
                     </Text>
                 </HStack>
                 <PermissionPicker selected={permissions} onChange={setPermissions} />
+            </Box>
+
+            <Box>
+                <HStack justify="space-between" mb={1.5}>
+                    <Text fontSize="11px" fontWeight="semibold" color="gray.700">
+                        Operates on roles
+                    </Text>
+                    <Text fontSize="10px" color={scopedRoles.length ? 'gray.500' : 'primary.500'}>
+                        {scopedRoles.length ? `${scopedRoles.length} selected` : 'All roles'}
+                    </Text>
+                </HStack>
+                <Flex flexWrap="wrap" gap={2}>
+                    {PLATFORM_ROLE_LIST.map((meta) => {
+                        const checked = scopedRoles.includes(meta.role);
+                        return (
+                            <Box
+                                as="button"
+                                key={meta.role}
+                                onClick={() => toggleScopedRole(meta.role)}
+                                px={2.5}
+                                py={1.5}
+                                borderRadius="8px"
+                                border="1px solid"
+                                borderColor={checked ? 'primary.500' : 'gray.200'}
+                                bg={checked ? 'primary.50' : 'white'}
+                                color={checked ? 'primary.600' : 'gray.700'}
+                                fontSize="11px"
+                                fontWeight={checked ? 'semibold' : 'normal'}
+                                transition="all 0.15s"
+                                _hover={{ borderColor: checked ? 'primary.500' : 'gray.300' }}
+                            >
+                                {meta.plural}
+                            </Box>
+                        );
+                    })}
+                </Flex>
+                <Text fontSize="10px" color="gray.500" mt={1.5}>
+                    {scopedRoles.length
+                        ? 'This role only operates on the selected platform roles.'
+                        : 'No roles selected means this role operates on all platform roles (unrestricted).'}
+                </Text>
             </Box>
         </ManagementDialog>
     );

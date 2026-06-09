@@ -52,13 +52,23 @@ function duplicateTierFg(tier: string): string {
     }
 }
 
+interface ModerationPanelProps {
+    /**
+     * Locks the queue to a single content-owner role (snake_case, e.g.
+     * `artist`). Used by the CR1 per-role moderation pages; when omitted the
+     * panel shows reports across all roles (the legacy combined queue).
+     */
+    ownerRole?: string;
+}
+
 /** Flagged-content moderation queue — table with a resolve-action dialog. */
-export const ModerationPanel: React.FC = () => {
+export const ModerationPanel: React.FC<ModerationPanelProps> = ({ ownerRole }) => {
     // The "Disputed" pill is a client-side filter over Pending — backend has no
     // disputed-specific status, since a dispute is metadata on a still-Pending case.
     const [activePill, setActivePill] = React.useState<ModerationStatus | 'All' | 'Disputed'>('Pending');
     const [query, setQuery] = React.useState<ModerationQuery>({
         status: 'Pending',
+        ownerRole,
         page: 1,
         pageSize: PAGE_SIZE,
     });

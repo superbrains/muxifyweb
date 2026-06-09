@@ -30,6 +30,9 @@ import {
 import { useWindowWidth } from '../hooks/useWindowsWidth';
 import { useUserType } from '@/features/auth/hooks/useUserType';
 import { useIsAdmin } from '@app/hooks/useIsAdmin';
+import { useIsContributor } from '@app/hooks/useIsContributor';
+import { SectionNav } from '@/features/admin/components/ui';
+import { useAdminNavGroups } from '@/features/admin/config/adminNav';
 
 interface SidebarProps {
     isCollapsed: boolean;
@@ -62,6 +65,13 @@ const recordLabelNavItems: NavItem[] = [
     { icon: Setting2Icon, label: 'Settings', path: '/label/settings' },
 ];
 
+const contributorNavItems: NavItem[] = [
+    { icon: DashboardIcon, label: 'Dashboard', path: '/' },
+    { icon: EarningsAndRoyaltyIcon, label: 'Earnings', path: '/contributor/dashboard' },
+    { icon: PaymentsIcon, label: 'Payout Accounts', path: '/contributor/payout-accounts' },
+    { icon: WalletMoneyIcon, label: 'Payouts', path: '/contributor/payouts' },
+];
+
 const adminNavItems: NavItem[] = [
     { icon: DashboardIcon, label: 'Overview', path: '/admin' },
     { icon: VerifyIcon, label: 'Verifications', path: '/admin/verifications' },
@@ -82,6 +92,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed }) => {
     const { isRecordLabel, isAdManager, isPodcaster, isCreator } = useUserType();
     const musicVideosLabel = isPodcaster || isCreator ? 'Video' : 'Music/Videos';
     const isAdmin = useIsAdmin();
+    const isContributor = useIsContributor();
+    // CR1: scope- and permission-aware 8-group admin navigation.
+    const adminNavGroups = useAdminNavGroups();
 
     const bgColor = 'white';
     const borderColor = 'gray.200';
@@ -110,6 +123,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed }) => {
     // Get the appropriate nav items based on user type
     const getNavItems = () => {
         if (isAdmin) return adminNavItems;
+        if (isContributor) return contributorNavItems;
         if (isAdManager) return adManagerNavItems;
         if (isRecordLabel) return recordLabelNavItems;
         return buildArtistNavItems(musicVideosLabel);
@@ -251,7 +265,18 @@ export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed }) => {
                 </motion.div>
 
                 {/* Navigation Items */}
-                <VStack gap={3} flex={1} align="stretch" zIndex={1000}>
+                {isAdmin && !shouldShowCollapsed ? (
+                    <Box flex={1} overflowY="auto" overflowX="hidden" pr={1} pb={4} zIndex={1000}>
+                        <SectionNav
+                            groups={adminNavGroups}
+                            currentPath={location.pathname}
+                            onItemClick={() => {
+                                if (isMobile) setMobileOpen(false);
+                            }}
+                        />
+                    </Box>
+                ) : (
+                <VStack gap={3} flex={1} align="stretch" zIndex={1000} overflowY="auto" overflowX="hidden">
                     {currentNavItems.map((item) => {
                         const isActive = isItemActive(location.pathname, item.path);
                         const IconComponent = item.icon;
@@ -329,6 +354,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed }) => {
                         );
                     })}
                 </VStack>
+                )}
 
             </VStack>
         </motion.div>

@@ -24,12 +24,26 @@ const PAGE_SIZE = 15;
 const TABS = [
     { id: 'artist', label: 'Artists' },
     { id: 'label', label: 'Record Labels' },
+    { id: 'contributor', label: 'Contributors' },
+    { id: 'ad_manager', label: 'Ad Managers' },
 ];
+
+const ENTITY_TYPES: VerificationEntityType[] = ['artist', 'label', 'contributor', 'ad_manager'];
+
+const ENTITY_TYPE_LABEL: Record<VerificationEntityType, string> = {
+    artist: 'Artist',
+    label: 'Record Label',
+    contributor: 'Contributor',
+    ad_manager: 'Ad Manager',
+};
 
 const VerificationCenterPage: React.FC = () => {
     const [searchParams, setSearchParams] = useSearchParams();
+    const typeParam = searchParams.get('type');
     const entityType: VerificationEntityType =
-        searchParams.get('type') === 'label' ? 'label' : 'artist';
+        (ENTITY_TYPES as string[]).includes(typeParam ?? '')
+            ? (typeParam as VerificationEntityType)
+            : 'artist';
 
     const [query, setQuery] = React.useState<VerificationQuery>({
         entityType,
@@ -48,7 +62,7 @@ const VerificationCenterPage: React.FC = () => {
     const { data, isLoading, error } = useVerifications(query);
 
     const handleTabChange = (id: string) => {
-        setSearchParams(id === 'label' ? { type: 'label' } : {});
+        setSearchParams(id === 'artist' ? {} : { type: id });
     };
 
     const columns: AdminTableColumn<VerificationListItemDto>[] = [
@@ -68,7 +82,7 @@ const VerificationCenterPage: React.FC = () => {
             header: 'Type',
             render: (r) => (
                 <Text fontSize="xs" color="gray.600">
-                    {r.entityType === 'label' ? 'Record Label' : 'Artist'}
+                    {ENTITY_TYPE_LABEL[r.entityType] ?? 'Artist'}
                 </Text>
             ),
         },
@@ -111,7 +125,7 @@ const VerificationCenterPage: React.FC = () => {
         >
             <AdminPageHeader
                 title="Verification Center"
-                subtitle="Review and decide on Artist & Record Label verification documents"
+                subtitle="Review and decide on Artist, Record Label, Contributor & Ad Manager verification documents"
             />
 
             <Box>

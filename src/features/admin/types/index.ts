@@ -19,7 +19,7 @@ export type AccountStatus =
     | 'Deactivated';
 
 /** Which kind of profile a verification request belongs to. */
-export type VerificationEntityType = 'artist' | 'label';
+export type VerificationEntityType = 'artist' | 'label' | 'contributor' | 'ad_manager';
 
 export type TicketStatus = 'Open' | 'InProgress' | 'Resolved' | 'Closed';
 export type TicketPriority = 'Low' | 'Normal' | 'High' | 'Urgent';
@@ -193,6 +193,11 @@ export interface TicketQuery {
     status?: TicketStatus | 'All';
     priority?: TicketPriority | 'All';
     search?: string;
+    /**
+     * Snake_case platform role of the ticket opener. When set, the backend
+     * filters tickets to users of that role (CR1 per-role support queues).
+     */
+    role?: string;
     page?: number;
     pageSize?: number;
 }
@@ -241,6 +246,12 @@ export interface ModerationQuery {
     status?: ModerationStatus | 'All';
     type?: ModerationContentType | 'All';
     search?: string;
+    /**
+     * Snake_case platform role of the flagged content's owner. When set, the
+     * backend filters reports to content owned by users of that role (CR1
+     * per-role moderation queues).
+     */
+    ownerRole?: string;
     page?: number;
     pageSize?: number;
 }

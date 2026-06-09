@@ -3,12 +3,16 @@ import { Navigate } from 'react-router-dom';
 import { useUserType } from '@/features/auth/hooks/useUserType';
 import { useIsRecordLabel } from '@app/hooks/useIsRecordLabel';
 import { useIsAdmin } from '@app/hooks/useIsAdmin';
+import { useIsContributor } from '@app/hooks/useIsContributor';
 import { LoadingScreen } from '@shared/components';
 
 const Dashboard = lazy(() => import('@dashboard/pages/Dashboard'));
 const AdsDashboard = lazy(() => import('@ads/pages/AdsDashboard'));
 const RecordLabelDashboard = lazy(
     () => import('@/features/record-label/pages/RecordLabelDashboard'),
+);
+const ContributorDashboard = lazy(
+    () => import('@/features/contributor/pages/ContributorDashboardPage'),
 );
 
 /**
@@ -17,12 +21,14 @@ const RecordLabelDashboard = lazy(
  * - Super Admin users -> redirected to the /admin console
  * - Ad Manager users -> AdsDashboard
  * - Record-label users -> RecordLabelDashboard
+ * - Contributor users -> ContributorDashboard
  * - Everyone else (artist, dj, creator) -> Dashboard
  */
 const DashboardRouter: React.FC = () => {
     const { isAdManager } = useUserType();
     const isRecordLabel = useIsRecordLabel();
     const isAdmin = useIsAdmin();
+    const isContributor = useIsContributor();
 
     // Admins never see a creator dashboard at "/" — send them to their console.
     if (isAdmin) {
@@ -31,7 +37,9 @@ const DashboardRouter: React.FC = () => {
 
     return (
         <Suspense fallback={<LoadingScreen />}>
-            {isAdManager ? (
+            {isContributor ? (
+                <ContributorDashboard />
+            ) : isAdManager ? (
                 <AdsDashboard />
             ) : isRecordLabel ? (
                 <RecordLabelDashboard />

@@ -22,10 +22,20 @@ const STATUS_PILLS = [
     { value: 'Closed', label: 'Closed', style: ticketStatusStyle('Closed') },
 ];
 
+interface TicketsPanelProps {
+    /**
+     * Locks the queue to tickets opened by a single role (snake_case, e.g.
+     * `artist`). Used by the CR1 per-role support pages; when omitted the panel
+     * shows tickets across all roles (the legacy combined queue).
+     */
+    role?: string;
+}
+
 /** Support ticket queue — filterable table with a detail drawer. */
-export const TicketsPanel: React.FC = () => {
+export const TicketsPanel: React.FC<TicketsPanelProps> = ({ role }) => {
     const [query, setQuery] = React.useState<TicketQuery>({
         status: 'Open',
+        role,
         page: 1,
         pageSize: PAGE_SIZE,
     });

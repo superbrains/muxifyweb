@@ -28,6 +28,8 @@ export interface AdminRoleDto {
     isSystemRole: boolean;
     isActive: boolean;
     permissions: string[];
+    /** Platform roles this admin role may operate on; empty = all roles (unrestricted). */
+    scopedRoles: string[];
     assignedUserCount: number;
     createdAt: string;
 }
@@ -80,6 +82,10 @@ export interface MyPermissionsDto {
     isSuperAdmin: boolean;
     isStaff: boolean;
     permissions: string[];
+    /** Platform roles this staff member may operate on; empty = unrestricted. */
+    roleScope: string[];
+    /** When false, the staff member is unrestricted (sees every role). */
+    isRoleScoped: boolean;
 }
 
 /** Public pre-auth view of an invitation token. */
@@ -95,6 +101,8 @@ export interface CreateRolePayload {
     name: string;
     description?: string;
     permissions: string[];
+    /** Platform roles this admin role may operate on; empty/omitted = all roles. */
+    scopedRoles?: string[];
 }
 
 export interface InviteAdminPayload {

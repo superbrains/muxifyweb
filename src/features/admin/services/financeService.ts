@@ -1,8 +1,10 @@
 import { api } from '@shared/services/api';
 import type {
+    ApprovalRequestQuery,
     CreatorEarningSummary,
     CreatorEarningsDetail,
     EarningsQuery,
+    FinanceApprovalRequestDto,
     FanLedger,
     FinanceGift,
     FinanceOverview,
@@ -11,6 +13,10 @@ import type {
     FinanceUnlock,
     GiftQuery,
     PagedResult,
+    PayoutAccountDto,
+    PayoutAccountQuery,
+    PayoutAuditEntryDto,
+    PayoutAuditQuery,
     PayoutDetail,
     PayoutListItem,
     PayoutQuery,
@@ -125,6 +131,20 @@ export const financeService = {
     retryPayout: (id: string, body: { note?: string }) => api.post(`${BASE}/payouts/${id}/retry`, body),
     cancelPayout: (id: string, body: { reason: string }) => api.post(`${BASE}/payouts/${id}/cancel`, body),
 
+    getPayoutAccounts: async (query: PayoutAccountQuery): Promise<PagedResult<PayoutAccountDto>> => {
+        const { data } = await api.get<PagedResult<PayoutAccountDto>>(`${BASE}/payout-accounts`, {
+            params: clean(query),
+        });
+        return data;
+    },
+
+    getPayoutAudit: async (query: PayoutAuditQuery): Promise<PagedResult<PayoutAuditEntryDto>> => {
+        const { data } = await api.get<PagedResult<PayoutAuditEntryDto>>(`${BASE}/payout-audit`, {
+            params: clean(query),
+        });
+        return data;
+    },
+
     creditWallet: (userId: string, body: { amount: number; reason: string }) =>
         api.post(`${BASE}/fans/${userId}/wallet/credit`, body),
     debitWallet: (userId: string, body: { amount: number; reason: string }) =>
@@ -137,4 +157,19 @@ export const financeService = {
         const { data } = await api.get<ReconciliationSummary>(`${BASE}/reconciliation`, { params: clean(range) });
         return data;
     },
+
+    // ----- Maker-checker (dual-approval) -----
+
+    getApprovalRequests: async (
+        query: ApprovalRequestQuery,
+    ): Promise<PagedResult<FinanceApprovalRequestDto>> => {
+        const { data } = await api.get<PagedResult<FinanceApprovalRequestDto>>(`${BASE}/approvals`, {
+            params: clean(query),
+        });
+        return data;
+    },
+
+    approveRequest: (id: string) => api.post(`${BASE}/approvals/${id}/approve`),
+    rejectRequest: (id: string, reason: string) =>
+        api.post(`${BASE}/approvals/${id}/reject`, { reason }),
 };

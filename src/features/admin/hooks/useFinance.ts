@@ -9,8 +9,11 @@ import { getApiErrorMessage } from '@/shared/lib/errorUtils';
 import { financeService } from '../services/financeService';
 import { adminKeys } from './adminKeys';
 import type {
+    ApprovalRequestQuery,
     EarningsQuery,
     GiftQuery,
+    PayoutAccountQuery,
+    PayoutAuditQuery,
     PayoutQuery,
     TransactionQuery,
     UnlockQuery,
@@ -110,11 +113,35 @@ export const usePayouts = (query: PayoutQuery) =>
         staleTime: 30_000,
     });
 
+export const usePayoutAccounts = (query: PayoutAccountQuery) =>
+    useQuery({
+        queryKey: adminKeys.finance.payoutAccounts(query),
+        queryFn: () => financeService.getPayoutAccounts(query),
+        placeholderData: keepPreviousData,
+        staleTime: 30_000,
+    });
+
+export const usePayoutAudit = (query: PayoutAuditQuery) =>
+    useQuery({
+        queryKey: adminKeys.finance.payoutAudit(query),
+        queryFn: () => financeService.getPayoutAudit(query),
+        placeholderData: keepPreviousData,
+        staleTime: 30_000,
+    });
+
 export const useReconciliation = (range: { from?: string; to?: string; currency?: string }) =>
     useQuery({
         queryKey: adminKeys.finance.reconciliation(range),
         queryFn: () => financeService.getReconciliation(range),
         staleTime: 30_000,
+    });
+
+export const useApprovalRequests = (query: ApprovalRequestQuery) =>
+    useQuery({
+        queryKey: adminKeys.finance.approvals(query),
+        queryFn: () => financeService.getApprovalRequests(query),
+        placeholderData: keepPreviousData,
+        staleTime: 15_000,
     });
 
 // ----- Mutations -----
@@ -219,4 +246,20 @@ export const useRefundPurchase = () =>
         (v: { id: string; reason: string }) => financeService.refundPurchase(v.id, { reason: v.reason }),
         'Purchase refunded',
         'The purchase was refunded.',
+    );
+
+// ----- Maker-checker (dual-approval) -----
+
+export const useApproveRequest = () =>
+    useFinanceAction(
+        (v: { id: string }) => financeService.approveRequest(v.id),
+        'Request approved',
+        'The second review was recorded and the action applied.',
+    );
+
+export const useRejectRequest = () =>
+    useFinanceAction(
+        (v: { id: string; reason: string }) => financeService.rejectRequest(v.id, v.reason),
+        'Request rejected',
+        'The request was rejected.',
     );
