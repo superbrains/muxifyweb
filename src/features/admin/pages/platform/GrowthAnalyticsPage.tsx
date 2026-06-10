@@ -1,27 +1,37 @@
 import React from 'react';
-import { Box, Center, HStack, Spinner, Text, VStack } from '@chakra-ui/react';
-import ReactApexChart from 'react-apexcharts';
-import type { ApexOptions } from 'apexcharts';
-import { FiUsers } from 'react-icons/fi';
-import { baseChartTheme } from '@/features/record-label/lib/chartTheme';
-import {
-    AdminPageLayout,
-    AdminError,
-    DataTable,
-} from '../../components/ui';
-import type { DataColumn } from '../../components/ui';
+import { Grid, GridItem, HStack, SimpleGrid } from '@chakra-ui/react';
+import { AdminPageLayout, AdminError, AdminLoading, KpiStrip } from '../../components/ui';
+import type { KpiItem } from '../../components/ui';
 import { Select } from '@shared/components';
 import { getApiErrorMessage } from '@/shared/lib/errorUtils';
+import { formatTrend } from '@/features/record-label/lib/format';
 import { formatCount, isoDaysAgo, todayIso } from '../../lib/format';
-import { useGrowthAnalytics } from '../../hooks/usePlatform';
-import type { DateWindow, Granularity, GrowthRoleBreakdown } from '../../types/platform';
+import { exportCsv } from '../../lib/exportCsv';
+import type { CsvColumn } from '../../lib/exportCsv';
+import { ExportButton } from '../../components/finance/FinanceFilters';
+import { QuickRanges } from '../../components/platform/QuickRanges';
+import type { QuickRangeKey } from '../../components/platform/QuickRanges';
+import { formatBucket, formatCompact } from '../../components/platform/chartFormat';
+import { SignupsTrendChart } from '../../components/platform/growth/SignupsTrendChart';
+import { RoleBreakdownDonut } from '../../components/platform/growth/RoleBreakdownDonut';
+import { EngagementChart } from '../../components/platform/growth/EngagementChart';
+import { RetentionHeatmap } from '../../components/platform/growth/RetentionHeatmap';
+import { ActivationFunnel } from '../../components/platform/growth/ActivationFunnel';
+import { PlatformSplitCard } from '../../components/platform/growth/PlatformSplitCard';
+import { GrowthGeographyCard } from '../../components/platform/growth/GrowthGeographyCard';
+import {
+    useGrowthAnalytics,
+    useGrowthEngagement,
+    useGrowthFunnel,
+    useGrowthRetention,
+} from '../../hooks/usePlatform';
+import type {
+    DateWindow,
+    Granularity,
+    GrowthEngagementPoint,
+    GrowthSignupPoint,
+} from '../../types/platform';
 import { DateWindowBar } from './DateWindowBar';
-
-const formatBucket = (iso: string): string => {
-    const d = new Date(iso);
-    if (Number.isNaN(d.getTime())) return iso;
-    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-};
 
 const GRANULARITY_OPTIONS = [
     { value: 'day', label: 'Daily' },
@@ -29,116 +39,200 @@ const GRANULARITY_OPTIONS = [
     { value: 'month', label: 'Monthly' },
 ];
 
-const ROLE_COLUMNS: DataColumn<GrowthRoleBreakdown>[] = [
-    { key: 'role', header: 'Role', render: (r) => <Text fontWeight="medium" textTransform="capitalize">{r.role.replace(/_/g, ' ')}</Text> },
-    { key: 'count', header: 'Signups', align: 'right', render: (r) => formatCount(r.count) },
+type CsvRow = GrowthSignupPoint & { engagement?: GrowthEngagementPoint };
+
+const CSV_COLUMNS: CsvColumn<CsvRow>[] = [
+    { header: 'Date', value: (r) => r.date },
+    { header: 'New signups', value: (r) => r.signups },
+    { header: 'Previous period signups', value: (r) => r.previousSignups ?? '' },
+    { header: 'Cumulative users', value: (r) => r.cumulativeUsers },
+    { header: 'Active users', value: (r) => r.engagement?.activeUsers ?? '' },
+    { header: 'Rolling 7-day actives', value: (r) => r.engagement?.rollingWau ?? '' },
+    { header: 'Rolling 30-day actives', value: (r) => r.engagement?.rollingMau ?? '' },
 ];
 
-/** Tower 22 — signups time-series + signups-by-role breakdown over a window. */
+/** "12.3%" of a base, zero-guarded; em-dash while the source query loads. */
+const pctOf = (numerator?: number, denominator?: number): string => {
+    if (numerator === undefined || denominator === undefined) return '—';
+    if (denominator === 0) return '0%';
+    return `${((numerator / denominator) * 100).toFixed(1)}%`;
+};
+
+/**
+ * Tower 22 — the growth command center: acquisition (signups vs previous
+ * period, cumulative base, role/country mix), engagement (DAU/WAU/MAU,
+ * stickiness, platform split), weekly retention cohorts, and the activation
+ * funnel from signup to first purchase.
+ */
 const GrowthAnalyticsPage: React.FC = () => {
-    const [range, setRange] = React.useState<DateWindow & { granularity: Granularity }>({
-        from: isoDaysAgo(30),
-        to: todayIso(),
-        granularity: 'day',
-    });
-    const { data, isLoading, error } = useGrowthAnalytics(range);
+    const [range, setRange] = React.useState<DateWindow>({ from: isoDaysAgo(30), to: todayIso() });
+    const [granularity, setGranularity] = React.useState<Granularity>('day');
+    const [activePreset, setActivePreset] = React.useState<QuickRangeKey | undefined>('30d');
 
-    const series = data?.series ?? [];
-    const total = series.reduce((sum, p) => sum + p.signups, 0);
-    const trendPct = data?.trendPct ?? 0;
+    const growth = useGrowthAnalytics({ ...range, granularity });
+    const engagement = useGrowthEngagement({ ...range, granularity });
+    const retention = useGrowthRetention(8);
+    const funnel = useGrowthFunnel(range);
 
-    const options: ApexOptions = {
-        ...baseChartTheme,
-        chart: { ...baseChartTheme.chart, type: 'area' },
-        stroke: { curve: 'smooth', width: 2.5 },
-        colors: ['#f94444'],
-        fill: {
-            type: 'gradient',
-            gradient: { shadeIntensity: 1, opacityFrom: 0.35, opacityTo: 0.05, stops: [0, 100] },
-        },
-        xaxis: {
-            ...baseChartTheme.xaxis,
-            categories: series.map((p) => formatBucket(p.date)),
-            tickAmount: 6,
-        },
-        markers: { size: 0, hover: { size: 5 } },
+    const data = growth.data;
+    const totals = data?.totals;
+    const eng = engagement.data;
+    const fun = funnel.data;
+
+    const kpis: KpiItem[] = data
+        ? [
+              {
+                  label: 'Total Users',
+                  value: formatCount(totals?.totalUsers),
+                  sub: 'All time',
+              },
+              {
+                  label: 'New Signups',
+                  value: formatCount(totals?.newSignups),
+                  trend:
+                      totals?.prevNewSignups === null || totals?.prevNewSignups === undefined
+                          ? undefined
+                          : formatTrend(totals.newSignups, totals.prevNewSignups),
+                  trendCaption: 'vs prev period',
+              },
+              {
+                  label: 'Signups / Day',
+                  value: (totals?.signupsPerDay ?? 0).toLocaleString(undefined, {
+                      maximumFractionDigits: 1,
+                  }),
+                  sub: totals?.peakDate
+                      ? `Peak ${formatBucket(totals.peakDate, granularity)} · ${formatCount(totals.peakSignups)}`
+                      : 'No peak yet',
+              },
+              {
+                  label: 'DAU',
+                  value: eng ? formatCompact(eng.currentDau) : '—',
+                  sub: 'Active on the last day',
+              },
+              {
+                  label: 'MAU',
+                  value: eng ? formatCompact(eng.currentMau) : '—',
+                  sub: '30-day actives',
+              },
+              {
+                  label: 'Stickiness',
+                  value: eng ? `${eng.stickinessPct.toFixed(1)}%` : '—',
+                  sub: 'DAU / MAU',
+              },
+              {
+                  label: 'Activation Rate',
+                  value: pctOf(fun?.activated, fun?.signedUp),
+                  sub: 'Signup → first play',
+              },
+              {
+                  label: 'Paying Conversion',
+                  value: pctOf(fun?.converted, fun?.signedUp),
+                  sub: 'Signup → first purchase',
+              },
+          ]
+        : [];
+
+    const handleExport = () => {
+        if (!data) return;
+        const engagementByDate = new Map(
+            (engagement.data?.series ?? []).map((p) => [p.date, p]),
+        );
+        const rows: CsvRow[] = data.series.map((p) => ({
+            ...p,
+            engagement: engagementByDate.get(p.date),
+        }));
+        exportCsv(
+            `growth-analytics-${range.from ?? 'all'}-to-${range.to ?? 'now'}`,
+            CSV_COLUMNS,
+            rows,
+        );
     };
 
     return (
         <AdminPageLayout
             title="Growth Analytics"
-            subtitle="New signups over time and how they break down by role"
+            subtitle="Acquisition, engagement, retention and activation across the platform"
             breadcrumbs={[{ label: 'Platform' }, { label: 'Growth Analytics' }]}
+            actions={<ExportButton onClick={handleExport} disabled={!data} />}
         >
             <DateWindowBar
                 range={range}
-                onChange={(next) => setRange((r) => ({ ...r, ...next }))}
+                onChange={(next) => {
+                    setRange(next);
+                    setActivePreset(undefined);
+                }}
                 right={
-                    <Box ml={{ lg: 'auto' }}>
+                    <HStack gap={2} ml={{ lg: 'auto' }} flexWrap="wrap">
+                        <QuickRanges
+                            active={activePreset}
+                            onSelect={(key, next) => {
+                                setActivePreset(key);
+                                setRange(next);
+                            }}
+                        />
                         <Select
                             options={GRANULARITY_OPTIONS}
-                            value={range.granularity}
-                            onChange={(v) => setRange((r) => ({ ...r, granularity: v as Granularity }))}
-                            width="130px"
+                            value={granularity}
+                            onChange={(v) => setGranularity(v as Granularity)}
+                            width="120px"
                             borderColor="gray.200"
                             borderRadius="10px"
                         />
-                    </Box>
+                    </HStack>
                 }
             />
 
-            {error ? (
-                <AdminError error={error} message={getApiErrorMessage(error, 'Could not load growth analytics.')} />
+            {growth.isLoading && !data ? (
+                <AdminLoading />
+            ) : growth.error ? (
+                <AdminError
+                    error={growth.error}
+                    message={getApiErrorMessage(growth.error, 'Could not load growth analytics.')}
+                />
             ) : (
                 <>
-                    <Box bg="white" p={4} borderRadius="xl" border="1px solid" borderColor="gray.100">
-                        <HStack justify="space-between" align="flex-start" mb={3}>
-                            <VStack align="start" gap={0.5}>
-                                <Text fontSize="11px" fontWeight="semibold" color="gray.900">
-                                    New signups
-                                </Text>
-                                <Text fontSize="9px" color="gray.500">
-                                    {trendPct >= 0 ? '+' : ''}{trendPct.toFixed(1)}% vs previous period
-                                </Text>
-                            </VStack>
-                            <VStack align="end" gap={0}>
-                                <Text fontSize="md" fontWeight="bold" color="gray.900">
-                                    {total.toLocaleString()}
-                                </Text>
-                                <Text fontSize="9px" color="gray.500">
-                                    Total
-                                </Text>
-                            </VStack>
-                        </HStack>
+                    <KpiStrip items={kpis} columns={{ base: 2, md: 4, xl: 4 }} />
 
-                        {isLoading && !data ? (
-                            <Center h="260px">
-                                <Spinner size="sm" color="primary.500" />
-                            </Center>
-                        ) : total === 0 ? (
-                            <Center h="260px">
-                                <Text fontSize="xs" color="gray.500">
-                                    No signups in this window yet.
-                                </Text>
-                            </Center>
-                        ) : (
-                            <ReactApexChart
-                                options={options}
-                                series={[{ name: 'Signups', data: series.map((p) => p.signups) }]}
-                                height={260}
-                                type="area"
+                    <Grid templateColumns={{ base: '1fr', xl: '1.7fr 1fr' }} gap={3}>
+                        <GridItem minW={0}>
+                            <SignupsTrendChart
+                                series={data?.series ?? []}
+                                granularity={granularity}
+                                loading={growth.isLoading && !data}
                             />
-                        )}
-                    </Box>
+                        </GridItem>
+                        <GridItem minW={0}>
+                            <RoleBreakdownDonut
+                                byRole={data?.byRole ?? []}
+                                loading={growth.isLoading && !data}
+                            />
+                        </GridItem>
+                    </Grid>
 
-                    <DataTable
-                        columns={ROLE_COLUMNS}
-                        rows={data?.byRole ?? []}
-                        rowKey={(r) => r.role}
-                        loading={isLoading && !data}
-                        emptyIcon={FiUsers}
-                        emptyTitle="No signups by role"
-                        emptyDescription="Nothing was recorded in this window."
+                    <SimpleGrid columns={{ base: 1, xl: 2 }} gap={3}>
+                        <EngagementChart
+                            series={eng?.series ?? []}
+                            granularity={granularity}
+                            currentMau={eng?.currentMau ?? 0}
+                            loading={engagement.isLoading && !eng}
+                        />
+                        <RetentionHeatmap
+                            data={retention.data}
+                            loading={retention.isLoading && !retention.data}
+                        />
+                    </SimpleGrid>
+
+                    <SimpleGrid columns={{ base: 1, xl: 2 }} gap={3}>
+                        <ActivationFunnel data={fun} loading={funnel.isLoading && !fun} />
+                        <PlatformSplitCard
+                            byPlatform={eng?.byPlatform ?? []}
+                            loading={engagement.isLoading && !eng}
+                        />
+                    </SimpleGrid>
+
+                    <GrowthGeographyCard
+                        byCountry={data?.byCountry ?? []}
+                        loading={growth.isLoading && !data}
                     />
                 </>
             )}

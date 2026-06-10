@@ -118,6 +118,10 @@ export interface BusinessTop {
 export interface GrowthSignupPoint {
     date: string;
     signups: number;
+    /** Users existing before the window + running signup sum. */
+    cumulativeUsers: number;
+    /** Index-aligned previous-window bucket; null when the window is open-ended. */
+    previousSignups?: number | null;
 }
 
 export interface GrowthRoleBreakdown {
@@ -125,10 +129,72 @@ export interface GrowthRoleBreakdown {
     count: number;
 }
 
+export interface GrowthTotals {
+    totalUsers: number;
+    newSignups: number;
+    signupsPerDay: number;
+    peakDate?: string | null;
+    peakSignups: number;
+    prevNewSignups?: number | null;
+}
+
+export interface GrowthCountryRow {
+    country: string;
+    count: number;
+}
+
 export interface GrowthAnalytics {
     series: GrowthSignupPoint[];
     byRole: GrowthRoleBreakdown[];
     trendPct: number;
+    totals: GrowthTotals;
+    byCountry: GrowthCountryRow[];
+}
+
+export interface GrowthEngagementPoint {
+    date: string;
+    activeUsers: number;
+    rollingWau: number;
+    rollingMau: number;
+}
+
+export interface PlatformActiveRow {
+    platform: string;
+    activeUsers: number;
+}
+
+export interface GrowthEngagement {
+    series: GrowthEngagementPoint[];
+    currentDau: number;
+    currentWau: number;
+    currentMau: number;
+    /** DAU / MAU * 100, 1dp. */
+    stickinessPct: number;
+    activeUsers: number;
+    totalPlays: number;
+    playsPerActiveUser: number;
+    byPlatform: PlatformActiveRow[];
+}
+
+export interface RetentionCohortRow {
+    /** Monday week-start yyyy-MM-dd. */
+    cohortStart: string;
+    cohortSize: number;
+    /** cells[k] = % of the cohort active in week k after signup; null = not reached yet. */
+    cells: (number | null)[];
+}
+
+export interface GrowthRetention {
+    weeks: number;
+    cohorts: RetentionCohortRow[];
+}
+
+export interface GrowthFunnel {
+    signedUp: number;
+    emailVerified: number;
+    onboarded: number;
+    activated: number;
+    converted: number;
 }
 
 /* --------------------------------- Revenue --------------------------------- */

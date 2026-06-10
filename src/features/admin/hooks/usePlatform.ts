@@ -45,6 +45,27 @@ export const useGrowthAnalytics = (range: DateWindow & { granularity?: Granulari
         staleTime: 60_000,
     });
 
+export const useGrowthEngagement = (range: DateWindow & { granularity?: Granularity }) =>
+    useQuery({
+        queryKey: adminKeys.platform.growthEngagement(range),
+        queryFn: () => platformService.getGrowthEngagement(range),
+        staleTime: 60_000,
+    });
+
+export const useGrowthRetention = (weeks = 8) =>
+    useQuery({
+        queryKey: adminKeys.platform.growthRetention(weeks),
+        queryFn: () => platformService.getGrowthRetention(weeks),
+        staleTime: 60_000,
+    });
+
+export const useGrowthFunnel = (range: DateWindow) =>
+    useQuery({
+        queryKey: adminKeys.platform.growthFunnel(range),
+        queryFn: () => platformService.getGrowthFunnel(range),
+        staleTime: 60_000,
+    });
+
 export const useRevenueOverview = (range: DateWindow) =>
     useQuery({
         queryKey: adminKeys.platform.revenue(range),

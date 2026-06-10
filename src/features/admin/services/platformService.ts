@@ -11,6 +11,9 @@ import type {
     GeographyAnalytics,
     Granularity,
     GrowthAnalytics,
+    GrowthEngagement,
+    GrowthFunnel,
+    GrowthRetention,
     PagedResult,
     PlatformSetting,
     RevenueOverview,
@@ -61,6 +64,29 @@ export const platformService = {
         range: DateWindow & { granularity?: Granularity },
     ): Promise<GrowthAnalytics> => {
         const { data } = await api.get<GrowthAnalytics>(`${ANALYTICS}/growth`, {
+            params: clean(range),
+        });
+        return data;
+    },
+
+    getGrowthEngagement: async (
+        range: DateWindow & { granularity?: Granularity },
+    ): Promise<GrowthEngagement> => {
+        const { data } = await api.get<GrowthEngagement>(`${ANALYTICS}/growth/engagement`, {
+            params: clean(range),
+        });
+        return data;
+    },
+
+    getGrowthRetention: async (weeks?: number): Promise<GrowthRetention> => {
+        const { data } = await api.get<GrowthRetention>(`${ANALYTICS}/growth/retention`, {
+            params: clean({ weeks }),
+        });
+        return data;
+    },
+
+    getGrowthFunnel: async (range: DateWindow): Promise<GrowthFunnel> => {
+        const { data } = await api.get<GrowthFunnel>(`${ANALYTICS}/growth/funnel`, {
             params: clean(range),
         });
         return data;

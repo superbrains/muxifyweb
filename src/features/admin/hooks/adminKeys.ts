@@ -156,6 +156,11 @@ export const adminKeys = {
             ['admin', 'platform', 'business', 'timeseries', range] as const,
         businessTop: (range: unknown) => ['admin', 'platform', 'business', 'top', range] as const,
         growth: (range: unknown) => ['admin', 'platform', 'growth', range] as const,
+        growthEngagement: (range: unknown) =>
+            ['admin', 'platform', 'growth', 'engagement', range] as const,
+        growthRetention: (weeks: unknown) =>
+            ['admin', 'platform', 'growth', 'retention', weeks] as const,
+        growthFunnel: (range: unknown) => ['admin', 'platform', 'growth', 'funnel', range] as const,
         revenue: (range: unknown) => ['admin', 'platform', 'revenue', range] as const,
         geography: (range: unknown) => ['admin', 'platform', 'geography', range] as const,
         risk: ['admin', 'platform', 'risk'] as const,
