@@ -24,6 +24,20 @@ export const useBusinessAnalytics = (range: DateWindow) =>
         staleTime: 60_000,
     });
 
+export const useBusinessTimeseries = (range: DateWindow & { granularity?: Granularity }) =>
+    useQuery({
+        queryKey: adminKeys.platform.businessTimeseries(range),
+        queryFn: () => platformService.getBusinessTimeseries(range),
+        staleTime: 60_000,
+    });
+
+export const useBusinessTop = (range: DateWindow & { limit?: number }) =>
+    useQuery({
+        queryKey: adminKeys.platform.businessTop(range),
+        queryFn: () => platformService.getBusinessTop(range),
+        staleTime: 60_000,
+    });
+
 export const useGrowthAnalytics = (range: DateWindow & { granularity?: Granularity }) =>
     useQuery({
         queryKey: adminKeys.platform.growth(range),

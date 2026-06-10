@@ -15,6 +15,28 @@ export type Granularity = 'day' | 'week' | 'month';
 
 /* --------------------------------- Business -------------------------------- */
 
+/** One slice of the revenue mix, keyed by backend EarningType name. */
+export interface RevenueMixSlice {
+    type: string;
+    amountMinor: number;
+    coins: number;
+}
+
+/** Raw aggregates for the immediately-preceding equal-length window. */
+export interface BusinessSnapshot {
+    totalRevenueMinor: number;
+    platformFeesMinor: number;
+    netRevenueMinor: number;
+    grossCoinVolume: number;
+    payingUsers: number;
+    newSignups: number;
+    purchasesCount: number;
+    arppuMinor: number;
+    coinsPurchased: number;
+    coinsSpent: number;
+    payoutsMinor: number;
+}
+
 export interface BusinessAnalytics {
     currency: string;
     totalRevenueMinor: number;
@@ -24,7 +46,71 @@ export interface BusinessAnalytics {
     totalUsers: number;
     payingUsers: number;
     newSignups: number;
+    /** Revenue / total users. */
     arpuMinor: number;
+    /** Revenue / paying users. */
+    arppuMinor: number;
+    purchasesCount: number;
+    conversionPct: number;
+    feeRatePct: number;
+    coinsPurchased: number;
+    coinsSpent: number;
+    payoutsMinor: number;
+    revenueMix: RevenueMixSlice[];
+    /** Null unless both `from` and `to` were supplied. */
+    previous?: BusinessSnapshot | null;
+}
+
+export interface BusinessSeriesPoint {
+    date: string;
+    revenueMinor: number;
+    feesMinor: number;
+    payoutsMinor: number;
+    signups: number;
+    payingUsers: number;
+    coinsPurchased: number;
+    coinsSpent: number;
+}
+
+export interface BusinessTimeseries {
+    granularity: Granularity;
+    series: BusinessSeriesPoint[];
+}
+
+export interface TopArtist {
+    artistId: string;
+    name: string;
+    avatarUrl?: string | null;
+    grossMinor: number;
+    netMinor: number;
+    coins: number;
+    earningCount: number;
+}
+
+export interface TopContent {
+    trackId: string;
+    title: string;
+    artistName: string;
+    coins: number;
+    amountMinor: number;
+    giftCoins: number;
+    unlockCoins: number;
+}
+
+export interface TopSpender {
+    userId: string;
+    name: string;
+    avatarUrl?: string | null;
+    coinsSpent: number;
+    giftCoins: number;
+    unlockCoins: number;
+    txnCount: number;
+}
+
+export interface BusinessTop {
+    topArtists: TopArtist[];
+    topContent: TopContent[];
+    topSpenders: TopSpender[];
 }
 
 /* ---------------------------------- Growth --------------------------------- */

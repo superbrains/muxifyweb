@@ -3,6 +3,8 @@ import type {
     BroadcastQuery,
     Broadcast,
     BusinessAnalytics,
+    BusinessTimeseries,
+    BusinessTop,
     CreateBroadcastPayload,
     DateWindow,
     DeliveryStats,
@@ -34,6 +36,22 @@ export const platformService = {
 
     getBusiness: async (range: DateWindow): Promise<BusinessAnalytics> => {
         const { data } = await api.get<BusinessAnalytics>(`${ANALYTICS}/business`, {
+            params: clean(range),
+        });
+        return data;
+    },
+
+    getBusinessTimeseries: async (
+        range: DateWindow & { granularity?: Granularity },
+    ): Promise<BusinessTimeseries> => {
+        const { data } = await api.get<BusinessTimeseries>(`${ANALYTICS}/business/timeseries`, {
+            params: clean(range),
+        });
+        return data;
+    },
+
+    getBusinessTop: async (range: DateWindow & { limit?: number }): Promise<BusinessTop> => {
+        const { data } = await api.get<BusinessTop>(`${ANALYTICS}/business/top`, {
             params: clean(range),
         });
         return data;

@@ -152,6 +152,9 @@ export const adminKeys = {
     platform: {
         root: ['admin', 'platform'] as const,
         business: (range: unknown) => ['admin', 'platform', 'business', range] as const,
+        businessTimeseries: (range: unknown) =>
+            ['admin', 'platform', 'business', 'timeseries', range] as const,
+        businessTop: (range: unknown) => ['admin', 'platform', 'business', 'top', range] as const,
         growth: (range: unknown) => ['admin', 'platform', 'growth', range] as const,
         revenue: (range: unknown) => ['admin', 'platform', 'revenue', range] as const,
         geography: (range: unknown) => ['admin', 'platform', 'geography', range] as const,
