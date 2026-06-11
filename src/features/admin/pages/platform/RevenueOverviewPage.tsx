@@ -1,138 +1,275 @@
 import React from 'react';
-import { Box, Center, HStack, Spinner, Text, VStack } from '@chakra-ui/react';
-import ReactApexChart from 'react-apexcharts';
-import type { ApexOptions } from 'apexcharts';
-import { FiDollarSign } from 'react-icons/fi';
-import { baseChartTheme } from '@/features/record-label/lib/chartTheme';
-import {
-    AdminPageLayout,
-    AdminError,
-    DataTable,
-    KpiStrip,
-} from '../../components/ui';
-import type { DataColumn, KpiItem } from '../../components/ui';
+import { Grid, GridItem, HStack, SimpleGrid } from '@chakra-ui/react';
+import { AdminPageLayout, AdminError, AdminLoading, KpiStrip } from '../../components/ui';
+import type { KpiItem } from '../../components/ui';
+import { Select } from '@shared/components';
 import { getApiErrorMessage } from '@/shared/lib/errorUtils';
-import { formatMinorAmount, isoDaysAgo, todayIso } from '../../lib/format';
-import { useRevenueOverview } from '../../hooks/usePlatform';
-import type { DateWindow, RevenueTypeBreakdown } from '../../types/platform';
+import { formatTrend } from '@/features/record-label/lib/format';
+import { formatCount, formatMinorAmount, isoDaysAgo, todayIso } from '../../lib/format';
+import { exportCsv } from '../../lib/exportCsv';
+import type { CsvColumn } from '../../lib/exportCsv';
+import { ExportButton } from '../../components/finance/FinanceFilters';
+import { QuickRanges } from '../../components/platform/QuickRanges';
+import type { QuickRangeKey } from '../../components/platform/QuickRanges';
+import { RevenueTrendChart } from '../../components/platform/RevenueTrendChart';
+import { RevenueMixDonut } from '../../components/platform/RevenueMixDonut';
+import { TopPerformers } from '../../components/platform/TopPerformers';
+import { GeographyCard } from '../../components/platform/GeographyCard';
+import { NetRevenueWaterfall } from '../../components/platform/revenue/NetRevenueWaterfall';
+import { RevenueBySourceCard } from '../../components/platform/revenue/RevenueBySourceCard';
+import { CommissionByTypeCard } from '../../components/platform/revenue/CommissionByTypeCard';
+import { RoyaltiesByRoleCard } from '../../components/platform/revenue/RoyaltiesByRoleCard';
+import { TreasuryCard } from '../../components/platform/revenue/TreasuryCard';
+import {
+    useBusinessAnalytics,
+    useBusinessTimeseries,
+    useBusinessTop,
+} from '../../hooks/usePlatform';
+import { useCommission, useRevenue, useRoyalties } from '../../hooks/useMonetization';
+import { useFinanceOverview } from '../../hooks/useFinance';
+import type { BusinessAnalytics, DateWindow, Granularity } from '../../types/platform';
 import { DateWindowBar } from './DateWindowBar';
 
-const formatBucket = (iso: string): string => {
-    const d = new Date(iso);
-    if (Number.isNaN(d.getTime())) return iso;
-    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+const GRANULARITY_OPTIONS = [
+    { value: 'day', label: 'Daily' },
+    { value: 'week', label: 'Weekly' },
+    { value: 'month', label: 'Monthly' },
+];
+
+/** Metric rows for the CSV export — current window vs the previous one. */
+const buildCsvRows = (data: BusinessAnalytics) => {
+    const prev = data.previous;
+    const row = (metric: string, current: number, previous?: number) => ({
+        metric,
+        current,
+        previous: previous ?? '',
+        changePct:
+            previous === undefined || previous === 0
+                ? ''
+                : (((current - previous) / previous) * 100).toFixed(1),
+    });
+    return [
+        row('Gross revenue (minor)', data.totalRevenueMinor, prev?.totalRevenueMinor),
+        row('Platform fees (minor)', data.platformFeesMinor, prev?.platformFeesMinor),
+        row('Net revenue (minor)', data.netRevenueMinor, prev?.netRevenueMinor),
+        row('Creator payouts (minor)', data.payoutsMinor, prev?.payoutsMinor),
+        row('ARPU (minor)', data.arpuMinor),
+        row('ARPPU (minor)', data.arppuMinor, prev?.arppuMinor),
+        row('Coins sold', data.coinsPurchased, prev?.coinsPurchased),
+        row('Coin purchases', data.purchasesCount, prev?.purchasesCount),
+        row('Platform take rate (%)', data.feeRatePct),
+        row('Paying conversion (%)', data.conversionPct),
+    ];
 };
 
-/** Tower 24 — funding/fees/payouts/net KPIs, a revenue time-series and a by-type table. */
+const CSV_COLUMNS: CsvColumn<ReturnType<typeof buildCsvRows>[number]>[] = [
+    { header: 'Metric', value: (r) => r.metric },
+    { header: 'Current window', value: (r) => r.current },
+    { header: 'Previous window', value: (r) => r.previous },
+    { header: 'Change %', value: (r) => r.changePct },
+];
+
+/**
+ * Tower 24 — the platform revenue command center. Headline P&L KPIs with
+ * period-over-period deltas, a revenue/fees/payouts trend, the earnings mix and
+ * a gross→net bridge, funding by provider, platform commission and creator
+ * royalty splits, the treasury/liability position, revenue geography and the
+ * top revenue drivers. Composes existing analytics hooks — no new API surface.
+ */
 const RevenueOverviewPage: React.FC = () => {
     const [range, setRange] = React.useState<DateWindow>({ from: isoDaysAgo(30), to: todayIso() });
-    const { data, isLoading, error } = useRevenueOverview(range);
+    const [granularity, setGranularity] = React.useState<Granularity>('day');
+    const [activePreset, setActivePreset] = React.useState<QuickRangeKey | undefined>('30d');
 
+    const business = useBusinessAnalytics(range);
+    const timeseries = useBusinessTimeseries({ ...range, granularity });
+    const top = useBusinessTop({ ...range, limit: 5 });
+    const revenue = useRevenue(range);
+    const commission = useCommission(range);
+    const royalties = useRoyalties(range);
+    const finance = useFinanceOverview(range);
+
+    const data = business.data;
     const currency = data?.currency ?? 'NGN';
+    const prev = data?.previous ?? undefined;
+    const series = timeseries.data?.series ?? [];
 
-    const items: KpiItem[] = data
+    /** KPI with a period-over-period chip only when a previous window exists. */
+    const kpi = (
+        label: string,
+        value: string,
+        current: number,
+        previous?: number,
+        sub?: string,
+    ): KpiItem => ({
+        label,
+        value,
+        sub,
+        trend: previous === undefined ? undefined : formatTrend(current, previous),
+        trendCaption: previous === undefined ? undefined : 'vs prev period',
+    });
+
+    const kpis: KpiItem[] = data
         ? [
-              { label: 'Gross Funding', value: formatMinorAmount(data.grossFundingMinor, currency) },
-              { label: 'Fees', value: formatMinorAmount(data.feesMinor, currency) },
-              { label: 'Payouts', value: formatMinorAmount(data.payoutsMinor, currency) },
-              { label: 'Net', value: formatMinorAmount(data.netMinor, currency) },
+              kpi(
+                  'Gross Revenue',
+                  formatMinorAmount(data.totalRevenueMinor, currency),
+                  data.totalRevenueMinor,
+                  prev?.totalRevenueMinor,
+              ),
+              kpi(
+                  'Net Revenue',
+                  formatMinorAmount(data.netRevenueMinor, currency),
+                  data.netRevenueMinor,
+                  prev?.netRevenueMinor,
+              ),
+              kpi(
+                  'Platform Fees',
+                  formatMinorAmount(data.platformFeesMinor, currency),
+                  data.platformFeesMinor,
+                  prev?.platformFeesMinor,
+                  `${data.feeRatePct.toFixed(1)}% take rate`,
+              ),
+              kpi(
+                  'Creator Payouts',
+                  formatMinorAmount(data.payoutsMinor, currency),
+                  data.payoutsMinor,
+                  prev?.payoutsMinor,
+              ),
+              {
+                  label: 'ARPU',
+                  value: formatMinorAmount(data.arpuMinor, currency),
+                  sub: 'Per user',
+              },
+              kpi(
+                  'ARPPU',
+                  formatMinorAmount(data.arppuMinor, currency),
+                  data.arppuMinor,
+                  prev?.arppuMinor,
+                  'Per paying user',
+              ),
+              kpi(
+                  'Coins Sold',
+                  formatCount(data.coinsPurchased),
+                  data.coinsPurchased,
+                  prev?.coinsPurchased,
+              ),
+              kpi(
+                  'Purchases',
+                  formatCount(data.purchasesCount),
+                  data.purchasesCount,
+                  prev?.purchasesCount,
+              ),
           ]
         : [];
 
-    const typeColumns: DataColumn<RevenueTypeBreakdown>[] = [
-        { key: 'type', header: 'Type', render: (r) => <Text fontWeight="medium" textTransform="capitalize">{r.type.replace(/_/g, ' ')}</Text> },
-        { key: 'amount', header: 'Amount', align: 'right', render: (r) => formatMinorAmount(r.amountMinor, currency) },
-    ];
-
-    const series = data?.series ?? [];
-    const options: ApexOptions = {
-        ...baseChartTheme,
-        chart: { ...baseChartTheme.chart, type: 'area' },
-        stroke: { curve: 'smooth', width: 2.5 },
-        colors: ['#16A34A'],
-        fill: {
-            type: 'gradient',
-            gradient: { shadeIntensity: 1, opacityFrom: 0.3, opacityTo: 0.04, stops: [0, 100] },
-        },
-        xaxis: {
-            ...baseChartTheme.xaxis,
-            categories: series.map((p) => formatBucket(p.date)),
-            tickAmount: 6,
-        },
-        yaxis: {
-            ...baseChartTheme.yaxis,
-            labels: {
-                ...baseChartTheme.yaxis,
-                formatter: (v: number) => formatMinorAmount(v, currency),
-            },
-        },
-        markers: { size: 0, hover: { size: 5 } },
-        tooltip: {
-            ...baseChartTheme.tooltip,
-            y: { formatter: (v: number) => formatMinorAmount(v, currency) },
-        },
+    const handleExport = () => {
+        if (!data) return;
+        exportCsv(
+            `revenue-overview-${range.from ?? 'all'}-to-${range.to ?? 'now'}`,
+            CSV_COLUMNS,
+            buildCsvRows(data),
+        );
     };
 
     return (
         <AdminPageLayout
             title="Revenue Overview"
-            subtitle="Funding, fees, payouts and net revenue over a window"
+            subtitle="Platform P&L, monetization mix, payouts and treasury at a glance"
             breadcrumbs={[{ label: 'Platform' }, { label: 'Revenue' }]}
+            actions={<ExportButton onClick={handleExport} disabled={!data} />}
         >
-            <DateWindowBar range={range} onChange={setRange} />
+            <DateWindowBar
+                range={range}
+                onChange={(next) => {
+                    setRange(next);
+                    setActivePreset(undefined);
+                }}
+                right={
+                    <HStack gap={2} ml={{ lg: 'auto' }} flexWrap="wrap">
+                        <QuickRanges
+                            active={activePreset}
+                            onSelect={(key, next) => {
+                                setActivePreset(key);
+                                setRange(next);
+                            }}
+                        />
+                        <Select
+                            options={GRANULARITY_OPTIONS}
+                            value={granularity}
+                            onChange={(v) => setGranularity(v as Granularity)}
+                            width="120px"
+                            borderColor="gray.200"
+                            borderRadius="10px"
+                        />
+                    </HStack>
+                }
+            />
 
-            {error ? (
-                <AdminError error={error} message={getApiErrorMessage(error, 'Could not load revenue.')} />
+            {business.isLoading && !data ? (
+                <AdminLoading />
+            ) : business.error ? (
+                <AdminError
+                    error={business.error}
+                    message={getApiErrorMessage(business.error, 'Could not load revenue overview.')}
+                />
             ) : (
                 <>
-                    {data && <KpiStrip items={items} columns={{ base: 2, md: 4, xl: 4 }} />}
+                    <KpiStrip items={kpis} columns={{ base: 2, md: 4, xl: 4 }} />
 
-                    <Box bg="white" p={4} borderRadius="xl" border="1px solid" borderColor="gray.100">
-                        <HStack justify="space-between" align="flex-start" mb={3}>
-                            <Text fontSize="11px" fontWeight="semibold" color="gray.900">
-                                Revenue over time
-                            </Text>
-                            {data && (
-                                <Text fontSize="md" fontWeight="bold" color="gray.900">
-                                    {formatMinorAmount(data.grossFundingMinor, currency)}
-                                </Text>
-                            )}
-                        </HStack>
-
-                        {isLoading && !data ? (
-                            <Center h="260px">
-                                <Spinner size="sm" color="primary.500" />
-                            </Center>
-                        ) : series.length === 0 ? (
-                            <Center h="260px">
-                                <Text fontSize="xs" color="gray.500">
-                                    No revenue recorded in this window yet.
-                                </Text>
-                            </Center>
-                        ) : (
-                            <ReactApexChart
-                                options={options}
-                                series={[{ name: 'Revenue', data: series.map((p) => p.amountMinor) }]}
-                                height={260}
-                                type="area"
+                    <Grid templateColumns={{ base: '1fr', xl: '1.7fr 1fr' }} gap={3}>
+                        <GridItem minW={0}>
+                            <RevenueTrendChart
+                                series={series}
+                                granularity={granularity}
+                                currency={currency}
+                                loading={timeseries.isLoading && !timeseries.data}
                             />
-                        )}
-                    </Box>
+                        </GridItem>
+                        <GridItem minW={0}>
+                            <RevenueMixDonut
+                                mix={data?.revenueMix ?? []}
+                                currency={currency}
+                                loading={business.isLoading && !data}
+                            />
+                        </GridItem>
+                    </Grid>
 
-                    <VStack align="stretch" gap={2}>
-                        <Text fontSize="11px" fontWeight="semibold" color="gray.700" px={1}>
-                            Revenue by type
-                        </Text>
-                        <DataTable
-                            columns={typeColumns}
-                            rows={data?.byType ?? []}
-                            rowKey={(r) => r.type}
-                            loading={isLoading && !data}
-                            emptyIcon={FiDollarSign}
-                            emptyTitle="No revenue by type"
-                            emptyDescription="Nothing was recorded in this window."
+                    <SimpleGrid columns={{ base: 1, xl: 2 }} gap={3}>
+                        <NetRevenueWaterfall
+                            grossMinor={data?.totalRevenueMinor ?? 0}
+                            feesMinor={data?.platformFeesMinor ?? 0}
+                            payoutsMinor={data?.payoutsMinor ?? 0}
+                            currency={currency}
+                            loading={business.isLoading && !data}
                         />
-                    </VStack>
+                        <RevenueBySourceCard
+                            bySource={revenue.data?.bySource ?? []}
+                            currency={revenue.data?.currency ?? currency}
+                            loading={revenue.isLoading && !revenue.data}
+                        />
+                    </SimpleGrid>
+
+                    <SimpleGrid columns={{ base: 1, xl: 2 }} gap={3} alignItems="start">
+                        <CommissionByTypeCard
+                            data={commission.data}
+                            loading={commission.isLoading && !commission.data}
+                        />
+                        <RoyaltiesByRoleCard
+                            data={royalties.data}
+                            loading={royalties.isLoading && !royalties.data}
+                        />
+                    </SimpleGrid>
+
+                    <TreasuryCard data={finance.data} loading={finance.isLoading && !finance.data} />
+
+                    <GeographyCard range={range} currency={currency} />
+
+                    <TopPerformers
+                        data={top.data}
+                        currency={currency}
+                        loading={top.isLoading && !top.data}
+                    />
                 </>
             )}
         </AdminPageLayout>

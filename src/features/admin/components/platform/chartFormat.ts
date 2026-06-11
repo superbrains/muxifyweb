@@ -19,3 +19,22 @@ export const formatCompact = (n: number): string =>
     new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 }).format(
         n ?? 0,
     );
+
+/**
+ * Compact currency for chart axes — minor units in, "₦1.2M" out. Keeps the
+ * currency symbol while staying short enough for a y-axis tick. Falls back to a
+ * code-prefixed compact number if the currency isn't recognised by Intl.
+ */
+export const formatMinorCompact = (amountMinor: number, currency = 'NGN'): string => {
+    const amount = (amountMinor ?? 0) / 100;
+    try {
+        return new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: currency || 'NGN',
+            notation: 'compact',
+            maximumFractionDigits: 1,
+        }).format(amount);
+    } catch {
+        return `${currency} ${formatCompact(amount)}`;
+    }
+};
