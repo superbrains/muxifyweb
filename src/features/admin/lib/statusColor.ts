@@ -117,8 +117,22 @@ export const roleLabel = (role: string): string => {
         podcaster: 'Podcaster',
         record_label: 'Record Label',
         ad_manager: 'Ad Manager',
+        contributor: 'Contributor',
         fan: 'Fan',
         admin: 'Admin',
     };
     return map[role] ?? role;
 };
+
+/** Tinted pill colours for fan gamification medal tiers. */
+const MEDAL: Record<string, StatusStyle> = {
+    None: { bg: '#F1F5F9', color: '#64748B', dot: '#94A3B8', label: 'No medal' },
+    Iron: { bg: '#F1F5F9', color: '#475569', dot: '#64748B', label: 'Iron' },
+    Crown: { bg: '#FFF7ED', color: '#C2410C', dot: '#F97316', label: 'Crown' },
+    Gold: { bg: '#FFF9E6', color: '#A16207', dot: '#EAB308', label: 'Gold' },
+    Platinum: { bg: '#F0F9FF', color: '#0369A1', dot: '#38BDF8', label: 'Platinum' },
+    Diamond: { bg: '#F5F3FF', color: '#6D28D9', dot: '#8B5CF6', label: 'Diamond' },
+};
+
+export const medalStyle = (medal?: string | null): StatusStyle =>
+    MEDAL[medal ?? 'None'] ?? { ...FALLBACK, label: medal ?? '—' };

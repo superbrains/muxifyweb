@@ -121,6 +121,28 @@ export type VerificationPageDto = PagedResult<VerificationListItemDto>;
  * User Management
  * ------------------------------------------------------------------ */
 
+/** Role-appropriate headline numbers for a user row (only the fields matching the role are set). */
+export interface AdminUserMetricsDto {
+    // artist / dj / creator / podcaster
+    followers?: number;
+    tracks?: number;
+    earningsMinor?: number;
+    // record label
+    rosterCount?: number;
+    tradingName?: string;
+    // fan
+    coinBalance?: number;
+    medal?: string;
+    giftsSentCount?: number;
+    // ad manager
+    companyName?: string;
+    activeCampaigns?: number;
+    adSpendMinor?: number;
+    // contributor
+    activeSplits?: number;
+    currency?: string;
+}
+
 export interface AdminUserDto {
     id: string;
     name: string;
@@ -131,6 +153,171 @@ export interface AdminUserDto {
     isVerified: boolean;
     createdAt: string;
     lastActiveAt?: string;
+    metrics?: AdminUserMetricsDto;
+}
+
+export interface AdminUsersSummaryDto {
+    total: number;
+    active: number;
+    suspended: number;
+    pending: number;
+    verified: number;
+    newLast30Days: number;
+}
+
+export interface UserAuditEntryDto {
+    id: string;
+    action: string;
+    summary: string;
+    actorName: string;
+    createdAt: string;
+}
+
+export interface VerificationSummaryDto {
+    entityType: VerificationEntityType;
+    pending: number;
+    verified: number;
+    rejected: number;
+    oldestPendingSubmittedAt?: string;
+}
+
+/* ---- Role-discriminated profile detail (admin user page) ---- */
+
+export interface AccountSecuritySummaryDto {
+    isEmailVerified: boolean;
+    phoneVerified: boolean;
+    onboardingCompleted: boolean;
+    lastLoginAt?: string;
+}
+
+export interface VerificationBlockDto {
+    status: VerificationStatus;
+    submittedAt?: string;
+    reviewedAt?: string;
+    rejectionReason?: string;
+    documents: VerificationDocumentDto[];
+}
+
+export interface AdminAddressDto {
+    street?: string;
+    city?: string;
+    state?: string;
+    country?: string;
+    postalCode?: string;
+}
+
+export interface AdminFanProfileDto {
+    username?: string;
+    displayName?: string;
+    bio?: string;
+    gender?: string;
+    dateOfBirth?: string;
+    country?: string;
+    state?: string;
+    preferredGenres?: string;
+    coinBalance: number;
+    totalCoinsPurchased: number;
+    totalCoinsSpent: number;
+    totalGiftsSentValue: number;
+    totalGiftsSentCount: number;
+    totalUnlocksCount: number;
+    followingCount: number;
+    followerCount: number;
+    currentMedal: string;
+}
+
+export interface AdminRecentUploadDto {
+    id: string;
+    title: string;
+    status: string;
+    createdAt: string;
+}
+
+export interface AdminCreatorProfileDto {
+    performingName: string;
+    bio?: string;
+    country?: string;
+    state?: string;
+    website?: string;
+    socialLinks: Record<string, string | undefined>;
+    verification: VerificationBlockDto;
+    followerCount: number;
+    trackCount: number;
+    totalEarningsMinor: number;
+    currency: string;
+    uploads: number;
+    recentUploads: AdminRecentUploadDto[];
+}
+
+export interface AdminDirectorDto {
+    fullName: string;
+    email: string;
+    phoneNumber?: string;
+    position: string;
+    isPrimaryContact: boolean;
+    hasIdentityDocument: boolean;
+}
+
+export interface AdminRosterMemberDto {
+    userId: string;
+    name: string;
+    avatarUrl?: string;
+    status: AccountStatus;
+}
+
+export interface AdminLabelProfileDto {
+    legalName: string;
+    tradingName?: string;
+    natureOfBusiness: string;
+    registrationNumber?: string;
+    website?: string;
+    logoUrl?: string;
+    address?: AdminAddressDto;
+    socialLinks: Record<string, string | undefined>;
+    verification: VerificationBlockDto;
+    directors: AdminDirectorDto[];
+    artistCount: number;
+    roster: AdminRosterMemberDto[];
+    uploads: number;
+}
+
+export interface AdminAdManagerProfileDto {
+    companyName?: string;
+    businessPhone?: string;
+    website?: string;
+    industry?: string;
+    businessAddress?: AdminAddressDto;
+    verification: VerificationBlockDto;
+    totalAdSpendMinor: number;
+    activeCampaignCount: number;
+    totalCampaignCount: number;
+}
+
+export interface AdminContributorSplitDto {
+    trackId: string;
+    trackTitle: string;
+    artistName: string;
+    percent: number;
+    isActive: boolean;
+}
+
+export interface AdminContributorProfileDto {
+    displayName: string;
+    legalName?: string;
+    country?: string;
+    verification: VerificationBlockDto;
+    activeSplitCount: number;
+    splits: AdminContributorSplitDto[];
+}
+
+export interface AdminUserProfileDto {
+    role: UserRole;
+    account: AccountSecuritySummaryDto;
+    fan?: AdminFanProfileDto;
+    creator?: AdminCreatorProfileDto;
+    label?: AdminLabelProfileDto;
+    adManager?: AdminAdManagerProfileDto;
+    contributor?: AdminContributorProfileDto;
 }
 
 export interface AdminUserDetailDto extends AdminUserDto {

@@ -13,6 +13,7 @@ export interface SecurityActivityRowDto {
     userId: string;
     name: string;
     email: string;
+    avatarUrl?: string;
     role: string;
     status: string;
     lastLoginAt?: string;
@@ -21,8 +22,18 @@ export interface SecurityActivityRowDto {
 
 export interface SecurityActivityQuery {
     search?: string;
+    role?: string;
+    status?: string;
     page?: number;
     pageSize?: number;
+}
+
+/** Platform-wide security KPIs for the Security Activity header strip. */
+export interface SecuritySummaryDto {
+    activeSessions: number;
+    lockedAccounts: number;
+    logins24h: number;
+    logins7d: number;
 }
 
 export type SecurityActivityPageDto = PagedResult<SecurityActivityRowDto>;

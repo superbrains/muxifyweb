@@ -6,6 +6,7 @@ import {
     ConfirmActionModal,
     DataTable,
     FilterBar,
+    KpiStrip,
 } from '../../components/ui';
 import { ConfirmModal } from '@shared/components';
 import { PLATFORM_ROLES } from '../../config/adminRoles';
@@ -24,6 +25,8 @@ const PodcastersPage: React.FC = () => {
             subtitle="Browse, verify and manage every podcaster on the platform"
             breadcrumbs={[{ label: 'Users & Roles' }, { label: meta.plural }]}
         >
+            <KpiStrip items={c.kpiItems} columns={{ base: 2, md: 3, xl: 5 }} />
+
             <FilterBar
                 search={{
                     value: c.query.search ?? '',

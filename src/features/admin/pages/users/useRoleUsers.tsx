@@ -3,11 +3,12 @@ import { Box, Text } from '@chakra-ui/react';
 import { useNavigate } from 'react-router-dom';
 import { CustomMenu } from '@shared/components';
 import { IdentityCell, StatusBadge } from '../../components/ui';
-import type { DataColumn } from '../../components/ui';
-import { adminDate } from '../../lib/format';
-import { useActivateUser, useSuspendUser, useUsers } from '../../hooks/useUsers';
+import type { DataColumn, KpiItem } from '../../components/ui';
+import { adminDate, adminRelative, formatCount, formatMinorAmount } from '../../lib/format';
+import { medalStyle } from '../../lib/statusColor';
+import { useActivateUser, useSuspendUser, useUsers, useUsersSummary } from '../../hooks/useUsers';
 import type { AdminUserDto, UserQuery } from '../../types';
-import type { PlatformRole } from '../../config/adminRoles';
+import { PLATFORM_ROLES, type PlatformRole } from '../../config/adminRoles';
 
 const PAGE_SIZE = 15;
 
@@ -27,13 +28,140 @@ export const ROLE_VERIFICATION_OPTIONS = [
     { value: 'NotSubmitted', label: 'Not submitted' },
 ];
 
+const numCell = (value?: string) => (
+    <Text fontSize="xs" color="gray.700" fontWeight="medium" fontVariantNumeric="tabular-nums">
+        {value ?? '—'}
+    </Text>
+);
+
+const textCell = (value?: string | null) => (
+    <Text fontSize="xs" color="gray.600" lineClamp={1}>
+        {value || '—'}
+    </Text>
+);
+
+/**
+ * The role-appropriate metric columns rendered between the identity and status
+ * columns. Driven by `AdminUserDto.metrics`, which the backend populates from
+ * the matching profile table.
+ */
+const metricColumns = (role: PlatformRole): DataColumn<AdminUserDto>[] => {
+    switch (role) {
+        case 'artist':
+        case 'dj':
+        case 'creator':
+        case 'podcaster':
+            return [
+                {
+                    key: 'followers',
+                    header: 'Followers',
+                    align: 'right',
+                    render: (u) => numCell(u.metrics ? formatCount(u.metrics.followers) : undefined),
+                },
+                {
+                    key: 'tracks',
+                    header: 'Tracks',
+                    align: 'right',
+                    render: (u) => numCell(u.metrics ? formatCount(u.metrics.tracks) : undefined),
+                },
+                {
+                    key: 'earnings',
+                    header: 'Earnings',
+                    align: 'right',
+                    render: (u) =>
+                        numCell(
+                            u.metrics?.earningsMinor !== undefined
+                                ? formatMinorAmount(u.metrics.earningsMinor, u.metrics.currency)
+                                : undefined,
+                        ),
+                },
+            ];
+        case 'fan':
+            return [
+                {
+                    key: 'coins',
+                    header: 'Coin balance',
+                    align: 'right',
+                    render: (u) => numCell(u.metrics ? formatCount(u.metrics.coinBalance) : undefined),
+                },
+                {
+                    key: 'medal',
+                    header: 'Medal',
+                    render: (u) =>
+                        u.metrics?.medal && u.metrics.medal !== 'None' ? (
+                            <StatusBadge style={medalStyle(u.metrics.medal)} />
+                        ) : (
+                            textCell(undefined)
+                        ),
+                },
+                {
+                    key: 'gifts',
+                    header: 'Gifts sent',
+                    align: 'right',
+                    render: (u) => numCell(u.metrics ? formatCount(u.metrics.giftsSentCount) : undefined),
+                },
+            ];
+        case 'record_label':
+            return [
+                {
+                    key: 'tradingName',
+                    header: 'Trading name',
+                    render: (u) => textCell(u.metrics?.tradingName),
+                },
+                {
+                    key: 'roster',
+                    header: 'Roster',
+                    align: 'right',
+                    render: (u) => numCell(u.metrics ? formatCount(u.metrics.rosterCount) : undefined),
+                },
+            ];
+        case 'ad_manager':
+            return [
+                {
+                    key: 'company',
+                    header: 'Company',
+                    render: (u) => textCell(u.metrics?.companyName),
+                },
+                {
+                    key: 'campaigns',
+                    header: 'Active campaigns',
+                    align: 'right',
+                    render: (u) => numCell(u.metrics ? formatCount(u.metrics.activeCampaigns) : undefined),
+                },
+                {
+                    key: 'adSpend',
+                    header: 'Ad spend',
+                    align: 'right',
+                    render: (u) =>
+                        numCell(
+                            u.metrics?.adSpendMinor !== undefined
+                                ? formatMinorAmount(u.metrics.adSpendMinor, u.metrics.currency)
+                                : undefined,
+                        ),
+                },
+            ];
+        case 'contributor':
+            return [
+                {
+                    key: 'splits',
+                    header: 'Active splits',
+                    align: 'right',
+                    render: (u) => numCell(u.metrics ? formatCount(u.metrics.activeSplits) : undefined),
+                },
+            ];
+        default:
+            return [];
+    }
+};
+
 /**
  * Shared data/mutation controller for the per-role user pages. Each role page is
  * its own file (FansPage, ArtistsPage, …) composing the UI kit directly — this
- * hook only factors out the query state, columns and suspend/activate mutations
- * so the separated pages stay consistent without a shared page component.
+ * hook factors out the query state, KPI summary, columns (identity +
+ * role-appropriate metrics + lifecycle) and suspend/activate mutations so the
+ * separated pages stay consistent without a shared page component.
  *
- * `extraColumns` lets a role page inject role-appropriate columns before the
+ * `extraColumns` lets a role page inject additional columns before the
  * status/joined/actions block.
  */
 export const useRoleUsers = (
@@ -52,8 +180,18 @@ export const useRoleUsers = (
     const [activateTarget, setActivateTarget] = React.useState<AdminUserDto | null>(null);
 
     const { data, isLoading, error } = useUsers(query);
+    const { data: summary } = useUsersSummary(role);
     const suspend = useSuspendUser();
     const activate = useActivateUser();
+
+    const plural = PLATFORM_ROLES[role].plural;
+    const kpiItems: KpiItem[] = [
+        { label: `Total ${plural}`, value: formatCount(summary?.total) },
+        { label: 'Active', value: formatCount(summary?.active) },
+        { label: 'Suspended', value: formatCount(summary?.suspended) },
+        { label: 'Verified', value: formatCount(summary?.verified) },
+        { label: 'New (30d)', value: formatCount(summary?.newLast30Days) },
+    ];
 
     const columns: DataColumn<AdminUserDto>[] = [
         {
@@ -61,6 +199,7 @@ export const useRoleUsers = (
             header: 'User',
             render: (u) => <IdentityCell name={u.name} secondary={u.email} avatarUrl={u.avatarUrl} />,
         },
+        ...metricColumns(role),
         ...extraColumns,
         {
             key: 'status',
@@ -83,6 +222,15 @@ export const useRoleUsers = (
             render: (u) => (
                 <Text fontSize="xs" color="gray.600">
                     {adminDate(u.createdAt)}
+                </Text>
+            ),
+        },
+        {
+            key: 'lastActive',
+            header: 'Last active',
+            render: (u) => (
+                <Text fontSize="xs" color="gray.500" title={u.lastActiveAt ?? undefined}>
+                    {adminRelative(u.lastActiveAt)}
                 </Text>
             ),
         },
@@ -113,6 +261,8 @@ export const useRoleUsers = (
         isLoading,
         error,
         columns,
+        kpiItems,
+        summary,
         navigate,
         suspend,
         activate,

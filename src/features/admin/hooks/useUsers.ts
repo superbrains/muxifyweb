@@ -18,6 +18,13 @@ export const useUsers = (query: UserQuery) =>
         staleTime: 30_000,
     });
 
+export const useUsersSummary = (role?: string) =>
+    useQuery({
+        queryKey: adminKeys.usersSummary(role),
+        queryFn: () => adminService.getUsersSummary(role),
+        staleTime: 30_000,
+    });
+
 export const useUser = (userId: string | null) =>
     useQuery({
         queryKey: adminKeys.user(userId ?? ''),
@@ -25,12 +32,32 @@ export const useUser = (userId: string | null) =>
         enabled: !!userId,
     });
 
+export const useUserProfile = (userId: string | null) =>
+    useQuery({
+        queryKey: adminKeys.userProfile(userId ?? ''),
+        queryFn: () => adminService.getUserProfile(userId as string),
+        enabled: !!userId,
+        staleTime: 30_000,
+    });
+
+export const useUserAudit = (userId: string | null, page: number, pageSize = 20) =>
+    useQuery({
+        queryKey: adminKeys.userAudit(userId ?? '', { page, pageSize }),
+        queryFn: () => adminService.getUserAudit(userId as string, page, pageSize),
+        enabled: !!userId,
+        placeholderData: keepPreviousData,
+        staleTime: 30_000,
+    });
+
 const invalidateUserViews = (
     qc: ReturnType<typeof useQueryClient>,
     userId: string,
 ) => {
     qc.invalidateQueries({ queryKey: adminKeys.users() });
+    qc.invalidateQueries({ queryKey: adminKeys.usersSummaryRoot });
     qc.invalidateQueries({ queryKey: adminKeys.user(userId) });
+    qc.invalidateQueries({ queryKey: adminKeys.userProfile(userId) });
+    qc.invalidateQueries({ queryKey: adminKeys.userAudit(userId) });
     qc.invalidateQueries({ queryKey: adminKeys.overview });
 };
 

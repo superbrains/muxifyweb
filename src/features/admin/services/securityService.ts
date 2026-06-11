@@ -4,6 +4,7 @@ import type {
     SecurityActivityQuery,
     SecurityDeviceDto,
     SecuritySessionDto,
+    SecuritySummaryDto,
     SecurityUserDetailDto,
 } from '../types/security';
 
@@ -16,6 +17,11 @@ import type {
 const BASE = '/admin/security';
 
 export const securityService = {
+    getSummary: async (): Promise<SecuritySummaryDto> => {
+        const { data } = await api.get<SecuritySummaryDto>(`${BASE}/summary`);
+        return data;
+    },
+
     getActivity: async (
         query: SecurityActivityQuery,
     ): Promise<SecurityActivityPageDto> => {

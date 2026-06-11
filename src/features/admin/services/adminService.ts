@@ -3,6 +3,8 @@ import type {
     AdminActivityDto,
     AdminOverviewDto,
     AdminUserDetailDto,
+    AdminUserProfileDto,
+    AdminUsersSummaryDto,
     ActivityRange,
     ModerationAction,
     ModerationPageDto,
@@ -12,11 +14,14 @@ import type {
     TicketPageDto,
     TicketQuery,
     TicketStatus,
+    UserAuditEntryDto,
     UserPageDto,
     UserQuery,
+    PagedResult,
     VerificationDetailDto,
     VerificationPageDto,
     VerificationQuery,
+    VerificationSummaryDto,
 } from '../types';
 
 /**
@@ -64,14 +69,43 @@ export const adminService = {
     rejectVerification: async (id: string, reason: string): Promise<void> => {
         await api.post(`${BASE}/verifications/${id}/reject`, { reason });
     },
+    getVerificationSummary: async (): Promise<VerificationSummaryDto[]> => {
+        const { data } = await api.get<VerificationSummaryDto[]>(
+            `${BASE}/verifications/summary`,
+        );
+        return data;
+    },
 
     /* -------------------------------- Users --------------------------------- */
     getUsers: async (query: UserQuery): Promise<UserPageDto> => {
         const { data } = await api.get<UserPageDto>(`${BASE}/users`, { params: query });
         return data;
     },
+    getUsersSummary: async (role?: string): Promise<AdminUsersSummaryDto> => {
+        const { data } = await api.get<AdminUsersSummaryDto>(`${BASE}/users/summary`, {
+            params: role ? { role } : undefined,
+        });
+        return data;
+    },
     getUser: async (userId: string): Promise<AdminUserDetailDto> => {
         const { data } = await api.get<AdminUserDetailDto>(`${BASE}/users/${userId}`);
+        return data;
+    },
+    getUserProfile: async (userId: string): Promise<AdminUserProfileDto> => {
+        const { data } = await api.get<AdminUserProfileDto>(
+            `${BASE}/users/${userId}/profile`,
+        );
+        return data;
+    },
+    getUserAudit: async (
+        userId: string,
+        page: number,
+        pageSize: number,
+    ): Promise<PagedResult<UserAuditEntryDto>> => {
+        const { data } = await api.get<PagedResult<UserAuditEntryDto>>(
+            `${BASE}/users/${userId}/audit`,
+            { params: { page, pageSize } },
+        );
         return data;
     },
     suspendUser: async (userId: string, reason: string): Promise<void> => {

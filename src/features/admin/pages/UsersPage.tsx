@@ -1,22 +1,37 @@
 import React from 'react';
-import { Box, Text, VStack } from '@chakra-ui/react';
+import { Box, Text } from '@chakra-ui/react';
+import { FiUsers } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
-import { AdminPageHeader } from '../components/AdminPageHeader';
-import { AdminError, AdminLoading } from '../components/AdminStateBlock';
-import { AdminTable, type AdminTableColumn } from '../components/AdminTable';
-import { Paginator } from '../components/Paginator';
-import { StatusBadge } from '../components/StatusBadge';
-import { IdentityCell } from '../components/IdentityCell';
-import { ReasonDialog } from '../components/ReasonDialog';
-import { UsersFilterBar } from '../components/users/UsersFilterBar';
+import {
+    AdminError,
+    AdminPageLayout,
+    ConfirmActionModal,
+    DataTable,
+    FilterBar,
+    IdentityCell,
+    KpiStrip,
+    StatusBadge,
+} from '../components/ui';
+import type { DataColumn, KpiItem } from '../components/ui';
 import { CustomMenu, ConfirmModal } from '@shared/components';
-import { useActivateUser, useSuspendUser, useUsers } from '../hooks/useUsers';
-import { accountStatusStyle, roleLabel } from '../lib/statusColor';
-import { adminDate } from '../lib/format';
+import { useActivateUser, useSuspendUser, useUsers, useUsersSummary } from '../hooks/useUsers';
+import { roleLabel } from '../lib/statusColor';
+import { adminDate, adminRelative, formatCount } from '../lib/format';
+import { PLATFORM_ROLES } from '../config/adminRoles';
+import {
+    ROLE_STATUS_OPTIONS,
+    ROLE_VERIFICATION_OPTIONS,
+} from './users/useRoleUsers';
 import type { AdminUserDto, UserQuery } from '../types';
 
 const PAGE_SIZE = 15;
 
+const ROLE_OPTIONS = [
+    { value: 'All', label: 'All roles' },
+    ...Object.values(PLATFORM_ROLES).map((m) => ({ value: m.role, label: m.plural })),
+];
+
+/** Universal user directory — every platform role in one filterable table. */
 const UsersPage: React.FC = () => {
     const navigate = useNavigate();
     const [query, setQuery] = React.useState<UserQuery>({
@@ -30,10 +45,21 @@ const UsersPage: React.FC = () => {
     const [activateTarget, setActivateTarget] = React.useState<AdminUserDto | null>(null);
 
     const { data, isLoading, error } = useUsers(query);
+    const { data: summary } = useUsersSummary(
+        query.role && query.role !== 'All' ? query.role : undefined,
+    );
     const suspend = useSuspendUser();
     const activate = useActivateUser();
 
-    const columns: AdminTableColumn<AdminUserDto>[] = [
+    const kpiItems: KpiItem[] = [
+        { label: 'Total users', value: formatCount(summary?.total) },
+        { label: 'Active', value: formatCount(summary?.active) },
+        { label: 'Suspended', value: formatCount(summary?.suspended) },
+        { label: 'Verified', value: formatCount(summary?.verified) },
+        { label: 'New (30d)', value: formatCount(summary?.newLast30Days) },
+    ];
+
+    const columns: DataColumn<AdminUserDto>[] = [
         {
             key: 'user',
             header: 'User',
@@ -45,15 +71,33 @@ const UsersPage: React.FC = () => {
             key: 'role',
             header: 'Role',
             render: (u) => (
-                <Text fontSize="xs" color="gray.600">
+                <Box
+                    bg="gray.100"
+                    color="gray.700"
+                    fontSize="10px"
+                    fontWeight="semibold"
+                    px={2.5}
+                    py={1}
+                    borderRadius="full"
+                    display="inline-block"
+                >
                     {roleLabel(u.role)}
-                </Text>
+                </Box>
             ),
         },
         {
             key: 'status',
             header: 'Status',
-            render: (u) => <StatusBadge style={accountStatusStyle(u.status)} />,
+            render: (u) => <StatusBadge status={u.status} />,
+        },
+        {
+            key: 'verified',
+            header: 'Verified',
+            render: (u) => (
+                <Text fontSize="xs" color={u.isVerified ? 'green.600' : 'gray.400'}>
+                    {u.isVerified ? 'Yes' : 'No'}
+                </Text>
+            ),
         },
         {
             key: 'joined',
@@ -65,11 +109,11 @@ const UsersPage: React.FC = () => {
             ),
         },
         {
-            key: 'verified',
-            header: 'Verified',
+            key: 'lastActive',
+            header: 'Last active',
             render: (u) => (
-                <Text fontSize="xs" color={u.isVerified ? 'green.600' : 'gray.400'}>
-                    {u.isVerified ? 'Yes' : 'No'}
+                <Text fontSize="xs" color="gray.500" title={u.lastActiveAt ?? undefined}>
+                    {adminRelative(u.lastActiveAt)}
                 </Text>
             ),
         },
@@ -107,81 +151,110 @@ const UsersPage: React.FC = () => {
     ];
 
     return (
-        <VStack
-            gap={{ base: 3, lg: 4 }}
-            bg="gray.50"
-            minH="100vh"
-            align="stretch"
-            px={{ base: 3, md: 6 }}
-            py={{ base: 4, md: 6 }}
+        <AdminPageLayout
+            title="User Management"
+            subtitle="Browse and manage every account across all platform roles"
+            breadcrumbs={[{ label: 'Users & Roles' }, { label: 'All Users' }]}
         >
-            <AdminPageHeader
-                title="User Management"
-                subtitle="Browse and manage every artist, record label, fan and ad manager"
+            <KpiStrip items={kpiItems} columns={{ base: 2, md: 3, xl: 5 }} />
+
+            <FilterBar
+                search={{
+                    value: query.search ?? '',
+                    onChange: (v) => setQuery((q) => ({ ...q, search: v || undefined, page: 1 })),
+                    placeholder: 'Search by name or email',
+                }}
+                filters={[
+                    {
+                        key: 'role',
+                        value: (query.role ?? 'All') as string,
+                        onChange: (v) =>
+                            setQuery((q) => ({ ...q, role: v as UserQuery['role'], page: 1 })),
+                        options: ROLE_OPTIONS,
+                        width: '170px',
+                    },
+                    {
+                        key: 'status',
+                        value: (query.status ?? 'All') as string,
+                        onChange: (v) =>
+                            setQuery((q) => ({ ...q, status: v as UserQuery['status'], page: 1 })),
+                        options: ROLE_STATUS_OPTIONS,
+                    },
+                    {
+                        key: 'verification',
+                        value: (query.verification ?? 'All') as string,
+                        onChange: (v) =>
+                            setQuery((q) => ({
+                                ...q,
+                                verification: v as UserQuery['verification'],
+                                page: 1,
+                            })),
+                        options: ROLE_VERIFICATION_OPTIONS,
+                        width: '160px',
+                    },
+                ]}
             />
 
-            <UsersFilterBar query={query} onChange={setQuery} />
-
-            {isLoading && !data ? (
-                <AdminLoading />
-            ) : error ? (
+            {error ? (
                 <AdminError error={error} message="Could not load users." />
             ) : (
-                <>
-                    <AdminTable
-                        columns={columns}
-                        rows={data?.items ?? []}
-                        rowKey={(u) => u.id}
-                        onRowClick={(u) => navigate(`/admin/users/${u.id}`)}
-                        emptyTitle="No users found"
-                        emptyDescription="Nothing matches the current filters."
-                    />
-                    {data && (
-                        <Paginator
-                            page={data.page}
-                            pageSize={data.pageSize}
-                            total={data.total}
-                            onPageChange={(page) => setQuery((q) => ({ ...q, page }))}
-                        />
-                    )}
-                </>
+                <DataTable
+                    columns={columns}
+                    rows={data?.items ?? []}
+                    rowKey={(u) => u.id}
+                    onRowClick={(u) => navigate(`/admin/users/${u.id}`)}
+                    loading={isLoading && !data}
+                    emptyIcon={FiUsers}
+                    emptyTitle="No users found"
+                    emptyDescription="Nothing matches the current filters."
+                    pagination={
+                        data
+                            ? {
+                                  page: data.page,
+                                  pageSize: data.pageSize,
+                                  total: data.total,
+                                  onPageChange: (page) => setQuery((q) => ({ ...q, page })),
+                              }
+                            : undefined
+                    }
+                />
             )}
 
-            <ReasonDialog
+            <ConfirmActionModal
                 isOpen={suspendTarget !== null}
                 onClose={() => setSuspendTarget(null)}
-                onConfirm={(reason) => {
-                    if (!suspendTarget) return;
+                onConfirm={(reason) =>
+                    suspendTarget &&
                     suspend.mutate(
                         { userId: suspendTarget.id, reason },
                         { onSuccess: () => setSuspendTarget(null) },
-                    );
-                }}
+                    )
+                }
                 title={`Suspend ${suspendTarget?.name ?? 'account'}`}
                 message="The user will be signed out and blocked from signing in until reactivated."
                 reasonLabel="Suspension reason"
                 placeholder="e.g. Repeated violations of the content policy after warnings."
                 confirmText="Suspend account"
-                confirmColor="red"
+                tone="danger"
                 isLoading={suspend.isPending}
             />
 
             <ConfirmModal
                 isOpen={activateTarget !== null}
                 onClose={() => setActivateTarget(null)}
-                onConfirm={() => {
-                    if (!activateTarget) return;
+                onConfirm={() =>
+                    activateTarget &&
                     activate.mutate(activateTarget.id, {
                         onSuccess: () => setActivateTarget(null),
-                    });
-                }}
+                    })
+                }
                 title="Reactivate account?"
                 message={`${activateTarget?.name ?? 'This user'} will be able to sign in again immediately.`}
                 confirmText="Reactivate"
                 confirmColor="blue"
                 isLoading={activate.isPending}
             />
-        </VStack>
+        </AdminPageLayout>
     );
 };
 

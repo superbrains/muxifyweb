@@ -25,12 +25,20 @@ export const useVerification = (id: string | null) =>
         enabled: !!id,
     });
 
+export const useVerificationSummary = () =>
+    useQuery({
+        queryKey: adminKeys.verificationSummary,
+        queryFn: () => adminService.getVerificationSummary(),
+        staleTime: 30_000,
+    });
+
 const invalidateVerificationViews = (
     qc: ReturnType<typeof useQueryClient>,
     id: string,
 ) => {
     qc.invalidateQueries({ queryKey: adminKeys.verifications() });
     qc.invalidateQueries({ queryKey: adminKeys.verification(id) });
+    qc.invalidateQueries({ queryKey: adminKeys.verificationSummary });
     qc.invalidateQueries({ queryKey: adminKeys.overview });
 };
 

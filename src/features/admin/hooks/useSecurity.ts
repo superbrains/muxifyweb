@@ -12,6 +12,13 @@ import type { SecurityActivityQuery } from '../types/security';
 
 /* --------------------------------- Queries -------------------------------- */
 
+export const useSecuritySummary = () =>
+    useQuery({
+        queryKey: adminKeys.security.summary,
+        queryFn: () => securityService.getSummary(),
+        staleTime: 30_000,
+    });
+
 export const useSecurityActivity = (query: SecurityActivityQuery) =>
     useQuery({
         queryKey: adminKeys.security.activity(query),
@@ -48,11 +55,16 @@ const invalidateSecurityViews = (
     qc: ReturnType<typeof useQueryClient>,
     userId: string,
 ) => {
+    qc.invalidateQueries({ queryKey: adminKeys.security.summary });
     qc.invalidateQueries({ queryKey: adminKeys.security.activity({}) });
     qc.invalidateQueries({ queryKey: adminKeys.security.user(userId) });
     qc.invalidateQueries({ queryKey: adminKeys.security.sessions(userId) });
     qc.invalidateQueries({ queryKey: adminKeys.security.devices(userId) });
     qc.invalidateQueries({ queryKey: adminKeys.audit() });
+    // Lock/unlock mutate account status — refresh the admin user views too.
+    qc.invalidateQueries({ queryKey: adminKeys.users() });
+    qc.invalidateQueries({ queryKey: adminKeys.user(userId) });
+    qc.invalidateQueries({ queryKey: adminKeys.userAudit(userId) });
 };
 
 export const useForceLogout = () => {

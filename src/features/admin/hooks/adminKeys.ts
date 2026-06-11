@@ -9,7 +9,12 @@ export const adminKeys = {
     verifications: <T>(query?: T) => ['admin', 'verifications', query ?? {}] as const,
     verification: (id: string) => ['admin', 'verification', id] as const,
     users: <T>(query?: T) => ['admin', 'users', query ?? {}] as const,
+    usersSummaryRoot: ['admin', 'users', 'summary'] as const,
+    usersSummary: (role?: string) => ['admin', 'users', 'summary', role ?? 'All'] as const,
     user: (id: string) => ['admin', 'user', id] as const,
+    userProfile: (id: string) => ['admin', 'user', id, 'profile'] as const,
+    userAudit: <T>(id: string, query?: T) => ['admin', 'user', id, 'audit', query ?? {}] as const,
+    verificationSummary: ['admin', 'verifications', 'summary'] as const,
     tickets: <T>(query?: T) => ['admin', 'tickets', query ?? {}] as const,
     ticket: (id: string) => ['admin', 'ticket', id] as const,
     moderation: <T>(query?: T) => ['admin', 'moderation', query ?? {}] as const,
@@ -46,6 +51,7 @@ export const adminKeys = {
     // Security Activity (Towers 4 + 29)
     security: {
         root: ['admin', 'security'] as const,
+        summary: ['admin', 'security', 'summary'] as const,
         activity: (query: unknown) => ['admin', 'security', 'activity', query] as const,
         user: (userId: string) => ['admin', 'security', 'user', userId] as const,
         sessions: (userId: string) => ['admin', 'security', 'user', userId, 'sessions'] as const,

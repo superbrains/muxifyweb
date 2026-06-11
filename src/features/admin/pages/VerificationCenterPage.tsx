@@ -1,18 +1,22 @@
 import React from 'react';
 import { Box, Text, VStack } from '@chakra-ui/react';
+import { FiCheckSquare } from 'react-icons/fi';
 import { useSearchParams } from 'react-router-dom';
-import { AdminPageHeader } from '../components/AdminPageHeader';
-import { AdminError, AdminLoading } from '../components/AdminStateBlock';
-import { AdminTable, type AdminTableColumn } from '../components/AdminTable';
-import { Paginator } from '../components/Paginator';
-import { StatusBadge } from '../components/StatusBadge';
-import { IdentityCell } from '../components/IdentityCell';
+import {
+    AdminError,
+    AdminPageLayout,
+    DataTable,
+    IdentityCell,
+    KpiStrip,
+    StatusBadge,
+} from '../components/ui';
+import type { DataColumn, KpiItem } from '../components/ui';
 import { AnimatedTabs } from '@shared/components';
 import { VerificationFilterBar } from '../components/verification/VerificationFilterBar';
 import { VerificationReviewDrawer } from '../components/verification/VerificationReviewDrawer';
-import { useVerifications } from '../hooks/useVerifications';
+import { useVerifications, useVerificationSummary } from '../hooks/useVerifications';
 import { verificationStatusStyle } from '../lib/statusColor';
-import { adminDate } from '../lib/format';
+import { adminDate, adminRelative, formatCount } from '../lib/format';
 import type {
     VerificationEntityType,
     VerificationListItemDto,
@@ -21,13 +25,6 @@ import type {
 
 const PAGE_SIZE = 15;
 
-const TABS = [
-    { id: 'artist', label: 'Artists' },
-    { id: 'label', label: 'Record Labels' },
-    { id: 'contributor', label: 'Contributors' },
-    { id: 'ad_manager', label: 'Ad Managers' },
-];
-
 const ENTITY_TYPES: VerificationEntityType[] = ['artist', 'label', 'contributor', 'ad_manager'];
 
 const ENTITY_TYPE_LABEL: Record<VerificationEntityType, string> = {
@@ -35,6 +32,13 @@ const ENTITY_TYPE_LABEL: Record<VerificationEntityType, string> = {
     label: 'Record Label',
     contributor: 'Contributor',
     ad_manager: 'Ad Manager',
+};
+
+const ENTITY_TYPE_PLURAL: Record<VerificationEntityType, string> = {
+    artist: 'Artists',
+    label: 'Record Labels',
+    contributor: 'Contributors',
+    ad_manager: 'Ad Managers',
 };
 
 const VerificationCenterPage: React.FC = () => {
@@ -60,12 +64,35 @@ const VerificationCenterPage: React.FC = () => {
     }, [entityType]);
 
     const { data, isLoading, error } = useVerifications(query);
+    const { data: summary } = useVerificationSummary();
+
+    const summaryFor = (type: VerificationEntityType) =>
+        summary?.find((s) => s.entityType === type);
+
+    const kpiItems: KpiItem[] = ENTITY_TYPES.map((type) => {
+        const s = summaryFor(type);
+        return {
+            label: `Pending · ${ENTITY_TYPE_PLURAL[type]}`,
+            value: formatCount(s?.pending),
+            sub: s?.oldestPendingSubmittedAt
+                ? `oldest waiting ${adminRelative(s.oldestPendingSubmittedAt)}`
+                : undefined,
+        };
+    });
+
+    const tabs = ENTITY_TYPES.map((type) => {
+        const pending = summaryFor(type)?.pending ?? 0;
+        return {
+            id: type,
+            label: pending > 0 ? `${ENTITY_TYPE_PLURAL[type]} · ${pending}` : ENTITY_TYPE_PLURAL[type],
+        };
+    });
 
     const handleTabChange = (id: string) => {
         setSearchParams(id === 'artist' ? {} : { type: id });
     };
 
-    const columns: AdminTableColumn<VerificationListItemDto>[] = [
+    const columns: DataColumn<VerificationListItemDto>[] = [
         {
             key: 'applicant',
             header: 'Applicant',
@@ -90,9 +117,16 @@ const VerificationCenterPage: React.FC = () => {
             key: 'submitted',
             header: 'Submitted',
             render: (r) => (
-                <Text fontSize="xs" color="gray.600">
-                    {adminDate(r.submittedAt)}
-                </Text>
+                <VStack align="start" gap={0}>
+                    <Text fontSize="xs" color="gray.600">
+                        {adminDate(r.submittedAt)}
+                    </Text>
+                    {r.status === 'Pending' && r.submittedAt && (
+                        <Text fontSize="10px" color="gray.400">
+                            waiting {adminRelative(r.submittedAt).replace(' ago', '')}
+                        </Text>
+                    )}
+                </VStack>
             ),
         },
         {
@@ -112,25 +146,17 @@ const VerificationCenterPage: React.FC = () => {
         },
     ];
 
-    const pendingCount = data?.items.filter((v) => v.status === 'Pending').length ?? 0;
-
     return (
-        <VStack
-            gap={{ base: 3, lg: 4 }}
-            bg="gray.50"
-            minH="100vh"
-            align="stretch"
-            px={{ base: 3, md: 6 }}
-            py={{ base: 4, md: 6 }}
+        <AdminPageLayout
+            title="Verification Centre"
+            subtitle="Review and decide on Artist, Record Label, Contributor & Ad Manager verification documents"
+            breadcrumbs={[{ label: 'Users & Roles' }, { label: 'Verification Centre' }]}
         >
-            <AdminPageHeader
-                title="Verification Center"
-                subtitle="Review and decide on Artist, Record Label, Contributor & Ad Manager verification documents"
-            />
+            <KpiStrip items={kpiItems} columns={{ base: 2, md: 4, xl: 4 }} />
 
             <Box>
                 <AnimatedTabs
-                    tabs={TABS}
+                    tabs={tabs}
                     activeTab={entityType}
                     onTabChange={handleTabChange}
                     size="sm"
@@ -139,42 +165,36 @@ const VerificationCenterPage: React.FC = () => {
 
             <VerificationFilterBar query={query} onChange={setQuery} />
 
-            {isLoading && !data ? (
-                <AdminLoading />
-            ) : error ? (
+            {error ? (
                 <AdminError error={error} message="Could not load verification requests." />
             ) : (
-                <>
-                    {query.status === 'Pending' && pendingCount > 0 && (
-                        <Text fontSize="11px" color="gray.600">
-                            {pendingCount} request{pendingCount === 1 ? '' : 's'} awaiting
-                            review on this page
-                        </Text>
-                    )}
-                    <AdminTable
-                        columns={columns}
-                        rows={data?.items ?? []}
-                        rowKey={(r) => r.id}
-                        onRowClick={(r) => setSelectedId(r.id)}
-                        emptyTitle="No verification requests"
-                        emptyDescription="Nothing matches the current filters."
-                    />
-                    {data && (
-                        <Paginator
-                            page={data.page}
-                            pageSize={data.pageSize}
-                            total={data.total}
-                            onPageChange={(page) => setQuery((q) => ({ ...q, page }))}
-                        />
-                    )}
-                </>
+                <DataTable
+                    columns={columns}
+                    rows={data?.items ?? []}
+                    rowKey={(r) => r.id}
+                    onRowClick={(r) => setSelectedId(r.id)}
+                    loading={isLoading && !data}
+                    emptyIcon={FiCheckSquare}
+                    emptyTitle="No verification requests"
+                    emptyDescription="Nothing matches the current filters."
+                    pagination={
+                        data
+                            ? {
+                                  page: data.page,
+                                  pageSize: data.pageSize,
+                                  total: data.total,
+                                  onPageChange: (page) => setQuery((q) => ({ ...q, page })),
+                              }
+                            : undefined
+                    }
+                />
             )}
 
             <VerificationReviewDrawer
                 verificationId={selectedId}
                 onClose={() => setSelectedId(null)}
             />
-        </VStack>
+        </AdminPageLayout>
     );
 };
 
