@@ -233,13 +233,62 @@ export interface GeographyAnalytics {
 
 /* ----------------------------------- Risk ---------------------------------- */
 
+export type RiskSeverity = 'low' | 'medium' | 'high' | 'critical';
+export type RiskLevel = 'Low' | 'Elevated' | 'High' | 'Critical';
+
+/** One exposure area on the risk register, deep-linking to its queue. */
+export interface RiskCategory {
+    key: string;
+    label: string;
+    description: string;
+    openCount: number;
+    /** Urgent subset of openCount. */
+    criticalCount: number;
+    severity: RiskSeverity;
+    /** Admin route this row drills into. */
+    route: string;
+}
+
+/** One day of newly-raised risk signals. */
+export interface RiskTrendPoint {
+    date: string;
+    contentReports: number;
+    disputes: number;
+    duplicates: number;
+}
+
+/** A labelled count slice for the risk breakdown donuts. */
+export interface RiskBreakdownSlice {
+    label: string;
+    count: number;
+}
+
 export interface RiskCompliance {
+    // Headline open-exposure counts
     pendingVerifications: number;
     flaggedContent: number;
     failedPayouts: number;
     suspendedUsers: number;
     pendingWithdrawals: number;
     pendingFinanceApprovals: number;
+    openDisputes: number;
+    escalatedDisputes: number;
+    duplicateMatchesPending: number;
+    highConfidenceDuplicates: number;
+
+    // Composite posture
+    totalOpenItems: number;
+    criticalOpenItems: number;
+    /** 0–100 weighted gauge. */
+    riskScore: number;
+    riskLevel: RiskLevel;
+
+    // Drill-down data
+    categories: RiskCategory[];
+    trend: RiskTrendPoint[];
+    reportsByType: RiskBreakdownSlice[];
+    disputesByStatus: RiskBreakdownSlice[];
+    generatedAt: string;
 }
 
 /* ------------------------------- Today's queue ----------------------------- */
