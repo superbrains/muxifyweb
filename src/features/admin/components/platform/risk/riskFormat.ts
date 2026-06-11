@@ -59,10 +59,10 @@ export interface LevelStyle {
 
 export const LEVEL: Record<RiskLevel, LevelStyle> = {
     Low: {
-        color: '#0F7B5C',
-        accent: '#16A34A',
-        gradient: 'linear-gradient(135deg, #0B3B2E 0%, #0F5E45 52%, #15795A 100%)',
-        track: 'rgba(22,163,74,0.18)',
+        color: '#C73838',
+        accent: '#F94444',
+        gradient: 'linear-gradient(135deg, #3D0E0E 0%, #99292B 52%, #F94444 100%)',
+        track: 'rgba(249,68,68,0.18)',
         blurb: 'Exposure is contained — routine review only.',
     },
     Elevated: {

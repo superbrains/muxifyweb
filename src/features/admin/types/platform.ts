@@ -293,13 +293,56 @@ export interface RiskCompliance {
 
 /* ------------------------------- Today's queue ----------------------------- */
 
+/** SLA verdict for a work queue, derived from the oldest waiting item. */
+export type QueueSlaStatus = 'clear' | 'ontrack' | 'atrisk' | 'breached';
+
+/** Counts of a queue's open items bucketed by age. */
+export interface QueueAging {
+    fresh: number; // < 24h
+    day: number; // 24–72h
+    week: number; // 72–168h
+    stale: number; // > 168h
+}
+
+/** One day of newly-arrived work items across all queues. */
+export interface TodayQueueTrendPoint {
+    date: string;
+    added: number;
+}
+
+/** A single work queue on the Today's Queue register. */
+export interface TodayQueueItem {
+    key: string;
+    label: string;
+    description: string;
+    /** Admin route this row drills into. */
+    route: string;
+    openCount: number;
+    /** Urgent subset of openCount. */
+    criticalCount: number;
+    addedToday: number;
+    oldestItemAgeHours: number;
+    slaTargetHours: number;
+    slaStatus: QueueSlaStatus;
+    aging: QueueAging;
+}
+
 export interface TodayQueue {
-    pendingVerifications: number;
-    openTickets: number;
-    flaggedContent: number;
-    pendingWithdrawals: number;
-    pendingPayouts: number;
-    pendingFinanceApprovals: number;
+    // Headline summary
+    totalOpen: number;
+    addedToday: number;
+    atRiskCount: number;
+    breachCount: number;
+    criticalCount: number;
+    oldestWaitingHours: number;
+    oldestQueueLabel: string;
+
+    // Drill-down data
+    queues: TodayQueueItem[];
+    /** Platform-wide backlog split by age (reuses the breakdown-slice shape). */
+    aging: RiskBreakdownSlice[];
+    trend: TodayQueueTrendPoint[];
+    generatedAt: string;
 }
 
 /* ------------------------------- Notifications ----------------------------- */

@@ -1,67 +1,147 @@
 import React from 'react';
-import { Box, SimpleGrid } from '@chakra-ui/react';
-import { useNavigate } from 'react-router-dom';
-import { KpiCard } from '@/features/record-label/components/KpiCard';
-import { AdminPageLayout, AdminError, AdminLoading } from '../../components/ui';
+import { Button, Grid, GridItem, HStack } from '@chakra-ui/react';
+import { FiRefreshCw } from 'react-icons/fi';
+import { AdminPageLayout, AdminError, AdminLoading, KpiStrip } from '../../components/ui';
+import type { KpiItem } from '../../components/ui';
 import { getApiErrorMessage } from '@/shared/lib/errorUtils';
-import { formatCount } from '../../lib/format';
+import { formatCount, todayIso } from '../../lib/format';
+import { exportCsv } from '../../lib/exportCsv';
+import type { CsvColumn } from '../../lib/exportCsv';
+import { ExportButton } from '../../components/finance/FinanceFilters';
+import { RiskBreakdownDonut } from '../../components/platform/risk/RiskBreakdownDonut';
+import { QueueInflowChart } from '../../components/platform/queue/QueueInflowChart';
+import { QueueRegisterTable } from '../../components/platform/queue/QueueRegisterTable';
+import { AGING_COLORS, formatAge } from '../../components/platform/queue/queueFormat';
 import { useTodayQueue } from '../../hooks/usePlatform';
-import type { TodayQueue } from '../../types/platform';
+import type { TodayQueueItem } from '../../types/platform';
 
-interface QueueCard {
-    label: string;
-    value: number;
-    to: string;
-    bg: string;
-    iconColor: string;
-}
+const CSV_COLUMNS: CsvColumn<TodayQueueItem>[] = [
+    { header: 'Queue', value: (q) => q.label },
+    { header: 'SLA status', value: (q) => q.slaStatus },
+    { header: 'Open', value: (q) => q.openCount },
+    { header: 'Critical', value: (q) => q.criticalCount },
+    { header: 'Added today', value: (q) => q.addedToday },
+    { header: 'Oldest waiting (h)', value: (q) => q.oldestItemAgeHours },
+    { header: 'SLA target (h)', value: (q) => q.slaTargetHours },
+    { header: 'Queue route', value: (q) => q.route },
+];
 
-/** Tower — the operational "do this today" queue, each tile deep-linking to its area. */
+/**
+ * Tower — the operational "do this today" command center. A summary strip
+ * (total open, what arrived today, SLA breaches/at-risk, the oldest waiting item
+ * and critical count) sits over the work-arrival trend and a backlog-aging donut,
+ * with a full queue register that drills into every working area, ordered by SLA
+ * urgency. Read-only aggregate from `GET /admin/analytics/today-queue`.
+ */
 const TodayQueuePage: React.FC = () => {
-    const navigate = useNavigate();
-    const { data, isLoading, error } = useTodayQueue();
+    const { data, isLoading, error, refetch, isFetching } = useTodayQueue();
 
-    const cards: QueueCard[] = ([
-        { key: 'pendingVerifications', label: 'Pending Verifications', to: '/admin/verifications', bg: '#FFF9E6', iconColor: '#D97706' },
-        { key: 'openTickets', label: 'Open Support Tickets', to: '/admin/support', bg: '#ECF7FF', iconColor: '#3B82F6' },
-        { key: 'flaggedContent', label: 'Flagged Content', to: '/admin/content/moderation/artists', bg: '#FEF2F2', iconColor: '#E53E3E' },
-        { key: 'pendingWithdrawals', label: 'Pending Withdrawals', to: '/admin/payouts/requests/artists', bg: '#F6F1FF', iconColor: '#7C3AED' },
-        { key: 'pendingPayouts', label: 'Pending Payouts', to: '/admin/finance', bg: '#E7FFF7', iconColor: '#16A34A' },
-        { key: 'pendingFinanceApprovals', label: 'Pending Finance Approvals', to: '/admin/finance/approvals', bg: '#FFF5F6', iconColor: 'primary.500' },
-    ] as { key: keyof TodayQueue; label: string; to: string; bg: string; iconColor: string }[]).map((c) => ({
-        label: c.label,
-        value: data ? data[c.key] : 0,
-        to: c.to,
-        bg: c.bg,
-        iconColor: c.iconColor,
-    }));
+    const kpis: KpiItem[] = data
+        ? [
+              {
+                  label: 'Total Open',
+                  value: formatCount(data.totalOpen),
+                  sub: 'Items awaiting an action',
+                  bg: '#ECF7FF',
+                  iconColor: '#3B82F6',
+              },
+              {
+                  label: 'Added Today',
+                  value: formatCount(data.addedToday),
+                  sub: 'Arrived since midnight UTC',
+                  bg: '#F6F1FF',
+                  iconColor: '#7C3AED',
+              },
+              {
+                  label: 'SLA Breaches',
+                  value: formatCount(data.breachCount),
+                  sub: data.breachCount > 0 ? 'Queues past target' : 'All within target',
+                  bg: '#FEEEF2',
+                  iconColor: '#E11D48',
+              },
+              {
+                  label: 'At Risk',
+                  value: formatCount(data.atRiskCount),
+                  sub: 'Queues nearing target',
+                  bg: '#FFF8E8',
+                  iconColor: '#D97706',
+              },
+              {
+                  label: 'Oldest Waiting',
+                  value: formatAge(data.oldestWaitingHours),
+                  sub: data.oldestQueueLabel || 'Nothing waiting',
+                  bg: '#FFF5F6',
+                  iconColor: 'primary.500',
+              },
+              {
+                  label: 'Critical',
+                  value: formatCount(data.criticalCount),
+                  sub: 'Urgent items in queue',
+                  bg: '#FEF2F2',
+                  iconColor: '#E53E3E',
+              },
+          ]
+        : [];
+
+    const handleExport = () => {
+        if (!data) return;
+        exportCsv(`today-queue-${todayIso()}`, CSV_COLUMNS, data.queues);
+    };
 
     return (
         <AdminPageLayout
             title="Today's Queue"
-            subtitle="Everything awaiting an action right now — click a tile to jump to its area"
+            subtitle="Live operational backlog — what needs an action today, how old it is, and where it's breaching SLA"
             breadcrumbs={[{ label: 'Platform' }, { label: "Today's Queue" }]}
+            actions={
+                <HStack gap={2}>
+                    <Button
+                        size="sm"
+                        variant="outline"
+                        h="34px"
+                        fontSize="12px"
+                        borderColor="gray.200"
+                        color="gray.600"
+                        borderRadius="10px"
+                        onClick={() => refetch()}
+                        loading={isFetching}
+                        _hover={{ bg: 'gray.50' }}
+                    >
+                        <FiRefreshCw size={13} />
+                        Refresh
+                    </Button>
+                    <ExportButton onClick={handleExport} disabled={!data} />
+                </HStack>
+            }
         >
             {isLoading && !data ? (
                 <AdminLoading />
             ) : error ? (
                 <AdminError error={error} message={getApiErrorMessage(error, "Could not load today's queue.")} />
-            ) : (
-                <SimpleGrid columns={{ base: 2, md: 3, xl: 6 }} gap={3}>
-                    {cards.map((c) => (
-                        <Box
-                            key={c.label}
-                            as="button"
-                            textAlign="left"
-                            onClick={() => navigate(c.to)}
-                            transition="transform 0.12s"
-                            _hover={{ transform: 'translateY(-2px)' }}
-                        >
-                            <KpiCard bg={c.bg} iconColor={c.iconColor} label={c.label} value={formatCount(c.value)} />
-                        </Box>
-                    ))}
-                </SimpleGrid>
-            )}
+            ) : data ? (
+                <>
+                    <KpiStrip items={kpis} columns={{ base: 2, md: 3, xl: 6 }} />
+
+                    <Grid templateColumns={{ base: '1fr', xl: '1.7fr 1fr' }} gap={3}>
+                        <GridItem minW={0}>
+                            <QueueInflowChart trend={data.trend} loading={isFetching && !data.trend.length} />
+                        </GridItem>
+                        <GridItem minW={0}>
+                            <RiskBreakdownDonut
+                                title="Backlog by age"
+                                subtitle="How long open items have been waiting"
+                                slices={data.aging}
+                                unit="items"
+                                colors={AGING_COLORS}
+                                loading={false}
+                                emptyText="Nothing is waiting in any queue."
+                            />
+                        </GridItem>
+                    </Grid>
+
+                    <QueueRegisterTable queues={data.queues} />
+                </>
+            ) : null}
         </AdminPageLayout>
     );
 };
