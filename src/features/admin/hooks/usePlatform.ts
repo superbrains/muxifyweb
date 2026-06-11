@@ -117,9 +117,13 @@ export const useCreateBroadcast = () => {
     return useMutation({
         mutationFn: (payload: CreateBroadcastPayload) => platformService.createBroadcast(payload),
         onSuccess: (broadcast) => {
+            const emailSuffix =
+                broadcast.emailRecipientCount > 0
+                    ? ` · ${broadcast.emailRecipientCount.toLocaleString()} emailed`
+                    : '';
             toast.success(
                 'Broadcast sent',
-                `“${broadcast.title}” reached ${broadcast.recipientCount.toLocaleString()} recipients.`,
+                `“${broadcast.title}” reached ${broadcast.recipientCount.toLocaleString()} recipients${emailSuffix}.`,
             );
             qc.invalidateQueries({ queryKey: adminKeys.platform.root });
         },

@@ -354,6 +354,10 @@ export interface Broadcast {
     type: string;
     targetRole?: string | null;
     recipientCount: number;
+    /** How many recipients were actually emailed (0 unless the Email channel was used). */
+    emailRecipientCount: number;
+    /** Channels the broadcast was dispatched over, e.g. ['InApp','Push','Email']. */
+    channels: string[];
     createdAt: string;
 }
 
@@ -362,6 +366,9 @@ export interface CreateBroadcastPayload {
     message: string;
     type: string;
     targetRole?: string | null;
+    sendInApp: boolean;
+    sendPush: boolean;
+    sendEmail: boolean;
 }
 
 export interface BroadcastQuery {
