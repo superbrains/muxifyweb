@@ -1,8 +1,8 @@
 import React from 'react';
 import { FiMusic } from 'react-icons/fi';
-import { AdminError, AdminPageLayout, DataTable, FilterBar } from '../../components/ui';
-import { ContentActionModal } from './ContentActionModal';
-import { ContentDetailDrawer } from './ContentDetailDrawer';
+import { AdminError, AdminPageLayout, DataTable, FilterBar, KpiStrip } from '../../components/ui';
+import type { KpiItem } from '../../components/ui';
+import { useContentStats } from '../../hooks/useContent';
 import { CONTENT_PUBLISHED_OPTIONS, CONTENT_STATUS_OPTIONS, useContentItems } from './useContentItems';
 
 const RELEASE_TYPE_OPTIONS = [
@@ -16,6 +16,16 @@ const RELEASE_TYPE_OPTIONS = [
 /** Music operations — tracks across Single/EP/Album/Compilation release types. */
 const MusicOpsPage: React.FC = () => {
     const c = useContentItems({ kind: 'track' });
+    const { data: stats } = useContentStats({ kind: 'track' });
+
+    const kpis: KpiItem[] = stats
+        ? [
+              { label: 'Total tracks', value: stats.total },
+              { label: 'Published', value: stats.published, tone: 'success' },
+              { label: 'Restricted', value: stats.restricted, tone: 'warning' },
+              { label: 'New (7d)', value: stats.newLast7Days, tone: 'info' },
+          ]
+        : [];
 
     return (
         <AdminPageLayout
@@ -23,6 +33,7 @@ const MusicOpsPage: React.FC = () => {
             subtitle="Tracks across singles, EPs, albums and compilations"
             breadcrumbs={[{ label: 'Content' }, { label: 'Music' }]}
         >
+            {kpis.length > 0 && <KpiStrip items={kpis} />}
             <FilterBar
                 search={{
                     value: c.query.search ?? '',
@@ -70,7 +81,7 @@ const MusicOpsPage: React.FC = () => {
                     columns={c.columns}
                     rows={c.data?.items ?? []}
                     rowKey={(it) => it.id}
-                    onRowClick={(it) => c.setSelected(it)}
+                    onRowClick={(it) => c.navigateToDetail(it)}
                     loading={c.isLoading && !c.data}
                     emptyIcon={FiMusic}
                     emptyTitle="No tracks found"
@@ -88,8 +99,6 @@ const MusicOpsPage: React.FC = () => {
                 />
             )}
 
-            <ContentDetailDrawer selected={c.selected} controller={c} />
-            <ContentActionModal controller={c} />
         </AdminPageLayout>
     );
 };

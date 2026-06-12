@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Box, Button, HStack, Text, VStack } from '@chakra-ui/react';
 import { FiCopy } from 'react-icons/fi';
 import {
@@ -6,16 +7,18 @@ import {
     ConfirmActionModal,
     DataTable,
     FilterBar,
+    KpiStrip,
     StatusBadge,
     toneStyle,
 } from '../../components/ui';
-import type { DataColumn, SelectFilter } from '../../components/ui';
+import type { DataColumn, KpiItem, SelectFilter } from '../../components/ui';
 import { adminDate } from '../../lib/format';
 import { useHasPermission } from '../../hooks/useAdminManagement';
 import {
     useConfirmMatch,
     useDismissMatch,
     useDuplicateMatches,
+    useDuplicateStats,
 } from '../../hooks/useContent';
 import type { DuplicateMatchDto, DuplicateMatchQuery } from '../../types/content';
 
@@ -65,6 +68,8 @@ interface DuplicateMatchesViewProps {
     ) => SelectFilter[];
     /** Hide the tier select (copyright already pins tiers). */
     hideTierFilter?: boolean;
+    /** Show the KPI strip above the table. */
+    showStats?: boolean;
 }
 
 /**
@@ -77,8 +82,10 @@ export const DuplicateMatchesView: React.FC<DuplicateMatchesViewProps> = ({
     baseQuery,
     leadingFilters,
     hideTierFilter,
+    showStats = false,
 }) => {
     const canReview = useHasPermission('CopyrightReview');
+    const navigate = useNavigate();
     const [query, setQuery] = React.useState<DuplicateMatchQuery>({
         page: 1,
         pageSize: PAGE_SIZE,
@@ -88,9 +95,19 @@ export const DuplicateMatchesView: React.FC<DuplicateMatchesViewProps> = ({
     const [dismissTarget, setDismissTarget] = React.useState<DuplicateMatchDto | null>(null);
 
     const { data, isLoading, error } = useDuplicateMatches(query);
+    const { data: stats } = useDuplicateStats();
     const confirm = useConfirmMatch();
     const dismiss = useDismissMatch();
     const pending = confirm.isPending || dismiss.isPending;
+
+    const kpis: KpiItem[] = showStats && stats
+        ? [
+              { label: 'Total matches', value: stats.total },
+              { label: 'Pending', value: stats.pending, tone: 'warning' },
+              { label: 'High/Exact', value: stats.highOrExactPending, tone: 'danger' },
+              { label: 'Disputed', value: stats.disputed, tone: 'info' },
+          ]
+        : [];
 
     const isPending = (m: DuplicateMatchDto) => m.status.toLowerCase() === 'pending';
 
@@ -205,6 +222,7 @@ export const DuplicateMatchesView: React.FC<DuplicateMatchesViewProps> = ({
 
     return (
         <VStack align="stretch" gap={3}>
+            {kpis.length > 0 && <KpiStrip items={kpis} />}
             <FilterBar
                 filters={[
                     ...(leadingFilters?.(query, setQuery) ?? []),
@@ -234,6 +252,7 @@ export const DuplicateMatchesView: React.FC<DuplicateMatchesViewProps> = ({
                     columns={columns}
                     rows={data?.items ?? []}
                     rowKey={(m) => m.id}
+                    onRowClick={(m) => navigate(`/admin/content/duplicates/${m.id}`)}
                     loading={isLoading && !data}
                     emptyIcon={FiCopy}
                     emptyTitle="No matches found"

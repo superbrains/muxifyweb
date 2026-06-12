@@ -18,6 +18,8 @@ import type {
     UploadSessionQuery,
 } from '../types/content';
 
+export type { ContentItemQuery, ContentKind };
+
 /* --------------------------------- Queries -------------------------------- */
 
 export const useContentItems = (query: ContentItemQuery) =>
@@ -59,12 +61,77 @@ export const useDuplicateMatches = (query: DuplicateMatchQuery) =>
         staleTime: 30_000,
     });
 
+export const useMatch = (id: string | null) =>
+    useQuery({
+        queryKey: adminKeys.content.match(id ?? ''),
+        queryFn: () => contentService.getMatch(id as string),
+        enabled: !!id,
+    });
+
 export const useLyrics = (query: LyricsQuery) =>
     useQuery({
         queryKey: adminKeys.content.lyrics(query),
         queryFn: () => contentService.getLyrics(query),
         placeholderData: keepPreviousData,
         staleTime: 30_000,
+    });
+
+export const useLyricsById = (id: string | null) =>
+    useQuery({
+        queryKey: adminKeys.content.lyricsById(id ?? ''),
+        queryFn: () => contentService.getLyricsById(id as string),
+        enabled: !!id,
+    });
+
+export const useLyricsStats = () =>
+    useQuery({
+        queryKey: adminKeys.content.lyricsStats,
+        queryFn: () => contentService.getLyricsStats(),
+        staleTime: 60_000,
+    });
+
+export const useContentStats = (query?: {
+    kind?: string; ownerRole?: string; releaseType?: string; videoType?: string;
+}) =>
+    useQuery({
+        queryKey: adminKeys.content.stats(query),
+        queryFn: () => contentService.getStats(query),
+        staleTime: 60_000,
+    });
+
+export const useContentItemAudit = (kind: ContentKind | null, id: string | null) =>
+    useQuery({
+        queryKey: adminKeys.content.itemAudit(kind ?? '', id ?? ''),
+        queryFn: () => contentService.getItemAudit(kind as ContentKind, id as string),
+        enabled: !!kind && !!id,
+    });
+
+export const useUploadStats = () =>
+    useQuery({
+        queryKey: adminKeys.content.uploadStats,
+        queryFn: () => contentService.getUploadStats(),
+        staleTime: 30_000,
+    });
+
+export const useUploadSession = (id: string | null) =>
+    useQuery({
+        queryKey: adminKeys.content.uploadSession(id ?? ''),
+        queryFn: () => contentService.getUploadSession(id as string),
+        enabled: !!id,
+    });
+
+export const useDuplicateStats = () =>
+    useQuery({
+        queryKey: adminKeys.content.duplicateStats,
+        queryFn: () => contentService.getDuplicateStats(),
+        staleTime: 60_000,
+    });
+
+export const useModerationStats = (ownerRole?: string) =>
+    useQuery({
+        queryKey: adminKeys.content.moderationStats(ownerRole),
+        queryFn: () => contentService.getModerationStats(ownerRole),
+        staleTime: 60_000,
     });
 
 /* ------------------------------- Item mutations --------------------------- */

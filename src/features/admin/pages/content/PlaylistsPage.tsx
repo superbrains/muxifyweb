@@ -14,6 +14,7 @@ const PlaylistsPage: React.FC = () => (
         subtitle="Editorial and user playlists, with publish controls"
         breadcrumbLabel="Playlists"
         baseQuery={{ kind: 'playlist' }}
+        statsQuery={{ kind: 'playlist' }}
         emptyIcon={FiList}
         emptyNoun="playlists"
     />

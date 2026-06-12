@@ -9,6 +9,7 @@ const SinglesOpsPage: React.FC = () => (
         subtitle="Standalone single releases"
         breadcrumbLabel="Singles"
         baseQuery={{ kind: 'track', releaseType: 'Single' }}
+        statsQuery={{ kind: 'track', releaseType: 'Single' }}
         emptyIcon={FiMusic}
         emptyNoun="singles"
     />

@@ -25,6 +25,7 @@ const CopyrightReviewPage: React.FC = () => (
     >
         <DuplicateMatchesView
             baseQuery={{ tier: 'High' }}
+            showStats
             hideTierFilter
             leadingFilters={(query, setQuery) => [
                 {

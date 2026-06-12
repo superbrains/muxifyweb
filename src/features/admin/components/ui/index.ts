@@ -37,6 +37,16 @@ export { AdminEmptyState } from './EmptyState';
 export { SectionNav } from './SectionNav';
 export type { NavGroup, NavLink } from './SectionNav';
 
+// Detail page layout
+export { DetailPageLayout } from './DetailPageLayout';
+
+// Content-specific display helpers
+export { MediaCell } from './MediaCell';
+export type { MetaField } from './MetaGrid';
+export { MetaGrid } from './MetaGrid';
+export { ComparisonCard } from './ComparisonCard';
+export type { ComparisonSide } from './ComparisonCard';
+
 // Re-exported existing primitives (single import surface)
 export { IdentityCell } from '../IdentityCell';
 export { AdminLoading, AdminError } from '../AdminStateBlock';

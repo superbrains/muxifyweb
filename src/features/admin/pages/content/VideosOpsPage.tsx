@@ -17,6 +17,7 @@ const VideosOpsPage: React.FC = () => (
         subtitle="Music videos, visualizers and live sessions"
         breadcrumbLabel="Videos"
         baseQuery={{ kind: 'video' }}
+        statsQuery={{ kind: 'video' }}
         emptyIcon={FiVideo}
         emptyNoun="videos"
         leadingFilters={(c) => [

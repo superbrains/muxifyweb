@@ -1,6 +1,7 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Text, VStack } from '@chakra-ui/react';
-import { IdentityCell, StatusBadge, toneStyle } from '../../components/ui';
+import { IdentityCell, MediaCell, StatusBadge, toneStyle } from '../../components/ui';
 import type { DataColumn } from '../../components/ui';
 import { adminDate, formatCount } from '../../lib/format';
 import { useHasPermission } from '../../hooks/useAdminManagement';
@@ -68,6 +69,7 @@ export const useContentItems = (
     extraColumns: DataColumn<ContentItemDto>[] = [],
 ) => {
     const canManage = useHasPermission('ContentManage');
+    const navigate = useNavigate();
 
     const [query, setQuery] = React.useState<ContentItemQuery>({
         page: 1,
@@ -95,20 +97,20 @@ export const useContentItems = (
         restrict.isPending ||
         unrestrict.isPending;
 
+    const navigateToDetail = (it: ContentItemDto) =>
+        navigate(`/admin/content/${it.kind}/${it.id}`);
+
     const columns: DataColumn<ContentItemDto>[] = [
         {
             key: 'title',
             header: 'Title',
             render: (it) => (
-                <VStack align="start" gap={0.5} minW={0}>
-                    <Text fontSize="xs" fontWeight="semibold" color="gray.900" lineClamp={1}>
-                        {it.title || 'Untitled'}
-                    </Text>
-                    <Text fontSize="10px" color="gray.500" textTransform="capitalize">
-                        {it.releaseType ?? it.videoType ?? it.kind}
-                        {it.genreName ? ` · ${it.genreName}` : ''}
-                    </Text>
-                </VStack>
+                <MediaCell
+                    title={it.title || 'Untitled'}
+                    subtype={it.releaseType ?? it.videoType ?? it.kind}
+                    meta={it.genreName}
+                    coverArtUrl={it.coverArtUrl}
+                />
             ),
         },
         {
@@ -159,6 +161,7 @@ export const useContentItems = (
         columns,
         selected,
         setSelected,
+        navigateToDetail,
         actionTarget,
         setActionTarget,
         actionPending,

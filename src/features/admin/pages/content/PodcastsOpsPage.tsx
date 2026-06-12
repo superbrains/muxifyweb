@@ -9,6 +9,7 @@ const PodcastsOpsPage: React.FC = () => (
         subtitle="Episodes uploaded by podcaster accounts"
         breadcrumbLabel="Podcasts"
         baseQuery={{ kind: 'track', ownerRole: 'podcaster' }}
+        statsQuery={{ kind: 'track', ownerRole: 'podcaster' }}
         emptyIcon={FiMic}
         emptyNoun="podcasts"
     />

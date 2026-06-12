@@ -9,7 +9,7 @@ const DuplicateDetectionPage: React.FC = () => (
         subtitle="Audio and video fingerprint matches flagged by the detection engine"
         breadcrumbs={[{ label: 'Content' }, { label: 'Duplicate Detection' }]}
     >
-        <DuplicateMatchesView baseQuery={{}} />
+        <DuplicateMatchesView baseQuery={{}} showStats />
     </AdminPageLayout>
 );
 

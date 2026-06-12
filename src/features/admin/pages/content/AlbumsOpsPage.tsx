@@ -9,6 +9,7 @@ const AlbumsOpsPage: React.FC = () => (
         subtitle="Full album releases and their publication state"
         breadcrumbLabel="Albums"
         baseQuery={{ kind: 'album' }}
+        statsQuery={{ kind: 'album' }}
         emptyIcon={FiDisc}
         emptyNoun="albums"
     />

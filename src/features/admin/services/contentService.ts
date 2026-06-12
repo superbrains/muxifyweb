@@ -1,19 +1,27 @@
 import { api } from '@shared/services/api';
 import type {
+    ContentAuditEntryDto,
     ContentItemDetailDto,
     ContentItemPageDto,
     ContentItemQuery,
     ContentKind,
+    ContentStatsDto,
     CreateLyricsPayload,
     DuplicateMatchDto,
     DuplicateMatchPageDto,
     DuplicateMatchQuery,
+    DuplicateStatsDto,
+    LyricsDto,
     LyricsPageDto,
     LyricsQuery,
+    LyricsStatsDto,
+    ModerationStatsDto,
     ProcessingItemPageDto,
     ProcessingQuery,
+    UploadSessionDetailDto,
     UploadSessionPageDto,
     UploadSessionQuery,
+    UploadStatsDto,
 } from '../types/content';
 
 /**
@@ -59,6 +67,16 @@ export const contentService = {
     reschedule: async (id: string, releaseDate: string): Promise<void> => {
         await api.post(`${CONTENT}/items/track/${id}/reschedule`, { releaseDate });
     },
+    getStats: async (query?: {
+        kind?: string; ownerRole?: string; releaseType?: string; videoType?: string;
+    }): Promise<ContentStatsDto> => {
+        const { data } = await api.get<ContentStatsDto>(`${CONTENT}/stats`, { params: query });
+        return data;
+    },
+    getItemAudit: async (kind: ContentKind, id: string): Promise<ContentAuditEntryDto[]> => {
+        const { data } = await api.get<ContentAuditEntryDto[]>(`${CONTENT}/items/${kind}/${id}/audit`);
+        return data;
+    },
 
     /* -------------------------------- Uploads -------------------------------- */
     getUploadSessions: async (query: UploadSessionQuery): Promise<UploadSessionPageDto> => {
@@ -75,6 +93,14 @@ export const contentService = {
     },
     retryProcessing: async (kind: string, id: string): Promise<void> => {
         await api.post(`${UPLOADS}/retry/${kind}/${id}`);
+    },
+    getUploadStats: async (): Promise<UploadStatsDto> => {
+        const { data } = await api.get<UploadStatsDto>(`${UPLOADS}/stats`);
+        return data;
+    },
+    getUploadSession: async (id: string): Promise<UploadSessionDetailDto> => {
+        const { data } = await api.get<UploadSessionDetailDto>(`${UPLOADS}/sessions/${id}`);
+        return data;
     },
 
     /* ------------------------------- Duplicates ------------------------------ */
@@ -94,6 +120,10 @@ export const contentService = {
     dismissMatch: async (id: string, reason: string): Promise<void> => {
         await api.post(`${DUPLICATES}/matches/${id}/dismiss`, { reason });
     },
+    getDuplicateStats: async (): Promise<DuplicateStatsDto> => {
+        const { data } = await api.get<DuplicateStatsDto>(`${DUPLICATES}/stats`);
+        return data;
+    },
 
     /* --------------------------------- Lyrics -------------------------------- */
     getLyrics: async (query: LyricsQuery): Promise<LyricsPageDto> => {
@@ -108,5 +138,21 @@ export const contentService = {
     },
     rejectLyrics: async (id: string, reason: string): Promise<void> => {
         await api.post(`${LYRICS}/${id}/reject`, { reason });
+    },
+    getLyricsById: async (id: string): Promise<LyricsDto> => {
+        const { data } = await api.get<LyricsDto>(`${LYRICS}/${id}`);
+        return data;
+    },
+    getLyricsStats: async (): Promise<LyricsStatsDto> => {
+        const { data } = await api.get<LyricsStatsDto>(`${LYRICS}/stats`);
+        return data;
+    },
+
+    /* ------------------------------ Moderation ------------------------------- */
+    getModerationStats: async (ownerRole?: string): Promise<ModerationStatsDto> => {
+        const { data } = await api.get<ModerationStatsDto>(`/admin/moderation/stats`, {
+            params: ownerRole ? { ownerRole } : undefined,
+        });
+        return data;
     },
 };

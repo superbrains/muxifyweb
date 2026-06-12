@@ -5,8 +5,10 @@ import {
     AdminPageLayout,
     DataTable,
     FilterBar,
+    KpiStrip,
 } from '../../components/ui';
-import type { Breadcrumb, SelectFilter } from '../../components/ui';
+import type { Breadcrumb, KpiItem, SelectFilter } from '../../components/ui';
+import { useContentStats } from '../../hooks/useContent';
 import { ContentActionModal } from './ContentActionModal';
 import { ContentDetailDrawer } from './ContentDetailDrawer';
 import {
@@ -26,6 +28,8 @@ interface ContentVerticalPageProps {
     emptyNoun: string;
     /** Extra select filters rendered before the standard status/published pair. */
     leadingFilters?: (c: ReturnType<typeof useContentItems>) => SelectFilter[];
+    /** KPI strip query params (mirrors baseQuery structure). */
+    statsQuery?: Parameters<typeof useContentStats>[0];
 }
 
 /**
@@ -44,9 +48,20 @@ export const ContentVerticalPage: React.FC<ContentVerticalPageProps> = ({
     emptyIcon,
     emptyNoun,
     leadingFilters,
+    statsQuery,
 }) => {
     const c = useContentItems(baseQuery);
+    const { data: stats } = useContentStats(statsQuery);
     const breadcrumbs: Breadcrumb[] = [{ label: 'Content' }, { label: breadcrumbLabel }];
+
+    const kpis: KpiItem[] = stats
+        ? [
+              { label: 'Total', value: stats.total },
+              { label: 'Published', value: stats.published, tone: 'success' },
+              { label: 'Restricted', value: stats.restricted, tone: 'warning' },
+              { label: 'New (7d)', value: stats.newLast7Days, tone: 'info' },
+          ]
+        : [];
 
     const statusFilters: SelectFilter[] = [
         {
@@ -71,6 +86,7 @@ export const ContentVerticalPage: React.FC<ContentVerticalPageProps> = ({
 
     return (
         <AdminPageLayout title={title} subtitle={subtitle} breadcrumbs={breadcrumbs}>
+            {kpis.length > 0 && <KpiStrip items={kpis} />}
             <FilterBar
                 search={{
                     value: c.query.search ?? '',
@@ -87,7 +103,7 @@ export const ContentVerticalPage: React.FC<ContentVerticalPageProps> = ({
                     columns={c.columns}
                     rows={c.data?.items ?? []}
                     rowKey={(it) => it.id}
-                    onRowClick={(it) => c.setSelected(it)}
+                    onRowClick={(it) => c.navigateToDetail(it)}
                     loading={c.isLoading && !c.data}
                     emptyIcon={emptyIcon}
                     emptyTitle={`No ${emptyNoun} found`}
@@ -104,9 +120,6 @@ export const ContentVerticalPage: React.FC<ContentVerticalPageProps> = ({
                     }
                 />
             )}
-
-            <ContentDetailDrawer selected={c.selected} controller={c} />
-            <ContentActionModal controller={c} />
         </AdminPageLayout>
     );
 };

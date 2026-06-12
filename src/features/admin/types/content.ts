@@ -34,29 +34,122 @@ export interface ContentItemDto {
     likeCount: number;
     releaseDate?: string;
     createdAt: string;
+    /** Cover art / thumbnail URL — set for all kinds when available. */
+    coverArtUrl?: string;
+    /** Duration in seconds — set for tracks and videos only. */
+    durationSeconds?: number;
+    /** Track count — set for albums and playlists only. */
+    trackCount?: number;
 }
 
-/** Owner block on a content detail response. */
-export interface ContentOwnerDto {
+/** A track row inside an album or playlist detail. */
+export interface ContentTrackRowDto {
     id: string;
-    name: string;
-    role: string;
-    avatarUrl?: string;
+    title: string;
+    artistName: string;
+    durationSeconds: number;
+    trackNumber: number;
+    status: string;
+    isPublished: boolean;
+    coverArtUrl?: string;
 }
 
 /** Duplicate-review summary attached to a content detail response. */
-export interface ContentDuplicateSummaryDto {
-    heldForReview: boolean;
-    matchCount: number;
-    topTier?: string;
-    topScore?: number;
+export interface DuplicateMatchSummaryDto {
+    id: string;
+    status: string;
+    tier: string;
+    score: number;
+    matchMethod: string;
+    isDisputed: boolean;
+    artistDisputeNote?: string;
 }
 
 export interface ContentItemDetailDto {
     item: ContentItemDto;
+    ownerEmail?: string;
+    ownerAvatarUrl?: string;
+    description?: string;
     reportCount: number;
-    duplicate: ContentDuplicateSummaryDto;
-    owner: ContentOwnerDto;
+    openReportCount: number;
+    duplicateMatch?: DuplicateMatchSummaryDto;
+    durationSeconds: number;
+    albumId?: string;
+    // Track-specific
+    isrc?: string;
+    upc?: string;
+    bpm?: number;
+    musicalKey?: string;
+    bitrate?: number;
+    featuredArtists: string[];
+    // Video-specific
+    resolution?: string;
+    fps?: number;
+    // Album-specific
+    label?: string;
+    copyright?: string;
+    // Album / playlist track list
+    tracks: ContentTrackRowDto[];
+}
+
+/** KPI counts for content library section headers. */
+export interface ContentStatsDto {
+    total: number;
+    published: number;
+    restricted: number;
+    heldForReview: number;
+    failed: number;
+    newLast7Days: number;
+}
+
+/** KPI counts for the upload workflow page. */
+export interface UploadStatsDto {
+    processing: number;
+    failed: number;
+    sessionsActive: number;
+    sessionsToday: number;
+}
+
+/** KPI counts for the lyrics management page. */
+export interface LyricsStatsDto {
+    total: number;
+    pending: number;
+    approved: number;
+    rejected: number;
+}
+
+/** KPI counts for duplicate detection / copyright review. */
+export interface DuplicateStatsDto {
+    total: number;
+    pending: number;
+    confirmed: number;
+    disputed: number;
+    highOrExactPending: number;
+}
+
+/** KPI counts for a per-role moderation queue. */
+export interface ModerationStatsDto {
+    pending: number;
+    disputed: number;
+    resolved: number;
+    dismissed: number;
+}
+
+/** A single admin audit entry for the content item history tab. */
+export interface ContentAuditEntryDto {
+    id: string;
+    action: string;
+    summary: string;
+    actorName?: string;
+    timestamp: string;
+}
+
+/** An upload session with linked content summary. */
+export interface UploadSessionDetailDto {
+    session: UploadSessionDto;
+    linkedContentTitle?: string;
+    linkedContentKind?: string;
+    linkedContentCoverArtUrl?: string;
 }
 
 export interface ContentItemQuery {
@@ -81,14 +174,18 @@ export type ContentItemPageDto = PagedResult<ContentItemDto>;
 
 export interface UploadSessionDto {
     id: string;
-    ownerId: string;
-    ownerName: string;
-    ownerRole: string;
-    kind: string;
-    title?: string;
+    userId: string;
+    userName?: string;
+    mediaType: string;
+    originalFileName: string;
+    contentType: string;
+    sizeBytes: number;
     status: string;
+    expiresAt: string;
+    createdTrackId?: string;
+    createdVideoId?: string;
+    failureReason?: string;
     createdAt: string;
-    completedAt?: string;
 }
 
 export interface ProcessingItemDto {
@@ -96,11 +193,13 @@ export interface ProcessingItemDto {
     kind: string;
     title: string;
     ownerId: string;
-    ownerName: string;
+    ownerName?: string;
     status: string;
     stage?: string;
+    processingError?: string;
     errorMessage?: string;
     createdAt: string;
+    updatedAt?: string;
 }
 
 export interface UploadSessionQuery {
@@ -130,13 +229,20 @@ export interface DuplicateMatchDto {
     tier: string;
     score: number;
     matchMethod: string;
+    detectorProvider: string;
     status: string;
-    suspectTitle: string;
-    suspectOwnerName: string;
-    matchedTitle: string;
-    matchedOwnerName: string;
+    suspectContentId?: string;
+    suspectTitle?: string;
+    suspectOwnerId?: string;
+    suspectOwnerName?: string;
+    matchedContentId?: string;
+    matchedTitle?: string;
+    matchedOwnerId?: string;
+    matchedOwnerName?: string;
     artistDisputeNote?: string;
     isDisputed: boolean;
+    disputedAtUtc?: string;
+    contentReportId?: string;
     createdAt: string;
 }
 

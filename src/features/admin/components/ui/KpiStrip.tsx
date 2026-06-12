@@ -5,10 +5,12 @@ import type { TrendValue } from '@/features/record-label/lib/format';
 
 export interface KpiItem {
     label: string;
-    value: string;
+    value: string | number;
     /** Card background tint (defaults cycle through the brand palette). */
     bg?: string;
     iconColor?: string;
+    /** Optional colour tone for semantic meaning (maps to palette overrides). */
+    tone?: 'success' | 'warning' | 'danger' | 'info' | 'neutral';
     sub?: string;
     trend?: TrendValue;
     trendCaption?: string;
@@ -29,6 +31,14 @@ const PALETTE: { bg: string; iconColor: string }[] = [
     { bg: '#FEF2F2', iconColor: '#E53E3E' },
 ];
 
+const TONE_PALETTE: Record<string, { bg: string; iconColor: string }> = {
+    success: { bg: '#E7FFF7', iconColor: '#16A34A' },
+    warning: { bg: '#FFF9E6', iconColor: '#D97706' },
+    danger: { bg: '#FEF2F2', iconColor: '#E53E3E' },
+    info: { bg: '#ECF7FF', iconColor: '#3B82F6' },
+    neutral: { bg: '#F1F5F9', iconColor: '#64748B' },
+};
+
 /**
  * Dashboard metric strip — wraps the shared {@link KpiCard} so every tower's
  * KPI row looks identical. Pass `items`; colours auto-cycle unless overridden.
@@ -43,14 +53,16 @@ export const KpiStrip: React.FC<KpiStripProps> = ({ items, columns }) => (
         gap={3}
     >
         {items.map((item, i) => {
-            const palette = PALETTE[i % PALETTE.length];
+            const tonePalette = item.tone ? TONE_PALETTE[item.tone] : undefined;
+            const defaultPalette = PALETTE[i % PALETTE.length];
+            const resolved = tonePalette ?? defaultPalette;
             return (
                 <KpiCard
                     key={item.label}
-                    bg={item.bg ?? palette.bg}
-                    iconColor={item.iconColor ?? palette.iconColor}
+                    bg={item.bg ?? resolved.bg}
+                    iconColor={item.iconColor ?? resolved.iconColor}
                     label={item.label}
-                    value={item.value}
+                    value={typeof item.value === 'number' ? item.value.toLocaleString() : item.value}
                     sub={item.sub}
                     trend={item.trend}
                     trendCaption={item.trendCaption}

@@ -14,19 +14,24 @@ import {
     AdminError,
     AdminPageLayout,
     DataTable,
+    DetailDrawer,
     DetailTabs,
     FilterBar,
     IdentityCell,
+    KpiStrip,
+    MetaGrid,
     StatusBadge,
 } from '../../components/ui';
-import type { DataColumn, DetailTab } from '../../components/ui';
+import type { DataColumn, DetailTab, MetaField } from '../../components/ui';
 import { adminDateTime } from '../../lib/format';
 import { useHasPermission } from '../../hooks/useAdminManagement';
 import {
     useProcessingItems,
     useRescheduleTrack,
     useRetryProcessing,
+    useUploadSession,
     useUploadSessions,
+    useUploadStats,
 } from '../../hooks/useContent';
 import type { ProcessingItemDto, UploadSessionDto } from '../../types/content';
 
@@ -234,11 +239,53 @@ const ProcessingTable: React.FC<{
     );
 };
 
+/* ------------------------------- Session detail drawer ----------------------- */
+
+const SessionDetailDrawer: React.FC<{
+    sessionId: string | null;
+    onClose: () => void;
+}> = ({ sessionId, onClose }) => {
+    const { data, isLoading } = useUploadSession(sessionId);
+    const session = data?.session;
+
+    const fields: MetaField[] = session
+        ? [
+              { label: 'Session ID', value: session.id },
+              { label: 'Media type', value: session.mediaType },
+              { label: 'Content type', value: session.contentType },
+              { label: 'File name', value: session.originalFileName },
+              { label: 'Size', value: `${(session.sizeBytes / 1024 / 1024).toFixed(2)} MB` },
+              { label: 'Status', value: session.status },
+              { label: 'Started', value: adminDateTime(session.createdAt) },
+              session.failureReason && { label: 'Failure reason', value: session.failureReason },
+              data?.linkedContentTitle && { label: 'Linked content', value: `${data.linkedContentTitle} (${data.linkedContentKind})` },
+          ].filter(Boolean) as MetaField[]
+        : [];
+
+    return (
+        <DetailDrawer
+            open={!!sessionId}
+            onClose={onClose}
+            title="Upload session"
+            subtitle={session?.originalFileName}
+        >
+            {isLoading ? (
+                <Text fontSize="xs" color="gray.500">Loading…</Text>
+            ) : session ? (
+                <MetaGrid fields={fields} columns={1} />
+            ) : (
+                <Text fontSize="xs" color="gray.500">Session not found.</Text>
+            )}
+        </DetailDrawer>
+    );
+};
+
 /* ------------------------------- Sessions table ------------------------------ */
 
 const SessionsTable: React.FC = () => {
     const [status, setStatus] = React.useState<string | undefined>(undefined);
     const [page, setPage] = React.useState(1);
+    const [selectedSessionId, setSelectedSessionId] = React.useState<string | null>(null);
     const { data, isLoading, error } = useUploadSessions({ status, page, pageSize: PAGE_SIZE });
 
     const columns: DataColumn<UploadSessionDto>[] = [
@@ -248,10 +295,10 @@ const SessionsTable: React.FC = () => {
             render: (s) => (
                 <VStack align="start" gap={0.5} minW={0}>
                     <Text fontSize="xs" fontWeight="semibold" color="gray.900" lineClamp={1}>
-                        {s.title || s.id}
+                        {s.originalFileName || s.id}
                     </Text>
                     <Text fontSize="10px" color="gray.500" textTransform="capitalize">
-                        {s.kind}
+                        {s.mediaType} · {s.contentType}
                     </Text>
                 </VStack>
             ),
@@ -259,7 +306,7 @@ const SessionsTable: React.FC = () => {
         {
             key: 'owner',
             header: 'Owner',
-            render: (s) => <IdentityCell name={s.ownerName} secondary={s.ownerRole} size="xs" />,
+            render: (s) => <IdentityCell name={s.userName ?? 'Unknown'} size="xs" />,
         },
         { key: 'status', header: 'Status', render: (s) => <StatusBadge status={s.status} /> },
         {
@@ -271,52 +318,50 @@ const SessionsTable: React.FC = () => {
                 </Text>
             ),
         },
-        {
-            key: 'completed',
-            header: 'Completed',
-            render: (s) => (
-                <Text fontSize="xs" color="gray.500">
-                    {adminDateTime(s.completedAt)}
-                </Text>
-            ),
-        },
     ];
 
     return (
-        <VStack align="stretch" gap={3}>
-            <FilterBar
-                filters={[
-                    {
-                        key: 'status',
-                        value: status ?? 'All',
-                        onChange: (v) => {
-                            setStatus(v === 'All' ? undefined : v);
-                            setPage(1);
+        <>
+            <VStack align="stretch" gap={3}>
+                <FilterBar
+                    filters={[
+                        {
+                            key: 'status',
+                            value: status ?? 'All',
+                            onChange: (v) => {
+                                setStatus(v === 'All' ? undefined : v);
+                                setPage(1);
+                            },
+                            options: SESSION_STATUS_OPTIONS,
+                            width: '170px',
                         },
-                        options: SESSION_STATUS_OPTIONS,
-                        width: '170px',
-                    },
-                ]}
-            />
-            {error ? (
-                <AdminError error={error} message="Could not load upload sessions." />
-            ) : (
-                <DataTable
-                    columns={columns}
-                    rows={data?.items ?? []}
-                    rowKey={(s) => s.id}
-                    loading={isLoading && !data}
-                    emptyIcon={FiUploadCloud}
-                    emptyTitle="No upload sessions"
-                    emptyDescription="No sessions match the current filter."
-                    pagination={
-                        data
-                            ? { page: data.page, pageSize: data.pageSize, total: data.total, onPageChange: setPage }
-                            : undefined
-                    }
+                    ]}
                 />
-            )}
-        </VStack>
+                {error ? (
+                    <AdminError error={error} message="Could not load upload sessions." />
+                ) : (
+                    <DataTable
+                        columns={columns}
+                        rows={data?.items ?? []}
+                        rowKey={(s) => s.id}
+                        onRowClick={(s) => setSelectedSessionId(s.id)}
+                        loading={isLoading && !data}
+                        emptyIcon={FiUploadCloud}
+                        emptyTitle="No upload sessions"
+                        emptyDescription="No sessions match the current filter."
+                        pagination={
+                            data
+                                ? { page: data.page, pageSize: data.pageSize, total: data.total, onPageChange: setPage }
+                                : undefined
+                        }
+                    />
+                )}
+            </VStack>
+            <SessionDetailDrawer
+                sessionId={selectedSessionId}
+                onClose={() => setSelectedSessionId(null)}
+            />
+        </>
     );
 };
 
@@ -326,6 +371,7 @@ const SessionsTable: React.FC = () => {
 const UploadWorkflowPage: React.FC = () => {
     const canManage = useHasPermission('ContentManage');
     const [reschedule, setReschedule] = React.useState<RescheduleState | null>(null);
+    const { data: uploadStats } = useUploadStats();
 
     const tabs: DetailTab[] = [
         {
@@ -360,12 +406,22 @@ const UploadWorkflowPage: React.FC = () => {
         },
     ];
 
+    const kpis = uploadStats
+        ? [
+              { label: 'Processing', value: uploadStats.processing, tone: 'info' as const },
+              { label: 'Failed', value: uploadStats.failed, tone: 'danger' as const },
+              { label: 'Active sessions', value: uploadStats.sessionsActive },
+              { label: 'Sessions today', value: uploadStats.sessionsToday, tone: 'success' as const },
+          ]
+        : [];
+
     return (
         <AdminPageLayout
             title="Upload Workflow"
             subtitle="Monitor processing, retry failures and review upload sessions"
             breadcrumbs={[{ label: 'Content' }, { label: 'Upload Workflow' }]}
         >
+            {kpis.length > 0 && <KpiStrip items={kpis} />}
             <DetailTabs tabs={tabs} />
             <RescheduleModal target={reschedule} onClose={() => setReschedule(null)} />
         </AdminPageLayout>

@@ -17,8 +17,10 @@ import {
     AdminPageLayout,
     ConfirmActionModal,
     DataTable,
+    DetailDrawer,
     FilterBar,
     IdentityCell,
+    KpiStrip,
     StatusBadge,
 } from '../../components/ui';
 import type { DataColumn } from '../../components/ui';
@@ -28,6 +30,8 @@ import {
     useApproveLyrics,
     useCreateLyrics,
     useLyrics,
+    useLyricsById,
+    useLyricsStats,
     useRejectLyrics,
 } from '../../hooks/useContent';
 import type { LyricsDto, LyricsQuery } from '../../types/content';
@@ -163,6 +167,102 @@ const AddLyricsModal: React.FC<{ open: boolean; onClose: () => void }> = ({ open
     );
 };
 
+/* -------------------------------- Preview drawer --------------------------- */
+
+const LyricsPreviewDrawer: React.FC<{
+    lyricsId: string | null;
+    onClose: () => void;
+    onApprove: (id: string) => void;
+    onReject: (l: LyricsDto) => void;
+    canManage: boolean;
+}> = ({ lyricsId, onClose, onApprove, onReject, canManage }) => {
+    const { data: lyrics, isLoading } = useLyricsById(lyricsId);
+    const approve = useApproveLyrics();
+    const isPending = lyrics?.status?.toLowerCase() === 'pending';
+
+    return (
+        <DetailDrawer
+            open={!!lyricsId}
+            onClose={onClose}
+            title="Lyrics preview"
+            subtitle={lyrics?.trackTitle}
+            footer={
+                canManage && isPending && lyrics ? (
+                    <HStack gap={3} justify="flex-end">
+                        <Button
+                            size="sm"
+                            fontSize="xs"
+                            borderRadius="10px"
+                            variant="outline"
+                            borderColor="#FECACA"
+                            color="#C53030"
+                            onClick={() => {
+                                onReject(lyrics);
+                                onClose();
+                            }}
+                        >
+                            Reject
+                        </Button>
+                        <Button
+                            size="sm"
+                            fontSize="xs"
+                            borderRadius="10px"
+                            bg="primary.500"
+                            color="white"
+                            _hover={{ bg: 'primary.600' }}
+                            disabled={approve.isPending}
+                            onClick={() => {
+                                onApprove(lyrics.id);
+                                onClose();
+                            }}
+                        >
+                            Approve
+                        </Button>
+                    </HStack>
+                ) : undefined
+            }
+        >
+            {isLoading ? (
+                <Text fontSize="xs" color="gray.500">Loading…</Text>
+            ) : lyrics ? (
+                <VStack align="stretch" gap={4}>
+                    <HStack gap={3} flexWrap="wrap">
+                        <StatusBadge status={lyrics.status} />
+                        <Text fontSize="11px" color="gray.500">
+                            {lyrics.language?.toUpperCase()} · {lyrics.format} · {lyrics.source}
+                        </Text>
+                    </HStack>
+                    <Box
+                        fontFamily="monospace"
+                        fontSize="xs"
+                        color="gray.800"
+                        whiteSpace="pre-wrap"
+                        bg="gray.50"
+                        borderRadius="10px"
+                        p={4}
+                        maxH="60vh"
+                        overflowY="auto"
+                    >
+                        {lyrics.content}
+                    </Box>
+                    {lyrics.rejectionReason && (
+                        <Box>
+                            <Text fontSize="11px" fontWeight="semibold" color="#C53030" mb={0.5}>
+                                Rejection reason
+                            </Text>
+                            <Text fontSize="xs" color="#C53030">
+                                {lyrics.rejectionReason}
+                            </Text>
+                        </Box>
+                    )}
+                </VStack>
+            ) : (
+                <Text fontSize="xs" color="gray.500">Lyrics not found.</Text>
+            )}
+        </DetailDrawer>
+    );
+};
+
 /* ---------------------------------- Page ---------------------------------- */
 
 /** Lyrics management — review queue with approve/reject and an add-lyrics form. */
@@ -171,6 +271,8 @@ const LyricsManagementPage: React.FC = () => {
     const [query, setQuery] = React.useState<LyricsQuery>({ page: 1, pageSize: PAGE_SIZE });
     const [rejectTarget, setRejectTarget] = React.useState<LyricsDto | null>(null);
     const [addOpen, setAddOpen] = React.useState(false);
+    const [previewId, setPreviewId] = React.useState<string | null>(null);
+    const { data: lyricsStats } = useLyricsStats();
 
     const { data, isLoading, error } = useLyrics(query);
     const approve = useApproveLyrics();
@@ -255,6 +357,15 @@ const LyricsManagementPage: React.FC = () => {
         },
     ];
 
+    const kpis = lyricsStats
+        ? [
+              { label: 'Total', value: lyricsStats.total },
+              { label: 'Pending', value: lyricsStats.pending, tone: 'warning' as const },
+              { label: 'Approved', value: lyricsStats.approved, tone: 'success' as const },
+              { label: 'Rejected', value: lyricsStats.rejected, tone: 'danger' as const },
+          ]
+        : [];
+
     return (
         <AdminPageLayout
             title="Lyrics"
@@ -276,6 +387,7 @@ const LyricsManagementPage: React.FC = () => {
                 ) : undefined
             }
         >
+            {kpis.length > 0 && <KpiStrip items={kpis} />}
             <FilterBar
                 search={{
                     value: query.search ?? '',
@@ -300,6 +412,7 @@ const LyricsManagementPage: React.FC = () => {
                     columns={columns}
                     rows={data?.items ?? []}
                     rowKey={(l) => l.id}
+                    onRowClick={(l) => setPreviewId(l.id)}
                     loading={isLoading && !data}
                     emptyIcon={FiFileText}
                     emptyTitle="No lyrics found"
@@ -340,6 +453,13 @@ const LyricsManagementPage: React.FC = () => {
             />
 
             <AddLyricsModal open={addOpen} onClose={() => setAddOpen(false)} />
+            <LyricsPreviewDrawer
+                lyricsId={previewId}
+                onClose={() => setPreviewId(null)}
+                onApprove={(id) => approve.mutate(id)}
+                onReject={(l) => setRejectTarget(l)}
+                canManage={canManage}
+            />
         </AdminPageLayout>
     );
 };

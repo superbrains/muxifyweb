@@ -1,8 +1,8 @@
 import React from 'react';
 import { FiMusic } from 'react-icons/fi';
-import { AdminError, AdminPageLayout, DataTable, FilterBar } from '../../components/ui';
-import { ContentActionModal } from './ContentActionModal';
-import { ContentDetailDrawer } from './ContentDetailDrawer';
+import { AdminError, AdminPageLayout, DataTable, FilterBar, KpiStrip } from '../../components/ui';
+import type { KpiItem } from '../../components/ui';
+import { useContentStats } from '../../hooks/useContent';
 import {
     CONTENT_OWNER_ROLE_OPTIONS,
     CONTENT_PUBLISHED_OPTIONS,
@@ -21,6 +21,16 @@ const KIND_OPTIONS = [
 /** Unified content library across every kind — Tower 5/6/7 entry point. */
 const ContentLibraryPage: React.FC = () => {
     const c = useContentItems({});
+    const { data: stats } = useContentStats();
+
+    const kpis: KpiItem[] = stats
+        ? [
+              { label: 'Total', value: stats.total },
+              { label: 'Published', value: stats.published, tone: 'success' },
+              { label: 'Restricted', value: stats.restricted, tone: 'warning' },
+              { label: 'New (7d)', value: stats.newLast7Days, tone: 'info' },
+          ]
+        : [];
 
     return (
         <AdminPageLayout
@@ -28,6 +38,7 @@ const ContentLibraryPage: React.FC = () => {
             subtitle="Every track, video, album and playlist on the platform"
             breadcrumbs={[{ label: 'Content' }, { label: 'Content Library' }]}
         >
+            {kpis.length > 0 && <KpiStrip items={kpis} />}
             <FilterBar
                 search={{
                     value: c.query.search ?? '',
@@ -88,7 +99,7 @@ const ContentLibraryPage: React.FC = () => {
                     columns={c.columns}
                     rows={c.data?.items ?? []}
                     rowKey={(it) => `${it.kind}-${it.id}`}
-                    onRowClick={(it) => c.setSelected(it)}
+                    onRowClick={(it) => c.navigateToDetail(it)}
                     loading={c.isLoading && !c.data}
                     emptyIcon={FiMusic}
                     emptyTitle="No content found"
@@ -106,8 +117,6 @@ const ContentLibraryPage: React.FC = () => {
                 />
             )}
 
-            <ContentDetailDrawer selected={c.selected} controller={c} />
-            <ContentActionModal controller={c} />
         </AdminPageLayout>
     );
 };

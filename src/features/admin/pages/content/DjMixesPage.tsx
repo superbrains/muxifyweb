@@ -9,6 +9,7 @@ const DjMixesPage: React.FC = () => (
         subtitle="Long-form DJ mixes published as Mix releases"
         breadcrumbLabel="DJ Mixes"
         baseQuery={{ kind: 'track', releaseType: 'Mix' }}
+        statsQuery={{ kind: 'track', releaseType: 'Mix' }}
         emptyIcon={FiDisc}
         emptyNoun="mixes"
     />

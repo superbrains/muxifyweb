@@ -137,6 +137,9 @@ const AdminUploadWorkflowPage = lazy(() => import('@/features/admin/pages/conten
 const AdminLyricsManagementPage = lazy(() => import('@/features/admin/pages/content/LyricsManagementPage'));
 const AdminDuplicateDetectionPage = lazy(() => import('@/features/admin/pages/content/DuplicateDetectionPage'));
 const AdminCopyrightReviewPage = lazy(() => import('@/features/admin/pages/content/CopyrightReviewPage'));
+// Content detail routes (Phase 3 redesign)
+const AdminContentItemDetailPage = lazy(() => import('@/features/admin/pages/content/ContentItemDetailPage'));
+const AdminDuplicateMatchDetailPage = lazy(() => import('@/features/admin/pages/content/DuplicateMatchDetailPage'));
 // CR1 — per-role moderation queues
 const AdminArtistModerationPage = lazy(() => import('@/features/admin/pages/content/moderation/ArtistModerationPage'));
 const AdminDjModerationPage = lazy(() => import('@/features/admin/pages/content/moderation/DjModerationPage'));
@@ -288,6 +291,9 @@ export const appRoutes: RouteObject[] = [
                     { path: '/admin/content/lyrics', element: <AdminLyricsManagementPage /> },
                     { path: '/admin/content/duplicates', element: <AdminDuplicateDetectionPage /> },
                     { path: '/admin/content/copyright', element: <AdminCopyrightReviewPage /> },
+                    // Content & duplicate detail pages (static segments rank above :kind/:id).
+                    { path: '/admin/content/duplicates/:id', element: <AdminDuplicateMatchDetailPage /> },
+                    { path: '/admin/content/:kind/:id', element: <AdminContentItemDetailPage /> },
                     // Content moderation — separated per-role queues.
                     { path: '/admin/content/moderation/artists', element: <AdminArtistModerationPage /> },
                     { path: '/admin/content/moderation/djs', element: <AdminDjModerationPage /> },
