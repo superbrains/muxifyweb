@@ -9,8 +9,6 @@ import {
 } from '../../components/ui';
 import type { Breadcrumb, KpiItem, SelectFilter } from '../../components/ui';
 import { useContentStats } from '../../hooks/useContent';
-import { ContentActionModal } from './ContentActionModal';
-import { ContentDetailDrawer } from './ContentDetailDrawer';
 import {
     CONTENT_PUBLISHED_OPTIONS,
     CONTENT_STATUS_OPTIONS,

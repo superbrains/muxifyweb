@@ -16,7 +16,7 @@ import { useModerationItems } from '../../hooks/useSupport';
 import { useModerationStats } from '../../hooks/useContent';
 import { adminRelative } from '../../lib/format';
 import { ModerationActionDialog } from './ModerationActionDialog';
-import type { ModerationItemDto, ModerationQuery, ModerationStatus } from '../../types';
+import type { ModerationContentType, ModerationItemDto, ModerationQuery, ModerationStatus } from '../../types';
 
 const PAGE_SIZE = 15;
 
@@ -225,7 +225,7 @@ export const ModerationPanel: React.FC<ModerationPanelProps> = ({ ownerRole }) =
                             setReportType(v === 'All' ? undefined : v);
                             setQuery((q) => ({
                                 ...q,
-                                type: v === 'All' ? undefined : v,
+                                type: v === 'All' ? undefined : (v as ModerationContentType),
                                 page: 1,
                             }));
                         },

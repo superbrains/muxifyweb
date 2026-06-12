@@ -42,7 +42,6 @@ import {
     useRestoreItem,
     useRestrictItem,
     useUnrestrictItem,
-    useRescheduleTrack,
 } from '../../hooks/useContent';
 import type { ContentItemDto, ContentKind, ContentTrackRowDto } from '../../types/content';
 
@@ -286,8 +285,6 @@ const ContentItemDetailPage: React.FC = () => {
     const remove = useRemoveItem();
     const restrict = useRestrictItem();
     const unrestrict = useUnrestrictItem();
-    const reschedule = useRescheduleTrack();
-
     const item = detail?.item;
 
     const handleConfirm = (reason: string) => {

@@ -154,7 +154,7 @@ const ProcessingTable: React.FC<{
                 </VStack>
             ),
         },
-        { key: 'owner', header: 'Owner', render: (p) => <IdentityCell name={p.ownerName} size="xs" /> },
+        { key: 'owner', header: 'Owner', render: (p) => <IdentityCell name={p.ownerName ?? 'Unknown'} size="xs" /> },
         {
             key: 'status',
             header: 'Status',

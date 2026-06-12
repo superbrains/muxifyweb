@@ -152,9 +152,9 @@ export const ContentDetailDrawer: React.FC<ContentDetailDrawerProps> = ({
                 <VStack align="stretch" gap={5}>
                     <HStack justify="space-between" align="flex-start" gap={3} flexWrap="wrap">
                         <IdentityCell
-                            name={data?.owner.name ?? item.ownerName}
-                            secondary={data?.owner.role ?? item.ownerRole}
-                            avatarUrl={data?.owner.avatarUrl}
+                            name={item.ownerName}
+                            secondary={item.ownerRole}
+                            avatarUrl={data?.ownerAvatarUrl}
                         />
                         <StatusBadge status={item.isPublished ? 'Published' : item.status} />
                     </HStack>
@@ -177,7 +177,7 @@ export const ContentDetailDrawer: React.FC<ContentDetailDrawerProps> = ({
                         )}
                     </SimpleGrid>
 
-                    {(item.heldForDuplicateReview || (data && data.duplicate.matchCount > 0)) && (
+                    {(item.heldForDuplicateReview || data?.duplicateMatch) && (
                         <Box
                             bg="#FFF9E6"
                             border="1px solid"
@@ -189,16 +189,14 @@ export const ContentDetailDrawer: React.FC<ContentDetailDrawerProps> = ({
                                 <Text fontSize="xs" fontWeight="semibold" color="#92660C">
                                     Duplicate review
                                 </Text>
-                                {data?.duplicate.topTier && (
-                                    <StatusBadge style={toneStyle('warning', data.duplicate.topTier)} />
+                                {data?.duplicateMatch?.tier && (
+                                    <StatusBadge style={toneStyle('warning', data.duplicateMatch.tier)} />
                                 )}
                             </HStack>
                             <Text fontSize="11px" color="#92660C">
-                                {data
-                                    ? `${formatCount(data.duplicate.matchCount)} potential match(es)` +
-                                      (data.duplicate.topScore != null
-                                          ? ` · top score ${(data.duplicate.topScore * 100).toFixed(0)}%`
-                                          : '')
+                                {data?.duplicateMatch
+                                    ? `Potential match · tier ${data.duplicateMatch.tier}` +
+                                      ` · score ${(data.duplicateMatch.score * 100).toFixed(0)}%`
                                     : 'Held pending duplicate review.'}
                             </Text>
                         </Box>
