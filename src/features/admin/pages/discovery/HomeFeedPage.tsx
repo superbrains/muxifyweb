@@ -2,7 +2,8 @@ import React from 'react';
 import { Box, Button, HStack, Image, SimpleGrid, Text, VStack } from '@chakra-ui/react';
 import { useNavigate } from 'react-router-dom';
 import { FiHome } from 'react-icons/fi';
-import { AdminEmptyState, AdminError, AdminLoading, AdminPageLayout } from '../../components/ui';
+import { AdminEmptyState, AdminError, AdminLoading, AdminPageLayout, KpiStrip } from '../../components/ui';
+import type { KpiItem } from '../../components/ui';
 import { useAuthedImageSrc } from '@/shared/hooks/useAuthedImageSrc';
 import { useHomeFeed } from '../../hooks/useDiscovery';
 import { adminDateTime } from '../../lib/format';
@@ -20,6 +21,16 @@ const HomeFeedPage: React.FC = () => {
     const { data, isLoading, error } = useHomeFeed();
 
     const sections = normalizeSections(data);
+    const totalItems = sections.reduce((sum, s) => sum + (s.items?.length ?? 0), 0);
+    const kpis: KpiItem[] = [
+        { label: 'Sections', value: sections.length, tone: 'info' },
+        { label: 'Total items', value: totalItems, tone: 'success' },
+        {
+            label: 'Largest section',
+            value: sections.reduce((max, s) => Math.max(max, s.items?.length ?? 0), 0),
+            tone: 'neutral',
+        },
+    ];
 
     return (
         <AdminPageLayout
@@ -70,6 +81,7 @@ const HomeFeedPage: React.FC = () => {
                 />
             ) : (
                 <VStack align="stretch" gap={4}>
+                    <KpiStrip items={kpis} columns={{ base: 3, md: 3, xl: 3 }} />
                     {sections.map((section, i) => (
                         <FeedSection key={section.key ?? section.title ?? i} section={section} />
                     ))}

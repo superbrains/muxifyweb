@@ -8,6 +8,8 @@ import type {
     AdminMostGiftedDto,
     AdminTopGiversDto,
     AdminTrendingPageDto,
+    BatchCurationOverrideRequest,
+    BatchCurationOverrideResult,
     CreateLeaderboardExclusionRequest,
     CurationOverrideQuery,
     FeaturedQuery,
@@ -101,6 +103,15 @@ export const discoveryService = {
         payload: UpsertCurationOverrideRequest,
     ): Promise<AdminCurationOverrideDto> => {
         const { data } = await api.post<AdminCurationOverrideDto>(`${DISCOVERY}/overrides`, payload);
+        return data;
+    },
+    createOverridesBatch: async (
+        payload: BatchCurationOverrideRequest,
+    ): Promise<BatchCurationOverrideResult> => {
+        const { data } = await api.post<BatchCurationOverrideResult>(
+            `${DISCOVERY}/overrides/batch`,
+            payload,
+        );
         return data;
     },
     updateOverride: async (

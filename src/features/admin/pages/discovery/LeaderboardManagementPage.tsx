@@ -24,9 +24,10 @@ import {
     AdminPageLayout,
     DataTable,
     FilterBar,
+    KpiStrip,
     StatusBadge,
 } from '../../components/ui';
-import type { DataColumn } from '../../components/ui';
+import type { DataColumn, KpiItem } from '../../components/ui';
 import { adminDate, formatCount } from '../../lib/format';
 import { useHasPermission } from '../../hooks/useAdminManagement';
 import {
@@ -175,6 +176,17 @@ const LeaderboardManagementPage: React.FC = () => {
                 <AdminLoading />
             ) : (
                 <VStack align="stretch" gap={4}>
+                    <KpiStrip
+                        items={
+                            [
+                                { label: 'Leaderboards', value: configs?.length ?? 0, tone: 'info' },
+                                { label: 'Enabled', value: (configs ?? []).filter((c) => c.isEnabled).length, tone: 'success' },
+                                { label: 'Disabled', value: (configs ?? []).filter((c) => !c.isEnabled).length, tone: 'neutral' },
+                            ] as KpiItem[]
+                        }
+                        columns={{ base: 3, md: 3, xl: 3 }}
+                    />
+
                     <SectionCard title="Leaderboards">
                         <DataTable
                             columns={configColumns}

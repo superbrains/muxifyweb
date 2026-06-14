@@ -84,6 +84,7 @@ const AdminTopChartsPage = lazy(() => import('@/features/admin/pages/discovery/T
 const AdminHotReleasesPage = lazy(() => import('@/features/admin/pages/discovery/HotReleasesPage'));
 const AdminNewReleasesPage = lazy(() => import('@/features/admin/pages/discovery/NewReleasesPage'));
 const AdminFeaturedContentPage = lazy(() => import('@/features/admin/pages/discovery/FeaturedContentPage'));
+const AdminOverridesPage = lazy(() => import('@/features/admin/pages/discovery/OverridesPage'));
 const AdminMostGiftedPage = lazy(() => import('@/features/admin/pages/discovery/MostGiftedPage'));
 const AdminTopGiversPage = lazy(() => import('@/features/admin/pages/discovery/TopGiversPage'));
 const AdminHomeFeedPage = lazy(() => import('@/features/admin/pages/discovery/HomeFeedPage'));
@@ -337,6 +338,7 @@ export const appRoutes: RouteObject[] = [
                     { path: '/admin/discovery/hot-releases', element: <AdminHotReleasesPage /> },
                     { path: '/admin/discovery/new-releases', element: <AdminNewReleasesPage /> },
                     { path: '/admin/discovery/featured', element: <AdminFeaturedContentPage /> },
+                    { path: '/admin/discovery/overrides', element: <AdminOverridesPage /> },
                     { path: '/admin/discovery/most-gifted', element: <AdminMostGiftedPage /> },
                     { path: '/admin/discovery/top-givers', element: <AdminTopGiversPage /> },
                     { path: '/admin/discovery/home-feed', element: <AdminHomeFeedPage /> },

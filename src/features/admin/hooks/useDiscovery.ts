@@ -9,6 +9,7 @@ import { getApiErrorMessage } from '@/shared/lib/errorUtils';
 import { discoveryService, leaderboardService } from '../services/discoveryService';
 import { adminKeys } from './adminKeys';
 import type {
+    BatchCurationOverrideRequest,
     CreateLeaderboardExclusionRequest,
     CurationOverrideQuery,
     FeaturedQuery,
@@ -162,6 +163,13 @@ export const useCreateOverride = () =>
         'Could not create override',
     );
 
+export const useCreateOverridesBatch = () =>
+    useDiscoveryMutation(
+        (payload: BatchCurationOverrideRequest) => discoveryService.createOverridesBatch(payload),
+        'Bulk curation applied.',
+        'Could not apply bulk curation',
+    );
+
 export const useUpdateOverride = () =>
     useDiscoveryMutation(
         ({ id, payload }: { id: string; payload: UpsertCurationOverrideRequest }) =>
@@ -182,6 +190,14 @@ export const useDeactivateOverride = () =>
         (id: string) => discoveryService.deactivateOverride(id),
         'Override deactivated.',
         'Could not deactivate override',
+    );
+
+export const useSetOverrideActive = () =>
+    useDiscoveryMutation(
+        ({ id, active }: { id: string; active: boolean }) =>
+            active ? discoveryService.activateOverride(id) : discoveryService.deactivateOverride(id),
+        'Override updated.',
+        'Could not update override',
     );
 
 export const useDeleteOverride = () =>

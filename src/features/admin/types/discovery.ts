@@ -68,9 +68,11 @@ export interface AdminTrendingItemDto {
     rankChange: number;
     genreId?: string | null;
     calculatedAt: string;
-    /** Title/owner metadata (best-effort — backend may not populate). */
+    /** Title/owner/cover metadata resolved from the underlying content. */
     title?: string | null;
     ownerName?: string | null;
+    ownerId?: string | null;
+    coverArtUrl?: string | null;
     genreName?: string | null;
     /** If an active override touches this row, its action + id. */
     overrideAction?: string | null;
@@ -182,6 +184,8 @@ export interface AdminCurationOverrideDto {
     weight?: number | null;
     pinnedRank?: number | null;
     isActive: boolean;
+    /** Active AND inside its scheduled window right now (backend-computed). */
+    isCurrentlyActive?: boolean;
     startDate?: string | null;
     endDate?: string | null;
     reason: string;
@@ -205,6 +209,33 @@ export interface UpsertCurationOverrideRequest {
 export interface CurationOverrideQuery {
     surface?: string;
     activeOnly?: boolean;
+}
+
+/* ------------------------------------------------------------------ *
+ * Batch curation (apply one action to many items on a surface)
+ * ------------------------------------------------------------------ */
+
+export interface BatchOverrideItem {
+    contentType: string;
+    contentId: string;
+}
+
+export interface BatchCurationOverrideRequest {
+    surface: string;
+    action: string;
+    weight?: number | null;
+    pinnedRank?: number | null;
+    reason: string;
+    startDate?: string | null;
+    endDate?: string | null;
+    items: BatchOverrideItem[];
+}
+
+export interface BatchCurationOverrideResult {
+    created: number;
+    skipped: number;
+    createdIds: string[];
+    skippedReasons: string[];
 }
 
 /* ------------------------------------------------------------------ *

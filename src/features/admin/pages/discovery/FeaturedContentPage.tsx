@@ -25,9 +25,10 @@ import {
     AdminPageLayout,
     DataTable,
     FilterBar,
+    KpiStrip,
     StatusBadge,
 } from '../../components/ui';
-import type { DataColumn } from '../../components/ui';
+import type { DataColumn, KpiItem } from '../../components/ui';
 import { adminDate } from '../../lib/format';
 import { useHasPermission } from '../../hooks/useAdminManagement';
 import { discoveryService } from '../../services/discoveryService';
@@ -71,6 +72,14 @@ const FeaturedContentPage: React.FC = () => {
 
     const setActive = useSetFeaturedActive();
     const del = useDeleteFeatured();
+
+    const rows = data ?? [];
+    const kpis: KpiItem[] = [
+        { label: 'Features', value: rows.length, tone: 'info' },
+        { label: 'Active', value: rows.filter((f) => f.isActive).length, tone: 'success' },
+        { label: 'Inactive', value: rows.filter((f) => !f.isActive).length, tone: 'neutral' },
+        { label: 'Sections', value: new Set(rows.map((f) => f.section)).size, tone: 'warning' },
+    ];
 
     const [editing, setEditing] = React.useState<AdminFeaturedDto | null>(null);
     const [creating, setCreating] = React.useState(false);
@@ -174,31 +183,35 @@ const FeaturedContentPage: React.FC = () => {
                 ) : undefined
             }
         >
-            <FilterBar
-                filters={[
-                    {
-                        key: 'section',
-                        value: section,
-                        onChange: setSection,
-                        options: SECTION_OPTIONS,
-                        width: '190px',
-                    },
-                ]}
-            />
+            <VStack align="stretch" gap={4}>
+                <KpiStrip items={kpis} columns={{ base: 2, md: 4, xl: 4 }} />
 
-            {error ? (
-                <AdminError error={error} message="Could not load featured content." />
-            ) : (
-                <DataTable
-                    columns={columns}
-                    rows={data ?? []}
-                    rowKey={(f) => f.id}
-                    loading={isLoading && !data}
-                    emptyIcon={FiStar}
-                    emptyTitle="No featured items"
-                    emptyDescription="Create a feature to surface it on the home feed."
+                <FilterBar
+                    filters={[
+                        {
+                            key: 'section',
+                            value: section,
+                            onChange: setSection,
+                            options: SECTION_OPTIONS,
+                            width: '190px',
+                        },
+                    ]}
                 />
-            )}
+
+                {error ? (
+                    <AdminError error={error} message="Could not load featured content." />
+                ) : (
+                    <DataTable
+                        columns={columns}
+                        rows={rows}
+                        rowKey={(f) => f.id}
+                        loading={isLoading && !data}
+                        emptyIcon={FiStar}
+                        emptyTitle="No featured items"
+                        emptyDescription="Create a feature to surface it on the home feed."
+                    />
+                )}
+            </VStack>
 
             {creating && <FeaturedDialog onClose={() => setCreating(false)} />}
             {editing && <FeaturedDialog item={editing} onClose={() => setEditing(null)} />}

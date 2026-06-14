@@ -16,9 +16,15 @@ import {
     VStack,
 } from '@chakra-ui/react';
 import { MdClose, MdAddPhotoAlternate } from 'react-icons/md';
-import { AdminPageHeader } from '../components/AdminPageHeader';
-import { AdminError, AdminLoading } from '../components/AdminStateBlock';
-import { AdminTable, type AdminTableColumn } from '../components/AdminTable';
+import { FiStar } from 'react-icons/fi';
+import {
+    AdminError,
+    AdminPageLayout,
+    DataTable,
+    KpiStrip,
+    StatusBadge as KitStatusBadge,
+} from '../components/ui';
+import type { DataColumn, KpiItem } from '../components/ui';
 import { ConfirmModal } from '@shared/components';
 import { useChakraToast } from '@shared/hooks';
 import { useAuthedImageSrc } from '@/shared/hooks/useAuthedImageSrc';
@@ -57,7 +63,15 @@ const SpotlightPage: React.FC = () => {
     const [creating, setCreating] = React.useState(false);
     const [deleteTarget, setDeleteTarget] = React.useState<AdminSpotlight | null>(null);
 
-    const columns: AdminTableColumn<AdminSpotlight>[] = [
+    const rows = data ?? [];
+    const kpis: KpiItem[] = [
+        { label: 'Spotlights', value: rows.length, tone: 'info' },
+        { label: 'Live', value: rows.filter((s) => spotlightStatus(s) === 'Live').length, tone: 'success' },
+        { label: 'Scheduled', value: rows.filter((s) => spotlightStatus(s) === 'Scheduled').length, tone: 'warning' },
+        { label: 'Inactive', value: rows.filter((s) => !s.isActive).length, tone: 'neutral' },
+    ];
+
+    const columns: DataColumn<AdminSpotlight>[] = [
         {
             key: 'item',
             header: 'Spotlight',
@@ -90,7 +104,7 @@ const SpotlightPage: React.FC = () => {
         {
             key: 'status',
             header: 'Status',
-            render: (s) => <StatusBadge item={s} />,
+            render: (s) => <KitStatusBadge status={spotlightStatus(s)} />,
         },
         {
             key: 'engagement',
@@ -123,45 +137,41 @@ const SpotlightPage: React.FC = () => {
     ];
 
     return (
-        <VStack
-            gap={{ base: 3, lg: 4 }}
-            bg="gray.50"
-            minH="100vh"
-            align="stretch"
-            px={{ base: 3, md: 6 }}
-            py={{ base: 4, md: 6 }}
+        <AdminPageLayout
+            title="Spotlight"
+            subtitle="Curate the featured banners shown on the mobile home feed. Active, in-window items appear by priority."
+            breadcrumbs={[{ label: 'Discovery' }, { label: 'Spotlight' }]}
+            actions={
+                <Button
+                    size="sm"
+                    fontSize="xs"
+                    bg={ACCENT}
+                    color="white"
+                    borderRadius="10px"
+                    _hover={{ bg: '#e53939' }}
+                    onClick={() => setCreating(true)}
+                >
+                    New spotlight
+                </Button>
+            }
         >
-            <AdminPageHeader
-                title="Spotlight"
-                subtitle="Curate the featured banners shown on the mobile home feed. Active, in-window items appear by priority."
-                action={
-                    <Button
-                        size="sm"
-                        fontSize="xs"
-                        bg={ACCENT}
-                        color="white"
-                        borderRadius="10px"
-                        _hover={{ bg: '#e53939' }}
-                        onClick={() => setCreating(true)}
-                    >
-                        New spotlight
-                    </Button>
-                }
-            />
+            <VStack align="stretch" gap={4}>
+                <KpiStrip items={kpis} columns={{ base: 2, md: 4, xl: 4 }} />
 
-            {isLoading && !data ? (
-                <AdminLoading />
-            ) : error ? (
-                <AdminError error={error} message="Could not load spotlight items." />
-            ) : (
-                <AdminTable
-                    columns={columns}
-                    rows={data ?? []}
-                    rowKey={(s) => s.id}
-                    emptyTitle="No spotlight items yet"
-                    emptyDescription="Create one to feature it on the home feed."
-                />
-            )}
+                {error ? (
+                    <AdminError error={error} message="Could not load spotlight items." />
+                ) : (
+                    <DataTable
+                        columns={columns}
+                        rows={rows}
+                        rowKey={(s) => s.id}
+                        loading={isLoading && !data}
+                        emptyIcon={FiStar}
+                        emptyTitle="No spotlight items yet"
+                        emptyDescription="Create one to feature it on the home feed."
+                    />
+                )}
+            </VStack>
 
             {creating && <SpotlightDialog onClose={() => setCreating(false)} />}
             {editing && <SpotlightDialog item={editing} onClose={() => setEditing(null)} />}
@@ -175,7 +185,7 @@ const SpotlightPage: React.FC = () => {
                 confirmText="Delete"
                 isLoading={del.isPending}
             />
-        </VStack>
+        </AdminPageLayout>
     );
 };
 
@@ -185,21 +195,15 @@ export default SpotlightPage;
 /* Status                                                                */
 /* ===================================================================== */
 
-const StatusBadge: React.FC<{ item: AdminSpotlight }> = ({ item }) => {
+/** Derives the live/scheduled/expired/inactive status string for a spotlight. */
+const spotlightStatus = (item: AdminSpotlight): string => {
     const now = Date.now();
     const start = new Date(item.startDate).getTime();
     const end = item.endDate ? new Date(item.endDate).getTime() : null;
-
-    if (!item.isActive) {
-        return <Badge size="sm" colorPalette="gray" variant="subtle">Inactive</Badge>;
-    }
-    if (start > now) {
-        return <Badge size="sm" colorPalette="blue" variant="subtle">Scheduled</Badge>;
-    }
-    if (end !== null && end <= now) {
-        return <Badge size="sm" colorPalette="orange" variant="subtle">Expired</Badge>;
-    }
-    return <Badge size="sm" colorPalette="green" variant="subtle">Live</Badge>;
+    if (!item.isActive) return 'Inactive';
+    if (start > now) return 'Scheduled';
+    if (end !== null && end <= now) return 'Expired';
+    return 'Live';
 };
 
 /* ===================================================================== */

@@ -1,5 +1,5 @@
 import React from 'react';
-import { HStack, Text } from '@chakra-ui/react';
+import { HStack, Text, VStack } from '@chakra-ui/react';
 import { FiHeart } from 'react-icons/fi';
 import {
     AdminError,
@@ -8,37 +8,50 @@ import {
     DataTable,
     FilterBar,
     IdentityCell,
+    KpiStrip,
     StatusBadge,
-    toneStyle,
 } from '../../components/ui';
-import type { DataColumn } from '../../components/ui';
+import type { DataColumn, KpiItem } from '../../components/ui';
 import { formatCount } from '../../lib/format';
 import { useHasPermission } from '../../hooks/useAdminManagement';
-import { useAuthedImageSrc } from '@/shared/hooks/useAuthedImageSrc';
 import { useCreateExclusion, useTopGivers } from '../../hooks/useDiscovery';
 import { DISCOVERY_PERIOD_OPTIONS, type AdminTopGiversDto } from '../../types/discovery';
+import { CurationStatusBadge, LeaderboardPodium, RankBadge } from './discoveryShared';
+import type { PodiumEntry } from './discoveryShared';
 import { LinkBtn } from './discoveryShared';
 
 const LEADERBOARD_TYPE = 'top-gifters';
 
 /** Top givers — ranked fans by gifting spend, with leaderboard exclusion control. */
 const TopGiversPage: React.FC = () => {
-    const canManage = useHasPermission('LeaderboardManage') || useHasPermission('DiscoveryManage');
+    const canManageLeaderboard = useHasPermission('LeaderboardManage');
+    const canManageDiscovery = useHasPermission('DiscoveryManage');
+    const canManage = canManageLeaderboard || canManageDiscovery;
     const [period, setPeriod] = React.useState('Week');
     const { data, isLoading, error } = useTopGivers({ period, take: 50 });
 
     const createExclusion = useCreateExclusion();
     const [excludeTarget, setExcludeTarget] = React.useState<AdminTopGiversDto | null>(null);
 
+    const rows = data ?? [];
+    const kpis: KpiItem[] = [
+        { label: 'Givers', value: rows.length, tone: 'info' },
+        { label: 'Total gifted', value: formatCount(rows.reduce((s, r) => s + (r.totalGiftValue ?? 0), 0)), tone: 'success' },
+        { label: 'Gifts sent', value: formatCount(rows.reduce((s, r) => s + (r.giftCount ?? 0), 0)), tone: 'neutral' },
+        { label: 'Curated', value: rows.filter((r) => r.overrideAction).length, tone: 'warning' },
+    ];
+
+    const podium: PodiumEntry[] = rows.slice(0, 3).map((r) => ({
+        rank: r.rank,
+        name: r.displayName ?? r.username ?? 'Unknown',
+        avatarUrl: r.avatarUrl,
+        value: `${formatCount(r.totalGiftValue)} coins`,
+        sub: r.currentMedal ?? `${formatCount(r.giftCount)} gifts`,
+    }));
+
     const columns: DataColumn<AdminTopGiversDto>[] = [
-        { key: 'rank', header: '#', width: '56px', align: 'center', render: (r) => (
-            <Text fontSize="sm" fontWeight="bold" color="gray.900">{r.rank}</Text>
-        ) },
-        {
-            key: 'who',
-            header: 'Giver',
-            render: (r) => <Giver row={r} />,
-        },
+        { key: 'rank', header: '#', width: '64px', align: 'center', render: (r) => <RankBadge rank={r.rank} /> },
+        { key: 'who', header: 'Giver', render: (r) => <Giver row={r} /> },
         {
             key: 'value',
             header: 'Total gifted',
@@ -60,17 +73,18 @@ const TopGiversPage: React.FC = () => {
             ),
         },
         {
-            key: 'override',
-            header: 'Curation',
+            key: 'medal',
+            header: 'Medal',
             render: (r) =>
-                r.overrideAction ? (
-                    <StatusBadge style={toneStyle('info', r.overrideAction)} />
+                r.currentMedal ? (
+                    <StatusBadge status="Active" label={r.currentMedal} />
                 ) : (
                     <Text fontSize="11px" color="gray.400">
-                        Organic
+                        —
                     </Text>
                 ),
         },
+        { key: 'override', header: 'Curation', render: (r) => <CurationStatusBadge action={r.overrideAction} /> },
     ];
 
     if (canManage) {
@@ -94,30 +108,29 @@ const TopGiversPage: React.FC = () => {
             subtitle="Fans who gift the most. Exclude a user to keep them off the public leaderboard."
             breadcrumbs={[{ label: 'Discovery' }, { label: 'Top Givers' }]}
         >
-            <FilterBar
-                filters={[
-                    {
-                        key: 'period',
-                        value: period,
-                        onChange: setPeriod,
-                        options: DISCOVERY_PERIOD_OPTIONS,
-                    },
-                ]}
-            />
+            <VStack align="stretch" gap={4}>
+                <KpiStrip items={kpis} columns={{ base: 2, md: 4, xl: 4 }} />
 
-            {error ? (
-                <AdminError error={error} message="Could not load the top-givers leaderboard." />
-            ) : (
-                <DataTable
-                    columns={columns}
-                    rows={data ?? []}
-                    rowKey={(r) => r.userId}
-                    loading={isLoading && !data}
-                    emptyIcon={FiHeart}
-                    emptyTitle="No gifting data"
-                    emptyDescription="No one has sent gifts in this period yet."
+                {podium.length > 0 && <LeaderboardPodium entries={podium} />}
+
+                <FilterBar
+                    filters={[{ key: 'period', value: period, onChange: setPeriod, options: DISCOVERY_PERIOD_OPTIONS }]}
                 />
-            )}
+
+                {error ? (
+                    <AdminError error={error} message="Could not load the top-givers leaderboard." />
+                ) : (
+                    <DataTable
+                        columns={columns}
+                        rows={rows}
+                        rowKey={(r) => r.userId}
+                        loading={isLoading && !data}
+                        emptyIcon={FiHeart}
+                        emptyTitle="No gifting data"
+                        emptyDescription="No one has sent gifts in this period yet."
+                    />
+                )}
+            </VStack>
 
             <ConfirmActionModal
                 isOpen={excludeTarget !== null}
@@ -147,13 +160,10 @@ const TopGiversPage: React.FC = () => {
 
 export default TopGiversPage;
 
-const Giver: React.FC<{ row: AdminTopGiversDto }> = ({ row }) => {
-    const avatar = useAuthedImageSrc(row.avatarUrl || undefined);
-    return (
-        <IdentityCell
-            name={row.displayName ?? row.username ?? 'Unknown'}
-            secondary={row.username ? `@${row.username}` : undefined}
-            avatarUrl={avatar}
-        />
-    );
-};
+const Giver: React.FC<{ row: AdminTopGiversDto }> = ({ row }) => (
+    <IdentityCell
+        name={row.displayName ?? row.username ?? 'Unknown'}
+        secondary={row.username ? `@${row.username}` : undefined}
+        avatarUrl={row.avatarUrl}
+    />
+);
