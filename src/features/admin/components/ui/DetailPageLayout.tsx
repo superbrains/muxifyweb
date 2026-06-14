@@ -1,7 +1,7 @@
 import React from 'react';
-import { Box, HStack, Image, Stack, Text, VStack } from '@chakra-ui/react';
-import { FiMusic } from 'react-icons/fi';
+import { Box, HStack, Stack, Text, VStack } from '@chakra-ui/react';
 import { AdminPageLayout } from './AdminPageLayout';
+import { CoverThumb } from './CoverThumb';
 import { DetailTabs } from './DetailTabs';
 import { StatusBadge, toneStyle, resolveStatusStyle } from './statusBadge';
 import type { StatusTone } from './statusBadge';
@@ -58,31 +58,13 @@ export const DetailPageLayout: React.FC<DetailPageLayoutProps> = ({
             shadow="xs"
         >
             <Stack direction={{ base: 'column', sm: 'row' }} gap={4} align="flex-start">
-                <Box
-                    w={{ base: '64px', sm: '80px' }}
-                    h={{ base: '64px', sm: '80px' }}
-                    borderRadius="12px"
-                    overflow="hidden"
-                    flexShrink={0}
-                    bg="gray.100"
-                    display="flex"
-                    alignItems="center"
-                    justifyContent="center"
-                >
-                    {coverArtUrl ? (
-                        <Image
-                            src={coverArtUrl}
-                            alt={heroTitle}
-                            w="100%"
-                            h="100%"
-                            objectFit="cover"
-                        />
-                    ) : (
-                        <Box color="gray.400" fontSize="28px">
-                            <FiMusic />
-                        </Box>
-                    )}
-                </Box>
+                <CoverThumb
+                    src={coverArtUrl}
+                    alt={heroTitle}
+                    size={{ base: '64px', sm: '80px' }}
+                    radius="12px"
+                    fallbackFontSize="28px"
+                />
 
                 <VStack align="start" gap={1.5} flex="1" minW={0}>
                     <Text

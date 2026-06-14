@@ -1,5 +1,5 @@
 import React from 'react';
-import { SimpleGrid, Text, VStack } from '@chakra-ui/react';
+import { Box, SimpleGrid, Text, VStack } from '@chakra-ui/react';
 
 export interface MetaField {
     label: string;
@@ -24,9 +24,9 @@ const MetaEntry: React.FC<{ label: string; value: React.ReactNode }> = ({ label,
         >
             {label}
         </Text>
-        <Text fontSize="xs" color="gray.800">
+        <Box fontSize="xs" color="gray.800">
             {value}
-        </Text>
+        </Box>
     </VStack>
 );
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Center, HStack, Icon, Skeleton, Text, VStack } from '@chakra-ui/react';
+import { Box, Center, Checkbox, HStack, Icon, Skeleton, Text, VStack } from '@chakra-ui/react';
 import { FiChevronDown, FiChevronUp, FiInbox } from 'react-icons/fi';
 import { Paginator } from '../Paginator';
 
@@ -40,6 +40,14 @@ interface DataTableProps<T> {
     onSortChange?: (next: SortState) => void;
     /** Renders a prev/next pager beneath the table when more than one page exists. */
     pagination?: PaginationState;
+    /** Opt-in row multi-select. Prepends a checkbox column when true (default off). */
+    selectable?: boolean;
+    /** Controlled set of selected row keys (only meaningful with `selectable`). */
+    selectedKeys?: Set<string>;
+    /** Toggle a single row's selection. */
+    onToggleRow?: (key: string) => void;
+    /** Toggle every visible row at once (receives the current page's keys). */
+    onToggleAll?: (keys: string[]) => void;
 }
 
 const HEADER_PROPS = {
@@ -74,6 +82,10 @@ export function DataTable<T>({
     sort,
     onSortChange,
     pagination,
+    selectable = false,
+    selectedKeys,
+    onToggleRow,
+    onToggleAll,
 }: DataTableProps<T>) {
     const handleSort = (col: DataColumn<T>) => {
         if (!col.sortKey || !onSortChange) return;
@@ -81,6 +93,11 @@ export function DataTable<T>({
             sort?.key === col.sortKey && sort.dir === 'asc' ? 'desc' : 'asc';
         onSortChange({ key: col.sortKey, dir });
     };
+
+    const pageKeys = rows.map(rowKey);
+    const selectedCount = pageKeys.filter((k) => selectedKeys?.has(k)).length;
+    const headerChecked: boolean | 'indeterminate' =
+        selectedCount === 0 ? false : selectedCount === pageKeys.length ? true : 'indeterminate';
 
     const card = (children: React.ReactNode) => (
         <Box bg="white" borderRadius="xl" border="1px solid" borderColor="gray.100" overflowX="auto">
@@ -110,6 +127,19 @@ export function DataTable<T>({
         <Box as="table" w="100%" borderCollapse="separate" style={{ borderSpacing: 0 }}>
             <Box as="thead">
                 <Box as="tr">
+                    {selectable && (
+                        <Box as="th" width="44px" textAlign="center" {...HEADER_PROPS}>
+                            <Checkbox.Root
+                                size="sm"
+                                checked={headerChecked}
+                                onCheckedChange={() => onToggleAll?.(pageKeys)}
+                                aria-label="Select all rows"
+                            >
+                                <Checkbox.HiddenInput />
+                                <Checkbox.Control />
+                            </Checkbox.Root>
+                        </Box>
+                    )}
                     {columns.map((col) => {
                         const sortable = !!col.sortKey && !!onSortChange;
                         const isSorted = sort?.key === col.sortKey;
@@ -147,6 +177,9 @@ export function DataTable<T>({
                 {loading
                     ? Array.from({ length: skeletonRows }).map((_, r) => (
                           <Box as="tr" key={`sk-${r}`}>
+                              {selectable && (
+                                  <Box as="td" px={4} py={3.5} borderBottom="1px solid" borderColor="gray.50" />
+                              )}
                               {columns.map((col) => (
                                   <Box
                                       as="td"
@@ -161,15 +194,41 @@ export function DataTable<T>({
                               ))}
                           </Box>
                       ))
-                    : rows.map((row) => (
+                    : rows.map((row) => {
+                          const key = rowKey(row);
+                          const isSelected = selectable && !!selectedKeys?.has(key);
+                          return (
                           <Box
                               as="tr"
-                              key={rowKey(row)}
+                              key={key}
                               cursor={onRowClick ? 'pointer' : 'default'}
                               transition="background 0.15s"
-                              _hover={onRowClick ? { bg: 'gray.50' } : undefined}
+                              bg={isSelected ? 'primary.50' : undefined}
+                              _hover={onRowClick ? { bg: isSelected ? 'primary.50' : 'gray.50' } : undefined}
                               onClick={() => onRowClick?.(row)}
                           >
+                              {selectable && (
+                                  <Box
+                                      as="td"
+                                      px={4}
+                                      py={3.5}
+                                      borderBottom="1px solid"
+                                      borderColor="gray.50"
+                                      textAlign="center"
+                                      verticalAlign="middle"
+                                      onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                                  >
+                                      <Checkbox.Root
+                                          size="sm"
+                                          checked={isSelected}
+                                          onCheckedChange={() => onToggleRow?.(key)}
+                                          aria-label="Select row"
+                                      >
+                                          <Checkbox.HiddenInput />
+                                          <Checkbox.Control />
+                                      </Checkbox.Root>
+                                  </Box>
+                              )}
                               {columns.map((col) => (
                                   <Box
                                       as="td"
@@ -187,7 +246,8 @@ export function DataTable<T>({
                                   </Box>
                               ))}
                           </Box>
-                      ))}
+                          );
+                      })}
             </Box>
         </Box>,
     );

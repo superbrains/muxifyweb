@@ -5,6 +5,7 @@ import { FiCopy } from 'react-icons/fi';
 import {
     AdminError,
     ConfirmActionModal,
+    CoverThumb,
     DataTable,
     FilterBar,
     KpiStrip,
@@ -116,28 +117,34 @@ export const DuplicateMatchesView: React.FC<DuplicateMatchesViewProps> = ({
             key: 'suspect',
             header: 'Suspect',
             render: (m) => (
-                <VStack align="start" gap={0.5} minW={0}>
-                    <Text fontSize="xs" fontWeight="semibold" color="gray.900" lineClamp={1}>
-                        {m.suspectTitle}
-                    </Text>
-                    <Text fontSize="10px" color="gray.500" lineClamp={1}>
-                        {m.suspectOwnerName}
-                    </Text>
-                </VStack>
+                <HStack gap={2.5} minW={0}>
+                    <CoverThumb src={m.suspectCoverArtUrl} size="36px" radius="6px" fallbackFontSize="14px" />
+                    <VStack align="start" gap={0.5} minW={0}>
+                        <Text fontSize="xs" fontWeight="semibold" color="gray.900" lineClamp={1}>
+                            {m.suspectTitle}
+                        </Text>
+                        <Text fontSize="10px" color="gray.500" lineClamp={1}>
+                            {m.suspectOwnerName}
+                        </Text>
+                    </VStack>
+                </HStack>
             ),
         },
         {
             key: 'matched',
             header: 'Matched against',
             render: (m) => (
-                <VStack align="start" gap={0.5} minW={0}>
-                    <Text fontSize="xs" color="gray.800" lineClamp={1}>
-                        {m.matchedTitle}
-                    </Text>
-                    <Text fontSize="10px" color="gray.500" lineClamp={1}>
-                        {m.matchedOwnerName}
-                    </Text>
-                </VStack>
+                <HStack gap={2.5} minW={0}>
+                    <CoverThumb src={m.matchedCoverArtUrl} size="36px" radius="6px" fallbackFontSize="14px" />
+                    <VStack align="start" gap={0.5} minW={0}>
+                        <Text fontSize="xs" color="gray.800" lineClamp={1}>
+                            {m.matchedTitle}
+                        </Text>
+                        <Text fontSize="10px" color="gray.500" lineClamp={1}>
+                            {m.matchedOwnerName}
+                        </Text>
+                    </VStack>
+                </HStack>
             ),
         },
         {

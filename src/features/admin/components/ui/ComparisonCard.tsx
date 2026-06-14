@@ -1,6 +1,6 @@
 import React from 'react';
-import { Box, HStack, Image, Stack, Text, VStack } from '@chakra-ui/react';
-import { FiMusic } from 'react-icons/fi';
+import { Box, HStack, Stack, Text, VStack } from '@chakra-ui/react';
+import { CoverThumb } from './CoverThumb';
 
 export interface ComparisonSide {
     label: string;
@@ -46,25 +46,7 @@ const Side: React.FC<ComparisonSide & { accent: string }> = ({
         </Text>
 
         <HStack gap={3} align="flex-start">
-            <Box
-                w="52px"
-                h="52px"
-                borderRadius="10px"
-                overflow="hidden"
-                flexShrink={0}
-                bg="gray.100"
-                display="flex"
-                alignItems="center"
-                justifyContent="center"
-            >
-                {coverArtUrl ? (
-                    <Image src={coverArtUrl} alt={title} w="100%" h="100%" objectFit="cover" />
-                ) : (
-                    <Box color="gray.400" fontSize="20px">
-                        <FiMusic />
-                    </Box>
-                )}
-            </Box>
+            <CoverThumb src={coverArtUrl} alt={title} size="52px" radius="10px" fallbackFontSize="20px" />
             <VStack align="start" gap={0.5} minW={0}>
                 <Text fontSize="sm" fontWeight="semibold" color="gray.900" lineClamp={2}>
                     {title ?? '—'}

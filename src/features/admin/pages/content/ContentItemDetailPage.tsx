@@ -4,7 +4,6 @@ import {
     Box,
     Button,
     HStack,
-    Image,
     Skeleton,
     Text,
     VStack,
@@ -13,9 +12,9 @@ import {
     FiAlertCircle,
     FiBook,
     FiClock,
+    FiExternalLink,
     FiGlobe,
     FiList,
-    FiMusic,
     FiShield,
 } from 'react-icons/fi';
 import {
@@ -23,6 +22,8 @@ import {
     AdminPageLayout,
     AuditTimeline,
     ConfirmActionModal,
+    CopyableId,
+    CoverThumb,
     DataTable,
     DetailTabs,
     IdentityCell,
@@ -30,6 +31,7 @@ import {
     StatusBadge,
     toneStyle,
 } from '../../components/ui';
+import { RescheduleModal } from '../../components/content/RescheduleModal';
 import type { DataColumn, DetailTab, MetaField } from '../../components/ui';
 import { adminDate, formatCount, formatDuration } from '../../lib/format';
 import { useHasPermission } from '../../hooks/useAdminManagement';
@@ -43,7 +45,11 @@ import {
     useRestrictItem,
     useUnrestrictItem,
 } from '../../hooks/useContent';
-import type { ContentItemDto, ContentKind, ContentTrackRowDto } from '../../types/content';
+import type {
+    ContentKind,
+    ContentTrackRowDto,
+    DuplicateMatchSummaryDto,
+} from '../../types/content';
 
 /* ─── Helpers ─────────────────────────────────────────────────────────── */
 
@@ -65,30 +71,7 @@ const TrackListTab: React.FC<{ tracks: ContentTrackRowDto[] }> = ({ tracks }) =>
             header: 'Track',
             render: (t) => (
                 <HStack gap={3}>
-                    <Box
-                        w="36px"
-                        h="36px"
-                        borderRadius="8px"
-                        overflow="hidden"
-                        flexShrink={0}
-                        bg="gray.100"
-                    >
-                        {t.coverArtUrl ? (
-                            <Image src={t.coverArtUrl} w="100%" h="100%" objectFit="cover" />
-                        ) : (
-                            <Box
-                                w="100%"
-                                h="100%"
-                                display="flex"
-                                alignItems="center"
-                                justifyContent="center"
-                                color="gray.400"
-                                fontSize="14px"
-                            >
-                                <FiMusic />
-                            </Box>
-                        )}
-                    </Box>
+                    <CoverThumb src={t.coverArtUrl} alt={t.title} size="36px" radius="8px" fallbackFontSize="14px" />
                     <VStack align="start" gap={0} minW={0}>
                         <Text fontSize="xs" fontWeight="semibold" color="gray.900" lineClamp={1}>
                             {t.title || 'Untitled'}
@@ -140,40 +123,78 @@ const TrackListTab: React.FC<{ tracks: ContentTrackRowDto[] }> = ({ tracks }) =>
 
 /* ─── Duplicate review tab ────────────────────────────────────────────── */
 
-const DuplicateTab: React.FC<{ item: ContentItemDto }> = ({ item }) => {
+const TIER_TONE: Record<string, 'danger' | 'warning' | 'info' | 'neutral'> = {
+    Exact: 'danger',
+    High: 'danger',
+    Medium: 'warning',
+    Low: 'info',
+};
+
+const DuplicateTab: React.FC<{
+    held: boolean;
+    match?: DuplicateMatchSummaryDto;
+}> = ({ held, match }) => {
     const navigate = useNavigate();
 
-    if (!item.heldForDuplicateReview) {
-        return (
-            <Text fontSize="xs" color="gray.500" py={2}>
-                This content is not held for duplicate review.
-            </Text>
-        );
-    }
-
     return (
-        <Box bg="#FFF9E6" border="1px solid" borderColor="#FDE68A" borderRadius="xl" p={4}>
-            <HStack gap={2} mb={2}>
-                <FiAlertCircle color="#D97706" />
-                <Text fontSize="sm" fontWeight="semibold" color="#92660C">
-                    Held for duplicate review
+        <VStack align="stretch" gap={4}>
+            {held && (
+                <Box bg="#FFF9E6" border="1px solid" borderColor="#FDE68A" borderRadius="xl" p={4}>
+                    <HStack gap={2} mb={1}>
+                        <FiAlertCircle color="#D97706" />
+                        <Text fontSize="sm" fontWeight="semibold" color="#92660C">
+                            Held for duplicate review
+                        </Text>
+                    </HStack>
+                    <Text fontSize="xs" color="#92660C">
+                        This content is soft-blocked pending a copyright decision.
+                    </Text>
+                </Box>
+            )}
+
+            {match ? (
+                <Box bg="white" border="1px solid" borderColor="gray.100" borderRadius="xl" p={4} shadow="xs">
+                    <HStack justify="space-between" mb={3} flexWrap="wrap" gap={2}>
+                        <HStack gap={2}>
+                            <StatusBadge style={toneStyle(TIER_TONE[match.tier] ?? 'neutral', `${match.tier} match`)} />
+                            <StatusBadge status={match.status} />
+                            {match.isDisputed && <StatusBadge style={toneStyle('warning', 'Disputed')} />}
+                        </HStack>
+                        <Button
+                            size="sm"
+                            fontSize="xs"
+                            borderRadius="10px"
+                            variant="outline"
+                            onClick={() => navigate(`/admin/content/duplicates/${match.id}`)}
+                        >
+                            <FiExternalLink /> Open match
+                        </Button>
+                    </HStack>
+                    <MetaGrid
+                        columns={3}
+                        fields={[
+                            { label: 'Confidence', value: `${Math.round(match.score * 100)}%` },
+                            { label: 'Method', value: match.matchMethod },
+                            { label: 'Status', value: match.status },
+                        ]}
+                    />
+                    {match.artistDisputeNote && (
+                        <Box mt={3} bg="gray.50" borderRadius="lg" p={3}>
+                            <Text fontSize="10px" fontWeight="600" color="gray.400" textTransform="uppercase" letterSpacing="0.5px" mb={1}>
+                                Artist dispute note
+                            </Text>
+                            <Text fontSize="xs" color="gray.700">
+                                {match.artistDisputeNote}
+                            </Text>
+                        </Box>
+                    )}
+                </Box>
+            ) : (
+                <Text fontSize="xs" color="gray.500" py={2}>
+                    No duplicate match is associated with this content.
                 </Text>
-            </HStack>
-            <Text fontSize="xs" color="#92660C" mb={3}>
-                This content has been flagged as a potential duplicate and is awaiting review.
-            </Text>
-            <Button
-                size="sm"
-                fontSize="xs"
-                borderRadius="10px"
-                variant="outline"
-                borderColor="#FDE68A"
-                color="#92660C"
-                onClick={() => navigate('/admin/content/duplicates')}
-            >
-                View Duplicate Detection queue
-            </Button>
-        </Box>
+            )}
+        </VStack>
     );
 };
 
@@ -335,8 +356,6 @@ const ContentItemDetailPage: React.FC = () => {
         item.releaseType && { label: 'Release type', value: item.releaseType },
         item.videoType && { label: 'Video type', value: item.videoType },
         item.genreName && { label: 'Genre', value: item.genreName },
-        detail.isrc && { label: 'ISRC', value: detail.isrc },
-        detail.upc && { label: 'UPC', value: detail.upc },
         detail.bpm && { label: 'BPM', value: String(detail.bpm) },
         detail.musicalKey && { label: 'Key', value: detail.musicalKey },
         detail.bitrate && { label: 'Bitrate', value: `${detail.bitrate} kbps` },
@@ -344,6 +363,10 @@ const ContentItemDetailPage: React.FC = () => {
         detail.fps && { label: 'FPS', value: String(detail.fps) },
         detail.label && { label: 'Label', value: detail.label },
         detail.copyright && { label: 'Copyright', value: detail.copyright },
+        (item.kind === 'track' || item.kind === 'video') && {
+            label: 'Unlock cost',
+            value: detail.unlockCostCoins ? `${formatCount(detail.unlockCostCoins)} coins` : 'Free',
+        },
         item.durationSeconds && { label: 'Duration', value: formatDuration(item.durationSeconds) },
         item.trackCount !== undefined && { label: 'Tracks', value: String(item.trackCount) },
         { label: 'Plays', value: formatCount(item.metricCount) },
@@ -352,6 +375,15 @@ const ContentItemDetailPage: React.FC = () => {
         { label: 'Created', value: adminDate(item.createdAt) },
         { label: 'Status', value: item.status },
     ].filter(Boolean) as MetaField[];
+
+    /** Copyable identifiers (content ID + recording codes). */
+    const identifiers: Array<{ label: string; value?: string }> = [
+        { label: 'Content ID', value: item.id },
+        { label: 'ISRC', value: detail.isrc },
+        { label: 'ISWC', value: detail.iswc },
+        { label: 'UPC', value: detail.upc },
+        detail.albumId ? { label: 'Album ID', value: detail.albumId } : { label: '', value: undefined },
+    ].filter((f) => f.label && f.value) as Array<{ label: string; value?: string }>;
 
     /* ── Tabs ── */
     const tabs: DetailTab[] = [
@@ -372,6 +404,23 @@ const ContentItemDetailPage: React.FC = () => {
                         </Box>
                     )}
                     <MetaGrid fields={overviewFields} columns={3} />
+                    {identifiers.length > 0 && (
+                        <Box>
+                            <Text fontSize="11px" fontWeight="semibold" color="gray.600" mb={2}>
+                                Identifiers
+                            </Text>
+                            <VStack align="stretch" gap={1.5}>
+                                {identifiers.map((f) => (
+                                    <HStack key={f.label} justify="space-between" gap={3}>
+                                        <Text fontSize="10px" fontWeight="600" color="gray.400" textTransform="uppercase" letterSpacing="0.5px">
+                                            {f.label}
+                                        </Text>
+                                        <CopyableId value={f.value} label={f.label} />
+                                    </HStack>
+                                ))}
+                            </VStack>
+                        </Box>
+                    )}
                     <Box>
                         <Text
                             fontSize="11px"
@@ -431,12 +480,12 @@ const ContentItemDetailPage: React.FC = () => {
         });
     }
 
-    if (item.heldForDuplicateReview) {
+    if (item.heldForDuplicateReview || detail.duplicateMatch) {
         tabs.push({
             id: 'duplicate',
             label: 'Duplicate Review',
             icon: FiAlertCircle,
-            content: <DuplicateTab item={item} />,
+            content: <DuplicateTab held={item.heldForDuplicateReview} match={detail.duplicateMatch} />,
         });
     }
 
@@ -601,31 +650,13 @@ const ContentItemDetailPage: React.FC = () => {
                     mb={4}
                 >
                     <HStack gap={4} align="flex-start">
-                        <Box
-                            w={{ base: '64px', md: '80px' }}
-                            h={{ base: '64px', md: '80px' }}
-                            borderRadius="12px"
-                            overflow="hidden"
-                            flexShrink={0}
-                            bg="gray.100"
-                            display="flex"
-                            alignItems="center"
-                            justifyContent="center"
-                        >
-                            {item.coverArtUrl ? (
-                                <Image
-                                    src={item.coverArtUrl}
-                                    alt={item.title}
-                                    w="100%"
-                                    h="100%"
-                                    objectFit="cover"
-                                />
-                            ) : (
-                                <Box color="gray.400" fontSize="28px">
-                                    <FiMusic />
-                                </Box>
-                            )}
-                        </Box>
+                        <CoverThumb
+                            src={item.coverArtUrl}
+                            alt={item.title}
+                            size={{ base: '64px', md: '80px' }}
+                            radius="12px"
+                            fallbackFontSize="28px"
+                        />
                         <VStack align="start" gap={1} flex="1" minW={0}>
                             <Text
                                 fontSize={{ base: 'md', md: 'lg' }}
@@ -670,6 +701,13 @@ const ContentItemDetailPage: React.FC = () => {
                     isLoading={actionPending}
                 />
             )}
+
+            <RescheduleModal
+                open={modal?.type === 'reschedule'}
+                trackId={id}
+                trackTitle={item.title}
+                onClose={() => setModal(null)}
+            />
         </>
     );
 };

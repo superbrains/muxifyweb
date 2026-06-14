@@ -1,6 +1,9 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Text, VStack } from '@chakra-ui/react';
+import { useQueryClient } from '@tanstack/react-query';
+import { useChakraToast } from '@shared/hooks';
+import { getApiErrorMessage } from '@/shared/lib/errorUtils';
 import { IdentityCell, MediaCell, StatusBadge, toneStyle } from '../../components/ui';
 import type { DataColumn } from '../../components/ui';
 import { adminDate, formatCount } from '../../lib/format';
@@ -15,6 +18,8 @@ import {
     useUnrestrictItem,
     useContentItems as useContentItemsQuery,
 } from '../../hooks/useContent';
+import { adminKeys } from '../../hooks/adminKeys';
+import { contentService } from '../../services/contentService';
 import type { ContentItemDto, ContentItemQuery, ContentKind } from '../../types/content';
 
 const PAGE_SIZE = 15;
@@ -44,8 +49,17 @@ export const CONTENT_OWNER_ROLE_OPTIONS = [
     { value: 'contributor', label: 'Contributors' },
 ];
 
+export const CONTENT_SORT_OPTIONS = [
+    { value: 'newest', label: 'Newest first' },
+    { value: 'oldest', label: 'Oldest first' },
+    { value: 'popular', label: 'Most played' },
+];
+
 /** Pending action that needs a reason captured via ConfirmActionModal. */
 export type ContentActionKind = 'remove' | 'restrict' | 'unrestrict';
+
+/** Bulk verbs runnable over a row selection (client-side fan-out). */
+export type BulkActionKind = 'publish' | 'unpublish' | 'restrict' | 'unrestrict' | 'remove';
 
 export interface ContentActionTarget {
     item: ContentItemDto;
@@ -70,6 +84,8 @@ export const useContentItems = (
 ) => {
     const canManage = useHasPermission('ContentManage');
     const navigate = useNavigate();
+    const qc = useQueryClient();
+    const toast = useChakraToast();
 
     const [query, setQuery] = React.useState<ContentItemQuery>({
         page: 1,
@@ -80,6 +96,72 @@ export const useContentItems = (
     const [actionTarget, setActionTarget] = React.useState<ContentActionTarget | null>(null);
 
     const { data, isLoading, error } = useContentItemsQuery(query);
+
+    /* ── Row multi-select + bulk fan-out ── */
+    const [selectedKeys, setSelectedKeys] = React.useState<Set<string>>(new Set());
+    const [bulkBusy, setBulkBusy] = React.useState(false);
+
+    const toggleRow = (key: string) =>
+        setSelectedKeys((prev) => {
+            const next = new Set(prev);
+            if (next.has(key)) next.delete(key);
+            else next.add(key);
+            return next;
+        });
+
+    const toggleAll = (keys: string[]) =>
+        setSelectedKeys((prev) => {
+            const allSelected = keys.length > 0 && keys.every((k) => prev.has(k));
+            const next = new Set(prev);
+            if (allSelected) keys.forEach((k) => next.delete(k));
+            else keys.forEach((k) => next.add(k));
+            return next;
+        });
+
+    const clearSelection = () => setSelectedKeys(new Set());
+
+    /**
+     * Runs a bulk verb over the currently-selected rows (current page) by
+     * fanning out the existing single-item endpoints. Toasts one aggregate
+     * result, clears the selection and refreshes the content namespace. There
+     * are no native bulk endpoints, so partial failures are reported, not hidden.
+     */
+    const runBulk = async (action: BulkActionKind, reason = '') => {
+        const items = (data?.items ?? []).filter((it) => selectedKeys.has(it.id));
+        if (items.length === 0) return;
+        setBulkBusy(true);
+        const calls = items.map((it) => {
+            switch (action) {
+                case 'publish':
+                    return contentService.publish(it.kind, it.id);
+                case 'unpublish':
+                    return contentService.unpublish(it.kind, it.id);
+                case 'restrict':
+                    return contentService.restrict(it.kind, it.id, reason);
+                case 'unrestrict':
+                    return contentService.unrestrict(it.kind, it.id, reason);
+                case 'remove':
+                    return contentService.remove(it.kind, it.id, reason);
+            }
+        });
+        const results = await Promise.allSettled(calls);
+        const ok = results.filter((r) => r.status === 'fulfilled').length;
+        const failed = results.length - ok;
+        setBulkBusy(false);
+        clearSelection();
+        qc.invalidateQueries({ queryKey: adminKeys.content.root });
+        if (failed === 0) {
+            toast.success(`${ok} ${ok === 1 ? 'item' : 'items'} updated`);
+        } else {
+            const firstError = results.find((r) => r.status === 'rejected') as
+                | PromiseRejectedResult
+                | undefined;
+            toast.warning(
+                `${ok} updated, ${failed} failed`,
+                firstError ? getApiErrorMessage(firstError.reason, 'Some items could not be updated.') : undefined,
+            );
+        }
+    };
 
     const publish = usePublishItem();
     const unpublish = useUnpublishItem();
@@ -116,7 +198,14 @@ export const useContentItems = (
         {
             key: 'owner',
             header: 'Owner',
-            render: (it) => <IdentityCell name={it.ownerName} secondary={it.ownerRole} size="xs" />,
+            render: (it) => (
+                <IdentityCell
+                    name={it.ownerName}
+                    secondary={it.ownerRole}
+                    avatarUrl={it.ownerAvatarUrl}
+                    size="xs"
+                />
+            ),
         },
         ...extraColumns,
         {
@@ -173,6 +262,13 @@ export const useContentItems = (
         unrestrict,
         reschedule,
         pageSize: PAGE_SIZE,
+        // selection + bulk
+        selectedKeys,
+        toggleRow,
+        toggleAll,
+        clearSelection,
+        runBulk,
+        bulkBusy,
     };
 };
 

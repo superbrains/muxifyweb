@@ -1,18 +1,11 @@
 import React from 'react';
-import {
-    Box,
-    Button,
-    Dialog,
-    HStack,
-    Input,
-    Portal,
-    Text,
-    VStack,
-} from '@chakra-ui/react';
+import { Button, HStack, Text, VStack } from '@chakra-ui/react';
 import { FiClock, FiRefreshCw, FiUploadCloud, FiXCircle } from 'react-icons/fi';
 import {
     AdminError,
     AdminPageLayout,
+    CopyableId,
+    CoverThumb,
     DataTable,
     DetailDrawer,
     DetailTabs,
@@ -23,11 +16,11 @@ import {
     StatusBadge,
 } from '../../components/ui';
 import type { DataColumn, DetailTab, MetaField } from '../../components/ui';
+import { RescheduleModal } from '../../components/content/RescheduleModal';
 import { adminDateTime } from '../../lib/format';
 import { useHasPermission } from '../../hooks/useAdminManagement';
 import {
     useProcessingItems,
-    useRescheduleTrack,
     useRetryProcessing,
     useUploadSession,
     useUploadSessions,
@@ -44,88 +37,6 @@ const SESSION_STATUS_OPTIONS = [
     { value: 'Failed', label: 'Failed' },
     { value: 'Abandoned', label: 'Abandoned' },
 ];
-
-/* ------------------------------ Reschedule modal ------------------------------ */
-
-interface RescheduleState {
-    item: ProcessingItemDto;
-}
-
-const RescheduleModal: React.FC<{
-    target: RescheduleState | null;
-    onClose: () => void;
-}> = ({ target, onClose }) => {
-    const reschedule = useRescheduleTrack();
-    const [date, setDate] = React.useState('');
-
-    React.useEffect(() => {
-        if (target) setDate('');
-    }, [target]);
-
-    return (
-        <Dialog.Root open={target !== null} onOpenChange={(e) => !e.open && onClose()} placement="center">
-            <Portal>
-                <Dialog.Backdrop bg="blackAlpha.500" />
-                <Dialog.Positioner>
-                    <Dialog.Content maxW="420px" p={6} borderRadius="20px">
-                        <VStack align="stretch" gap={4}>
-                            <Box>
-                                <Text fontSize="md" fontWeight="semibold" color="gray.900" fontFamily="Poppins">
-                                    Reschedule release
-                                </Text>
-                                <Text fontSize="xs" color="gray.600" mt={1}>
-                                    Set a new release date for “{target?.item.title}”.
-                                </Text>
-                            </Box>
-                            <Box>
-                                <Text fontSize="11px" fontWeight="semibold" color="gray.700" mb={1.5}>
-                                    Release date
-                                </Text>
-                                <Input
-                                    type="datetime-local"
-                                    value={date}
-                                    onChange={(e) => setDate(e.target.value)}
-                                    size="sm"
-                                    fontSize="xs"
-                                />
-                            </Box>
-                            <HStack gap={3} justify="flex-end" pt={1}>
-                                <Button
-                                    onClick={onClose}
-                                    variant="outline"
-                                    size="sm"
-                                    fontSize="xs"
-                                    borderRadius="10px"
-                                    disabled={reschedule.isPending}
-                                >
-                                    Cancel
-                                </Button>
-                                <Button
-                                    bg="primary.500"
-                                    color="white"
-                                    size="sm"
-                                    fontSize="xs"
-                                    borderRadius="10px"
-                                    _hover={{ bg: 'primary.600' }}
-                                    disabled={!date || reschedule.isPending}
-                                    onClick={() =>
-                                        target &&
-                                        reschedule.mutate(
-                                            { id: target.item.id, releaseDate: new Date(date).toISOString() },
-                                            { onSuccess: onClose },
-                                        )
-                                    }
-                                >
-                                    Reschedule
-                                </Button>
-                            </HStack>
-                        </VStack>
-                    </Dialog.Content>
-                </Dialog.Positioner>
-            </Portal>
-        </Dialog.Root>
-    );
-};
 
 /* ------------------------------ Processing table ------------------------------ */
 
@@ -250,7 +161,7 @@ const SessionDetailDrawer: React.FC<{
 
     const fields: MetaField[] = session
         ? [
-              { label: 'Session ID', value: session.id },
+              { label: 'Session ID', value: <CopyableId value={session.id} label="Session ID" /> },
               { label: 'Media type', value: session.mediaType },
               { label: 'Content type', value: session.contentType },
               { label: 'File name', value: session.originalFileName },
@@ -258,7 +169,6 @@ const SessionDetailDrawer: React.FC<{
               { label: 'Status', value: session.status },
               { label: 'Started', value: adminDateTime(session.createdAt) },
               session.failureReason && { label: 'Failure reason', value: session.failureReason },
-              data?.linkedContentTitle && { label: 'Linked content', value: `${data.linkedContentTitle} (${data.linkedContentKind})` },
           ].filter(Boolean) as MetaField[]
         : [];
 
@@ -272,7 +182,28 @@ const SessionDetailDrawer: React.FC<{
             {isLoading ? (
                 <Text fontSize="xs" color="gray.500">Loading…</Text>
             ) : session ? (
-                <MetaGrid fields={fields} columns={1} />
+                <VStack align="stretch" gap={4}>
+                    {data?.linkedContentTitle && (
+                        <HStack
+                            gap={3}
+                            bg="gray.50"
+                            borderRadius="xl"
+                            p={3}
+                            align="center"
+                        >
+                            <CoverThumb src={data.linkedContentCoverArtUrl} size="44px" radius="8px" />
+                            <VStack align="start" gap={0} minW={0}>
+                                <Text fontSize="xs" fontWeight="semibold" color="gray.900" lineClamp={1}>
+                                    {data.linkedContentTitle}
+                                </Text>
+                                <Text fontSize="10px" color="gray.500" textTransform="capitalize">
+                                    Linked {data.linkedContentKind}
+                                </Text>
+                            </VStack>
+                        </HStack>
+                    )}
+                    <MetaGrid fields={fields} columns={1} />
+                </VStack>
             ) : (
                 <Text fontSize="xs" color="gray.500">Session not found.</Text>
             )}
@@ -370,7 +301,7 @@ const SessionsTable: React.FC = () => {
 /** Upload workflow — processing vs failed items (with retry/reschedule) + sessions. */
 const UploadWorkflowPage: React.FC = () => {
     const canManage = useHasPermission('ContentManage');
-    const [reschedule, setReschedule] = React.useState<RescheduleState | null>(null);
+    const [reschedule, setReschedule] = React.useState<ProcessingItemDto | null>(null);
     const { data: uploadStats } = useUploadStats();
 
     const tabs: DetailTab[] = [
@@ -382,7 +313,7 @@ const UploadWorkflowPage: React.FC = () => {
                 <ProcessingTable
                     status="processing"
                     canManage={canManage}
-                    onReschedule={(item) => setReschedule({ item })}
+                    onReschedule={(item) => setReschedule(item)}
                 />
             ),
         },
@@ -394,7 +325,7 @@ const UploadWorkflowPage: React.FC = () => {
                 <ProcessingTable
                     status="failed"
                     canManage={canManage}
-                    onReschedule={(item) => setReschedule({ item })}
+                    onReschedule={(item) => setReschedule(item)}
                 />
             ),
         },
@@ -423,7 +354,12 @@ const UploadWorkflowPage: React.FC = () => {
         >
             {kpis.length > 0 && <KpiStrip items={kpis} />}
             <DetailTabs tabs={tabs} />
-            <RescheduleModal target={reschedule} onClose={() => setReschedule(null)} />
+            <RescheduleModal
+                open={reschedule !== null}
+                trackId={reschedule?.id}
+                trackTitle={reschedule?.title}
+                onClose={() => setReschedule(null)}
+            />
         </AdminPageLayout>
     );
 };

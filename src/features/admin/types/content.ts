@@ -18,6 +18,8 @@ export interface ContentItemDto {
     title: string;
     ownerId: string;
     ownerName: string;
+    /** Owner avatar / profile-picture URL (JWT-gated media-proxy path when set). */
+    ownerAvatarUrl?: string;
     /** Snake_case platform role of the owner, e.g. `artist`, `podcaster`. */
     ownerRole: string;
     status: string;
@@ -75,8 +77,11 @@ export interface ContentItemDetailDto {
     duplicateMatch?: DuplicateMatchSummaryDto;
     durationSeconds: number;
     albumId?: string;
+    /** Paywall cost in coins (0 = free). Set for tracks and videos. */
+    unlockCostCoins?: number;
     // Track-specific
     isrc?: string;
+    iswc?: string;
     upc?: string;
     bpm?: number;
     musicalKey?: string;
@@ -235,10 +240,12 @@ export interface DuplicateMatchDto {
     suspectTitle?: string;
     suspectOwnerId?: string;
     suspectOwnerName?: string;
+    suspectCoverArtUrl?: string;
     matchedContentId?: string;
     matchedTitle?: string;
     matchedOwnerId?: string;
     matchedOwnerName?: string;
+    matchedCoverArtUrl?: string;
     artistDisputeNote?: string;
     isDisputed: boolean;
     disputedAtUtc?: string;

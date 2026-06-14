@@ -31,6 +31,9 @@ export type { AuditEntry } from './AuditTimeline';
 // Actions & states
 export { ConfirmActionModal } from './ConfirmActionModal';
 export type { ActionTone } from './ConfirmActionModal';
+export { BulkActionBar } from './BulkActionBar';
+export type { BulkAction } from './BulkActionBar';
+export { CopyableId } from './CopyableId';
 export { AdminEmptyState } from './EmptyState';
 
 // Navigation
@@ -41,6 +44,7 @@ export type { NavGroup, NavLink } from './SectionNav';
 export { DetailPageLayout } from './DetailPageLayout';
 
 // Content-specific display helpers
+export { CoverThumb } from './CoverThumb';
 export { MediaCell } from './MediaCell';
 export type { MetaField } from './MetaGrid';
 export { MetaGrid } from './MetaGrid';

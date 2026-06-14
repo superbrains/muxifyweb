@@ -76,7 +76,7 @@ const DuplicateMatchDetailPage: React.FC = () => {
         label: 'Suspect content',
         title: match.suspectTitle ?? '(unknown)',
         ownerName: match.suspectOwnerName,
-        coverArtUrl: undefined,
+        coverArtUrl: match.suspectCoverArtUrl,
         fields: [
             { key: 'Content ID', value: match.suspectContentId?.toString() },
         ],
@@ -86,7 +86,7 @@ const DuplicateMatchDetailPage: React.FC = () => {
         label: 'Matched against',
         title: match.matchedTitle ?? '(unknown)',
         ownerName: match.matchedOwnerName,
-        coverArtUrl: undefined,
+        coverArtUrl: match.matchedCoverArtUrl,
         fields: [
             { key: 'Content ID', value: match.matchedContentId?.toString() },
         ],

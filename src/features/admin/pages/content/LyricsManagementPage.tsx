@@ -6,6 +6,7 @@ import {
     HStack,
     Input,
     Portal,
+    Stack,
     Text,
     Textarea,
     VStack,
@@ -16,6 +17,7 @@ import {
     AdminError,
     AdminPageLayout,
     ConfirmActionModal,
+    CopyableId,
     DataTable,
     DetailDrawer,
     FilterBar,
@@ -169,6 +171,32 @@ const AddLyricsModal: React.FC<{ open: boolean; onClose: () => void }> = ({ open
 
 /* -------------------------------- Preview drawer --------------------------- */
 
+/** Strip leading `[mm:ss.xx]` / `[mm:ss]` synchronisation tags from LRC lines. */
+const stripLrcTimestamps = (lrc: string): string =>
+    lrc
+        .split('\n')
+        .map((line) => line.replace(/\[\d{1,2}:\d{2}(?:[.:]\d{1,3})?\]/g, '').trimStart())
+        .join('\n')
+        .trim();
+
+const LyricsBlock: React.FC<{ content: string }> = ({ content }) => (
+    <Box
+        fontFamily="monospace"
+        fontSize="xs"
+        color="gray.800"
+        whiteSpace="pre-wrap"
+        bg="gray.50"
+        borderRadius="10px"
+        p={4}
+        maxH="60vh"
+        overflowY="auto"
+        flex="1"
+        minW={0}
+    >
+        {content || '—'}
+    </Box>
+);
+
 const LyricsPreviewDrawer: React.FC<{
     lyricsId: string | null;
     onClose: () => void;
@@ -226,25 +254,33 @@ const LyricsPreviewDrawer: React.FC<{
                 <Text fontSize="xs" color="gray.500">Loading…</Text>
             ) : lyrics ? (
                 <VStack align="stretch" gap={4}>
-                    <HStack gap={3} flexWrap="wrap">
-                        <StatusBadge status={lyrics.status} />
-                        <Text fontSize="11px" color="gray.500">
-                            {lyrics.language?.toUpperCase()} · {lyrics.format} · {lyrics.source}
-                        </Text>
+                    <HStack gap={3} flexWrap="wrap" justify="space-between">
+                        <HStack gap={3} flexWrap="wrap">
+                            <StatusBadge status={lyrics.status} />
+                            <Text fontSize="11px" color="gray.500">
+                                {lyrics.language?.toUpperCase()} · {lyrics.format} · {lyrics.source}
+                            </Text>
+                        </HStack>
+                        <CopyableId value={lyrics.trackId} label="Track ID" truncate={12} />
                     </HStack>
-                    <Box
-                        fontFamily="monospace"
-                        fontSize="xs"
-                        color="gray.800"
-                        whiteSpace="pre-wrap"
-                        bg="gray.50"
-                        borderRadius="10px"
-                        p={4}
-                        maxH="60vh"
-                        overflowY="auto"
-                    >
-                        {lyrics.content}
-                    </Box>
+                    {lyrics.format?.toLowerCase() === 'lrc' ? (
+                        <Stack direction={{ base: 'column', md: 'row' }} gap={3} align="stretch">
+                            <VStack align="stretch" gap={1.5} flex="1" minW={0}>
+                                <Text fontSize="10px" fontWeight="600" color="gray.400" textTransform="uppercase" letterSpacing="0.5px">
+                                    LRC (timed)
+                                </Text>
+                                <LyricsBlock content={lyrics.content} />
+                            </VStack>
+                            <VStack align="stretch" gap={1.5} flex="1" minW={0}>
+                                <Text fontSize="10px" fontWeight="600" color="gray.400" textTransform="uppercase" letterSpacing="0.5px">
+                                    Plain text
+                                </Text>
+                                <LyricsBlock content={stripLrcTimestamps(lyrics.content)} />
+                            </VStack>
+                        </Stack>
+                    ) : (
+                        <LyricsBlock content={lyrics.content} />
+                    )}
                     {lyrics.rejectionReason && (
                         <Box>
                             <Text fontSize="11px" fontWeight="semibold" color="#C53030" mb={0.5}>

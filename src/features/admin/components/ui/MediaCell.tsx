@@ -1,6 +1,6 @@
 import React from 'react';
-import { Box, HStack, Image, Text, VStack } from '@chakra-ui/react';
-import { FiMusic } from 'react-icons/fi';
+import { HStack, Text, VStack } from '@chakra-ui/react';
+import { CoverThumb } from './CoverThumb';
 
 interface MediaCellProps {
     title: string;
@@ -25,35 +25,15 @@ export const MediaCell: React.FC<MediaCellProps> = ({
     meta,
     size = 'xs',
 }) => {
-    const thumbSz = THUMB_SIZE[size];
-
     return (
         <HStack gap={2.5} minW={0} align="center">
-            <Box
-                w={thumbSz}
-                h={thumbSz}
-                borderRadius="6px"
-                overflow="hidden"
-                flexShrink={0}
-                bg="gray.100"
-                display="flex"
-                alignItems="center"
-                justifyContent="center"
-            >
-                {coverArtUrl ? (
-                    <Image
-                        src={coverArtUrl}
-                        alt={title}
-                        w="100%"
-                        h="100%"
-                        objectFit="cover"
-                    />
-                ) : (
-                    <Box color="gray.400" fontSize={PLACEHOLDER_SIZE[size]}>
-                        <FiMusic />
-                    </Box>
-                )}
-            </Box>
+            <CoverThumb
+                src={coverArtUrl}
+                alt={title}
+                size={THUMB_SIZE[size]}
+                radius="6px"
+                fallbackFontSize={PLACEHOLDER_SIZE[size]}
+            />
 
             <VStack align="start" gap={0} minW={0}>
                 <Text
