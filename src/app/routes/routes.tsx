@@ -92,14 +92,12 @@ const AdminLeaderboardManagementPage = lazy(() => import('@/features/admin/pages
 const AdminCoinTransactionsPage = lazy(() => import('@/features/admin/pages/monetization/CoinTransactionsPage'));
 const AdminGiftsPage = lazy(() => import('@/features/admin/pages/monetization/GiftsPage'));
 const AdminUnlocksPage = lazy(() => import('@/features/admin/pages/monetization/UnlocksPage'));
-const AdminRevenuePage = lazy(() => import('@/features/admin/pages/monetization/RevenuePage'));
 const AdminCommissionPage = lazy(() => import('@/features/admin/pages/monetization/CommissionPage'));
 const AdminRoyaltiesPage = lazy(() => import('@/features/admin/pages/monetization/RoyaltiesPage'));
 const AdminRoyaltySplitsPage = lazy(() => import('@/features/admin/pages/monetization/RoyaltySplitsPage'));
 const AdminSponsorshipsPage = lazy(() => import('@/features/admin/pages/monetization/SponsorshipsPage'));
 const AdminDisputesPage = lazy(() => import('@/features/admin/pages/monetization/DisputesPage'));
 const AdminMonetizationSettingsPage = lazy(() => import('@/features/admin/pages/monetization/MonetizationSettingsPage'));
-const AdminFinancePage = lazy(() => import('@/features/admin/pages/FinancePage'));
 // Advertising (Phase 3 Group 7 — Towers 17 & 18)
 const AdvertisingOverviewPage = lazy(() => import('@/features/admin/pages/advertising/OverviewPage'));
 const AdvertisingAdvertisersPage = lazy(() => import('@/features/admin/pages/advertising/AdvertisersPage'));
@@ -343,13 +341,11 @@ export const appRoutes: RouteObject[] = [
                     { path: '/admin/discovery/top-givers', element: <AdminTopGiversPage /> },
                     { path: '/admin/discovery/home-feed', element: <AdminHomeFeedPage /> },
                     { path: '/admin/discovery/leaderboards', element: <AdminLeaderboardManagementPage /> },
-                    { path: '/admin/finance', element: <AdminFinancePage /> },
                     { path: '/admin/finance/approvals', element: <AdminApprovalsPage /> },
                     // Monetization (Phase 3 Group 5)
                     { path: '/admin/monetization/coin-transactions', element: <AdminCoinTransactionsPage /> },
                     { path: '/admin/monetization/gifts', element: <AdminGiftsPage /> },
                     { path: '/admin/monetization/unlocks', element: <AdminUnlocksPage /> },
-                    { path: '/admin/monetization/revenue', element: <AdminRevenuePage /> },
                     { path: '/admin/monetization/commission', element: <AdminCommissionPage /> },
                     { path: '/admin/monetization/royalties', element: <AdminRoyaltiesPage /> },
                     { path: '/admin/monetization/royalty-splits', element: <AdminRoyaltySplitsPage /> },

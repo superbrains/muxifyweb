@@ -182,12 +182,10 @@ export const useAdminNavGroups = (): NavGroup[] => {
             icon: FiDollarSign,
             items: [
                 { label: 'Coin Economy', to: '/admin/coin-economy', icon: FiCreditCard, visible: canAccess({ permission: 'CoinEconomyView' }) },
-                { label: 'Finance', to: '/admin/finance', icon: FiDollarSign, exact: true, visible: canAccess({ permission: 'FinanceView' }) },
                 { label: 'Approvals', to: '/admin/finance/approvals', icon: FiCheckSquare, visible: canAccess({ permission: 'FinanceView' }) },
                 { label: 'Coin Transactions', to: '/admin/monetization/coin-transactions', icon: FiCreditCard, visible: canAccess({ permission: 'FinanceView' }) },
                 { label: 'Gifts', to: '/admin/monetization/gifts', icon: FiGift, visible: canAccess({ permission: 'FinanceView' }) },
                 { label: 'Unlocks', to: '/admin/monetization/unlocks', icon: FiUnlock, visible: canAccess({ permission: 'FinanceView' }) },
-                { label: 'Revenue', to: '/admin/monetization/revenue', icon: FiPieChart, visible: canAccess({ permission: 'FinanceView' }) },
                 { label: 'Commission', to: '/admin/monetization/commission', icon: FiPercent, visible: canAccess({ permission: 'FinanceView' }) },
                 { label: 'Royalties', to: '/admin/monetization/royalties', icon: FiUsers, visible: canAccess({ permission: 'FinanceView' }) },
                 { label: 'Royalty Splits', to: '/admin/monetization/royalty-splits', icon: FiList, visible: canAccess({ permission: 'RoyaltiesView' }) },
