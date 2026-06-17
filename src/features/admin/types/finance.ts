@@ -307,6 +307,12 @@ export interface ApprovalRequestQuery {
     pageSize: number;
 }
 
+export interface FinanceApprovalSummaryDto {
+    pendingReview: number;
+    approved: number;
+    rejected: number;
+}
+
 export interface PayoutQuery extends DateRange {
     status?: string;
     batchId?: string;

@@ -47,6 +47,7 @@ export const adminKeys = {
         payoutAudit: (query: unknown) => ['admin', 'finance', 'payout-audit', query] as const,
         reconciliation: (range: unknown) => ['admin', 'finance', 'reconciliation', range] as const,
         approvals: (query: unknown) => ['admin', 'finance', 'approvals', query] as const,
+        approvalsSummary: () => ['admin', 'finance', 'approvals', 'summary'] as const,
     },
     // Security Activity (Towers 4 + 29)
     security: {

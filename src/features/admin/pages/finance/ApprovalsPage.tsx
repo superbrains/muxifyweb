@@ -1,20 +1,25 @@
 import React from 'react';
-import { Button, HStack, Text, VStack } from '@chakra-ui/react';
+import { Box, Button, HStack, Text, VStack } from '@chakra-ui/react';
 import { FiCheckCircle } from 'react-icons/fi';
 import {
     AdminError,
     AdminPageLayout,
+    ConfirmActionModal,
+    CopyableId,
     DataTable,
+    DetailDrawer,
     FilterBar,
     IdentityCell,
+    KpiStrip,
+    MetaGrid,
     StatusBadge,
-    ConfirmActionModal,
 } from '../../components/ui';
-import type { DataColumn } from '../../components/ui';
+import type { DataColumn, KpiItem, MetaField } from '../../components/ui';
 import { getApiErrorMessage } from '@/shared/lib/errorUtils';
 import { adminDateTime } from '../../lib/format';
 import {
     useApprovalRequests,
+    useApprovalSummary,
     useApproveRequest,
     useRejectRequest,
 } from '../../hooks/useFinance';
@@ -39,6 +44,10 @@ const humanizeAction = (action: string): string => {
     return spaced.charAt(0).toUpperCase() + spaced.slice(1);
 };
 
+const isPendingReview = (r: FinanceApprovalRequestDto) =>
+    r.status.toLowerCase() === 'pendingreview';
+const isRejected = (r: FinanceApprovalRequestDto) => r.status.toLowerCase() === 'rejected';
+
 /**
  * Maker-checker (dual-approval) review queue. A second reviewer approves or
  * rejects high-risk finance actions that another admin (the maker) requested.
@@ -52,15 +61,74 @@ const ApprovalsPage: React.FC = () => {
         pageSize: PAGE_SIZE,
         status: 'PendingReview',
     });
+    const [selected, setSelected] = React.useState<FinanceApprovalRequestDto | null>(null);
     const [rejectTarget, setRejectTarget] = React.useState<FinanceApprovalRequestDto | null>(null);
 
     const { data, isLoading, error } = useApprovalRequests(query);
+    const { data: summary } = useApprovalSummary();
     const approve = useApproveRequest();
     const reject = useRejectRequest();
     const pending = approve.isPending || reject.isPending;
 
-    const isPendingReview = (r: FinanceApprovalRequestDto) =>
-        r.status.toLowerCase() === 'pendingreview';
+    const kpis: KpiItem[] = [
+        { label: 'Pending review', value: summary?.pendingReview ?? 0, tone: 'warning', sub: 'Awaiting a second reviewer' },
+        { label: 'Approved', value: summary?.approved ?? 0, tone: 'success', sub: 'Reviewed & applied' },
+        { label: 'Rejected', value: summary?.rejected ?? 0, tone: 'danger', sub: 'Declined by reviewer' },
+    ];
+
+    const handleApprove = (r: FinanceApprovalRequestDto) =>
+        approve.mutate({ id: r.id }, { onSuccess: () => setSelected(null) });
+
+    const handleReject = (reason: string) => {
+        if (!rejectTarget) return;
+        reject.mutate(
+            { id: rejectTarget.id, reason },
+            {
+                onSuccess: () => {
+                    setRejectTarget(null);
+                    setSelected(null);
+                },
+            },
+        );
+    };
+
+    const ActionButtons: React.FC<{ r: FinanceApprovalRequestDto; size?: 'xs' | 'sm' }> = ({
+        r,
+        size = 'xs',
+    }) => (
+        <HStack gap={1.5} justify="flex-end">
+            <Button
+                size={size}
+                variant="outline"
+                borderColor="gray.200"
+                color="#0F7B5C"
+                borderRadius="md"
+                fontSize="11px"
+                disabled={pending}
+                onClick={(e) => {
+                    e.stopPropagation();
+                    handleApprove(r);
+                }}
+            >
+                Approve
+            </Button>
+            <Button
+                size={size}
+                variant="outline"
+                borderColor="#FECACA"
+                color="#C53030"
+                borderRadius="md"
+                fontSize="11px"
+                disabled={pending}
+                onClick={(e) => {
+                    e.stopPropagation();
+                    setRejectTarget(r);
+                }}
+            >
+                Reject
+            </Button>
+        </HStack>
+    );
 
     const columns: DataColumn<FinanceApprovalRequestDto>[] = [
         {
@@ -99,7 +167,12 @@ const ApprovalsPage: React.FC = () => {
                     <StatusBadge status={r.status} />
                     {r.reviewedByName && (
                         <Text fontSize="10px" color="gray.400">
-                            by {r.reviewedByName}
+                            by {r.reviewedByName} · {adminDateTime(r.reviewedAt)}
+                        </Text>
+                    )}
+                    {isRejected(r) && r.rejectionReason && (
+                        <Text fontSize="10px" color="#C53030" lineClamp={1} maxW="200px" title={r.rejectionReason}>
+                            “{r.rejectionReason}”
                         </Text>
                     )}
                 </VStack>
@@ -111,36 +184,21 @@ const ApprovalsPage: React.FC = () => {
             align: 'right',
             render: (r) => {
                 if (!canReview || !isPendingReview(r)) return null;
-                return (
-                    <HStack gap={1.5} justify="flex-end">
-                        <Button
-                            size="xs"
-                            variant="outline"
-                            borderColor="gray.200"
-                            color="#0F7B5C"
-                            borderRadius="md"
-                            fontSize="11px"
-                            disabled={pending}
-                            onClick={() => approve.mutate({ id: r.id })}
-                        >
-                            Approve
-                        </Button>
-                        <Button
-                            size="xs"
-                            variant="outline"
-                            borderColor="#FECACA"
-                            color="#C53030"
-                            borderRadius="md"
-                            fontSize="11px"
-                            disabled={pending}
-                            onClick={() => setRejectTarget(r)}
-                        >
-                            Reject
-                        </Button>
-                    </HStack>
-                );
+                return <ActionButtons r={r} />;
             },
         },
+    ];
+
+    const detailFields = (r: FinanceApprovalRequestDto): MetaField[] => [
+        { label: 'Action', value: humanizeAction(r.actionType) },
+        { label: 'Status', value: <StatusBadge status={r.status} /> },
+        { label: 'Summary', value: r.summary },
+        { label: 'Target type', value: r.targetType },
+        { label: 'Target id', value: <CopyableId value={r.targetId} label="Target id" /> },
+        { label: 'Requested by', value: <IdentityCell name={r.requestedByName} size="xs" /> },
+        { label: 'Requested at', value: adminDateTime(r.createdAt) },
+        { label: 'Reviewed by', value: r.reviewedByName },
+        { label: 'Reviewed at', value: r.reviewedByName ? adminDateTime(r.reviewedAt) : null },
     ];
 
     return (
@@ -149,15 +207,17 @@ const ApprovalsPage: React.FC = () => {
             subtitle="Second-reviewer queue for high-risk finance actions (maker-checker)"
             breadcrumbs={[{ label: 'Finance' }, { label: 'Approval Requests' }]}
         >
+            <KpiStrip items={kpis} columns={{ base: 1, md: 3, xl: 3 }} />
+
             <FilterBar
                 filters={[
                     {
                         key: 'status',
-                        value: query.status ?? 'PendingReview',
+                        value: query.status ?? 'All',
                         onChange: (v) =>
                             setQuery((q) => ({
                                 ...q,
-                                status: v === 'All' ? undefined : v,
+                                status: v,
                                 page: 1,
                             })),
                         options: STATUS_OPTIONS,
@@ -173,6 +233,7 @@ const ApprovalsPage: React.FC = () => {
                     columns={columns}
                     rows={data?.items ?? []}
                     rowKey={(r) => r.id}
+                    onRowClick={(r) => setSelected(r)}
                     loading={isLoading && !data}
                     emptyIcon={FiCheckCircle}
                     emptyTitle="Nothing to review"
@@ -190,16 +251,45 @@ const ApprovalsPage: React.FC = () => {
                 />
             )}
 
+            <DetailDrawer
+                open={selected !== null}
+                onClose={() => setSelected(null)}
+                title={selected ? humanizeAction(selected.actionType) : ''}
+                subtitle={selected ? `Requested by ${selected.requestedByName}` : undefined}
+                footer={
+                    selected && canReview && isPendingReview(selected) ? (
+                        <ActionButtons r={selected} size="sm" />
+                    ) : undefined
+                }
+            >
+                {selected && (
+                    <VStack align="stretch" gap={4}>
+                        <MetaGrid fields={detailFields(selected)} columns={2} />
+                        {isRejected(selected) && selected.rejectionReason && (
+                            <Box
+                                bg="#FEF2F2"
+                                border="1px solid"
+                                borderColor="#FECACA"
+                                borderRadius="md"
+                                px={3}
+                                py={2.5}
+                            >
+                                <Text fontSize="10px" fontWeight="600" color="#C53030" textTransform="uppercase" letterSpacing="0.5px">
+                                    Rejection reason
+                                </Text>
+                                <Text fontSize="xs" color="gray.700" mt={1}>
+                                    {selected.rejectionReason}
+                                </Text>
+                            </Box>
+                        )}
+                    </VStack>
+                )}
+            </DetailDrawer>
+
             <ConfirmActionModal
                 isOpen={rejectTarget !== null}
                 onClose={() => setRejectTarget(null)}
-                onConfirm={(reason) =>
-                    rejectTarget &&
-                    reject.mutate(
-                        { id: rejectTarget.id, reason },
-                        { onSuccess: () => setRejectTarget(null) },
-                    )
-                }
+                onConfirm={handleReject}
                 title="Reject this request"
                 message={
                     rejectTarget

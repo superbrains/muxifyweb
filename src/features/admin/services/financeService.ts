@@ -5,6 +5,7 @@ import type {
     CreatorEarningsDetail,
     EarningsQuery,
     FinanceApprovalRequestDto,
+    FinanceApprovalSummaryDto,
     FanLedger,
     FinanceGift,
     FinanceOverview,
@@ -166,6 +167,11 @@ export const financeService = {
         const { data } = await api.get<PagedResult<FinanceApprovalRequestDto>>(`${BASE}/approvals`, {
             params: clean(query),
         });
+        return data;
+    },
+
+    getApprovalSummary: async (): Promise<FinanceApprovalSummaryDto> => {
+        const { data } = await api.get<FinanceApprovalSummaryDto>(`${BASE}/approvals/summary`);
         return data;
     },
 

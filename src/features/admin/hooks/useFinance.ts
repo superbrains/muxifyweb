@@ -144,6 +144,13 @@ export const useApprovalRequests = (query: ApprovalRequestQuery) =>
         staleTime: 15_000,
     });
 
+export const useApprovalSummary = () =>
+    useQuery({
+        queryKey: adminKeys.finance.approvalsSummary(),
+        queryFn: () => financeService.getApprovalSummary(),
+        staleTime: 15_000,
+    });
+
 // ----- Mutations -----
 
 const invalidateFinance = (qc: ReturnType<typeof useQueryClient>) =>
