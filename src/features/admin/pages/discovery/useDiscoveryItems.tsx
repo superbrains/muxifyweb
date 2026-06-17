@@ -1,5 +1,4 @@
 import React from 'react';
-import { Text } from '@chakra-ui/react';
 import type { DataColumn } from '../../components/ui';
 import { useHasPermission } from '../../hooks/useAdminManagement';
 import {
@@ -19,11 +18,17 @@ import type { CurationOverrideDraft } from './CurationOverrideModal';
 
 const PAGE_SIZE = 15;
 
-/** Shared query shape for the four TrendingContent-backed lists. */
+/**
+ * Shared query shape for the four feed-backed lists. Mirrors the mobile feed params: `vertical`
+ * (music tracks vs videos), `category` (creator role), `period`, `videoType` (video segment),
+ * `genre` (genre name, music vertical).
+ */
 export interface DiscoveryItemsQuery {
+    vertical: string;
+    category?: string;
     period: string;
-    contentType?: string;
-    genreId?: string;
+    videoType?: string;
+    genre?: string;
     page: number;
     pageSize: number;
 }
@@ -56,6 +61,7 @@ export const useDiscoveryItems = (surface: DiscoverySurface) => {
     const canManage = useHasPermission('DiscoveryManage');
 
     const [query, setQuery] = React.useState<DiscoveryItemsQuery>({
+        vertical: 'music',
         period: 'Week',
         page: 1,
         pageSize: PAGE_SIZE,
@@ -131,13 +137,15 @@ export const useDiscoveryItems = (surface: DiscoverySurface) => {
     const [detailRow, setDetailRow] = React.useState<AdminTrendingItemDto | null>(null);
 
     /* ------------------------------- columns ----------------------------- */
+    // These lists mirror the live mobile feed (the same `/feed/*` query the app calls), so there is no
+    // organic trending score / rank-delta to show — the rank is just the position the user sees.
     const columns: DataColumn<AdminTrendingItemDto>[] = [
         {
             key: 'rank',
             header: '#',
             width: '64px',
             align: 'center',
-            render: (it) => <RankBadge rank={it.rank} rankChange={it.rankChange} />,
+            render: (it) => <RankBadge rank={it.rank} />,
         },
         {
             key: 'content',
@@ -156,24 +164,7 @@ export const useDiscoveryItems = (surface: DiscoverySurface) => {
         {
             key: 'metrics',
             header: 'Engagement',
-            render: (it) => (
-                <MetricChips
-                    plays={it.playCount}
-                    likes={it.likeCount}
-                    shares={it.shareCount}
-                    gifts={it.giftCoins}
-                />
-            ),
-        },
-        {
-            key: 'score',
-            header: 'Score',
-            align: 'right',
-            render: (it) => (
-                <Text fontSize="xs" fontWeight="semibold" color="gray.800">
-                    {it.trendingScore.toLocaleString(undefined, { maximumFractionDigits: 1 })}
-                </Text>
-            ),
+            render: (it) => <MetricChips plays={it.playCount} likes={it.likeCount} />,
         },
         {
             key: 'override',

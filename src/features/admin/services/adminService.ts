@@ -117,6 +117,15 @@ export const adminService = {
     changeUserRole: async (userId: string, role: string): Promise<void> => {
         await api.put(`${BASE}/users/${userId}/role`, { role });
     },
+    softDeleteUser: async (userId: string, reason: string): Promise<void> => {
+        await api.post(`${BASE}/users/${userId}/soft-delete`, { reason });
+    },
+    restoreUser: async (userId: string): Promise<void> => {
+        await api.post(`${BASE}/users/${userId}/restore`);
+    },
+    permanentDeleteUser: async (userId: string, reason: string): Promise<void> => {
+        await api.delete(`${BASE}/users/${userId}`, { data: { reason } });
+    },
 
     /* ----------------------------- Support tickets --------------------------- */
     getTickets: async (query: TicketQuery): Promise<TicketPageDto> => {

@@ -107,6 +107,8 @@ const RecordLabelsPage: React.FC = () => {
                 confirmColor="blue"
                 isLoading={c.activate.isPending}
             />
+
+            {c.deleteActions.modals}
         </AdminPageLayout>
     );
 };

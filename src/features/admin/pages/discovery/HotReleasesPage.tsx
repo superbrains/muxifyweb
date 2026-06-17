@@ -2,23 +2,21 @@ import React from 'react';
 import { FiZap } from 'react-icons/fi';
 import { AdminPageLayout, FilterBar } from '../../components/ui';
 import { useHotReleases } from '../../hooks/useDiscovery';
-import { DISCOVERY_PERIOD_OPTIONS } from '../../types/discovery';
 import { useDiscoveryItems } from './useDiscoveryItems';
+import { useTrendingFamilyFilters } from './useTrendingFamilyFilters';
+import { GenreFilterInput } from './GenreFilterInput';
 import { TrendingSurfaceView } from './TrendingSurfaceView';
 
-/** Hot releases — recent releases gaining momentum, with curation overrides. */
+/** Hot Releases — mirrors the mobile Hot Releases lane (recently published, ranked by plays/views). */
 const HotReleasesPage: React.FC = () => {
     const c = useDiscoveryItems('HotReleases');
-    const { data, isLoading, error } = useHotReleases({
-        period: c.query.period,
-        page: c.query.page,
-        pageSize: c.query.pageSize,
-    });
+    const { data, isLoading, error } = useHotReleases(c.query);
+    const filters = useTrendingFamilyFilters(c);
 
     return (
         <AdminPageLayout
             title="Hot Releases"
-            subtitle="Fresh releases gaining momentum. Curate the surface with pin / boost / suppress / exclude."
+            subtitle="Exactly what the mobile Hot Releases lane shows for the chosen vertical & creator category. Curate with pin / boost / suppress / exclude."
             breadcrumbs={[{ label: 'Discovery' }, { label: 'Hot Releases' }]}
         >
             <TrendingSurfaceView
@@ -28,20 +26,9 @@ const HotReleasesPage: React.FC = () => {
                 error={error}
                 emptyIcon={FiZap}
                 emptyTitle="No hot releases"
-                emptyDescription="Nothing matches the current period."
+                emptyDescription="Nothing matches the current vertical / category filters."
                 errorMessage="Could not load hot releases."
-                filterBar={
-                    <FilterBar
-                        filters={[
-                            {
-                                key: 'period',
-                                value: c.query.period,
-                                onChange: (v) => c.setQuery((q) => ({ ...q, period: v, page: 1 })),
-                                options: DISCOVERY_PERIOD_OPTIONS,
-                            },
-                        ]}
-                    />
-                }
+                filterBar={<FilterBar filters={filters} right={<GenreFilterInput controller={c} />} />}
             />
         </AdminPageLayout>
     );

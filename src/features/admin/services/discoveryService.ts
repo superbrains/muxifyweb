@@ -6,6 +6,7 @@ import type {
     AdminLeaderboardConfigDto,
     AdminLeaderboardExclusionDto,
     AdminMostGiftedDto,
+    AdminMostGiftedRowDto,
     AdminTopGiversDto,
     AdminTrendingPageDto,
     BatchCurationOverrideRequest,
@@ -13,12 +14,13 @@ import type {
     CreateLeaderboardExclusionRequest,
     CurationOverrideQuery,
     FeaturedQuery,
-    GiftLeaderboardQuery,
     HotReleasesQuery,
     LeaderboardExclusionQuery,
     LeaderboardPreviewQuery,
+    MostGiftedQuery,
     NewReleasesQuery,
     TopChartsQuery,
+    TopGiversQuery,
     TrendingQuery,
     UpsertCurationOverrideRequest,
     UpsertFeaturedRequest,
@@ -71,14 +73,14 @@ export const discoveryService = {
     },
 
     /* ------------------------------- Gifting ranks --------------------------- */
-    getMostGifted: async (query: GiftLeaderboardQuery): Promise<AdminMostGiftedDto[]> => {
-        const { data } = await api.get<AdminMostGiftedDto[] | { items?: AdminMostGiftedDto[] }>(
+    getMostGifted: async (query: MostGiftedQuery): Promise<AdminMostGiftedRowDto[]> => {
+        const { data } = await api.get<AdminMostGiftedRowDto[] | { items?: AdminMostGiftedRowDto[] }>(
             `${DISCOVERY}/most-gifted`,
             { params: query },
         );
         return unwrapList(data);
     },
-    getTopGivers: async (query: GiftLeaderboardQuery): Promise<AdminTopGiversDto[]> => {
+    getTopGivers: async (query: TopGiversQuery): Promise<AdminTopGiversDto[]> => {
         const { data } = await api.get<AdminTopGiversDto[] | { items?: AdminTopGiversDto[] }>(
             `${DISCOVERY}/top-givers`,
             { params: query },

@@ -1,24 +1,22 @@
 import React from 'react';
 import { FiClock } from 'react-icons/fi';
-import { Input } from '@chakra-ui/react';
 import { AdminPageLayout, FilterBar } from '../../components/ui';
 import { useNewReleases } from '../../hooks/useDiscovery';
 import { useDiscoveryItems } from './useDiscoveryItems';
+import { useTrendingFamilyFilters } from './useTrendingFamilyFilters';
+import { GenreFilterInput } from './GenreFilterInput';
 import { TrendingSurfaceView } from './TrendingSurfaceView';
 
-/** New releases — the freshly-published feed, optionally filtered by genre, with curation overrides. */
+/** New Releases — mirrors the mobile New Releases lane (freshly published, last N days). */
 const NewReleasesPage: React.FC = () => {
     const c = useDiscoveryItems('NewReleases');
-    const { data, isLoading, error } = useNewReleases({
-        genreId: c.query.genreId,
-        page: c.query.page,
-        pageSize: c.query.pageSize,
-    });
+    const { data, isLoading, error } = useNewReleases(c.query);
+    const filters = useTrendingFamilyFilters(c);
 
     return (
         <AdminPageLayout
             title="New Releases"
-            subtitle="The freshly-published feed. Optionally narrow by genre, then curate with pin / boost / suppress / exclude."
+            subtitle="Exactly what the mobile New Releases lane shows for the chosen vertical & creator category. Curate with pin / boost / suppress / exclude."
             breadcrumbs={[{ label: 'Discovery' }, { label: 'New Releases' }]}
         >
             <TrendingSurfaceView
@@ -28,28 +26,9 @@ const NewReleasesPage: React.FC = () => {
                 error={error}
                 emptyIcon={FiClock}
                 emptyTitle="No new releases"
-                emptyDescription="Nothing matches the current genre filter."
+                emptyDescription="Nothing matches the current vertical / category / genre filters."
                 errorMessage="Could not load new releases."
-                filterBar={
-                    <FilterBar
-                        right={
-                            <Input
-                                size="sm"
-                                fontSize="xs"
-                                maxW="220px"
-                                placeholder="Filter by genre ID"
-                                value={c.query.genreId ?? ''}
-                                onChange={(e) =>
-                                    c.setQuery((q) => ({
-                                        ...q,
-                                        genreId: e.target.value || undefined,
-                                        page: 1,
-                                    }))
-                                }
-                            />
-                        }
-                    />
-                }
+                filterBar={<FilterBar filters={filters} right={<GenreFilterInput controller={c} />} />}
             />
         </AdminPageLayout>
     );

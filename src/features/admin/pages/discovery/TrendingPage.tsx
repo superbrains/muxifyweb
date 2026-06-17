@@ -2,19 +2,23 @@ import React from 'react';
 import { FiTrendingUp } from 'react-icons/fi';
 import { AdminPageLayout, FilterBar } from '../../components/ui';
 import { useTrending } from '../../hooks/useDiscovery';
-import { DISCOVERY_CONTENT_TYPE_OPTIONS, DISCOVERY_PERIOD_OPTIONS } from '../../types/discovery';
+import { DISCOVERY_PERIOD_OPTIONS } from '../../types/discovery';
 import { useDiscoveryItems } from './useDiscoveryItems';
+import { useTrendingFamilyFilters } from './useTrendingFamilyFilters';
 import { TrendingSurfaceView } from './TrendingSurfaceView';
 
-/** Trending content — the cross-vertical ranked trending list with curation overrides. */
+/** Trending — mirrors the mobile Trending lane (music or video) with curation overrides overlaid. */
 const TrendingPage: React.FC = () => {
     const c = useDiscoveryItems('Trending');
     const { data, isLoading, error } = useTrending(c.query);
+    const filters = useTrendingFamilyFilters(c, {
+        period: { options: DISCOVERY_PERIOD_OPTIONS },
+    });
 
     return (
         <AdminPageLayout
             title="Trending"
-            subtitle="Cross-vertical trending ranking. Pin, boost, suppress or exclude items to curate the surface."
+            subtitle="Exactly what the mobile Trending lane shows for the chosen vertical & creator category. Pin, boost, suppress or exclude to curate."
             breadcrumbs={[{ label: 'Discovery' }, { label: 'Trending' }]}
         >
             <TrendingSurfaceView
@@ -24,32 +28,9 @@ const TrendingPage: React.FC = () => {
                 error={error}
                 emptyIcon={FiTrendingUp}
                 emptyTitle="No trending items"
-                emptyDescription="Nothing matches the current period / content filters."
+                emptyDescription="Nothing matches the current vertical / category / period filters."
                 errorMessage="Could not load trending items."
-                filterBar={
-                    <FilterBar
-                        filters={[
-                            {
-                                key: 'period',
-                                value: c.query.period,
-                                onChange: (v) => c.setQuery((q) => ({ ...q, period: v, page: 1 })),
-                                options: DISCOVERY_PERIOD_OPTIONS,
-                            },
-                            {
-                                key: 'contentType',
-                                value: c.query.contentType ?? 'All',
-                                onChange: (v) =>
-                                    c.setQuery((q) => ({
-                                        ...q,
-                                        contentType: v === 'All' ? undefined : v,
-                                        page: 1,
-                                    })),
-                                options: DISCOVERY_CONTENT_TYPE_OPTIONS,
-                                width: '170px',
-                            },
-                        ]}
-                    />
-                }
+                filterBar={<FilterBar filters={filters} />}
             />
         </AdminPageLayout>
     );

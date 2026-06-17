@@ -151,6 +151,7 @@ export interface AdminUserDto {
     avatarUrl?: string;
     status: AccountStatus;
     isVerified: boolean;
+    isDeleted: boolean;
     createdAt: string;
     lastActiveAt?: string;
     metrics?: AdminUserMetricsDto;
@@ -163,6 +164,7 @@ export interface AdminUsersSummaryDto {
     pending: number;
     verified: number;
     newLast30Days: number;
+    deleted: number;
 }
 
 export interface UserAuditEntryDto {
@@ -327,6 +329,8 @@ export interface AdminUserDetailDto extends AdminUserDto {
     country?: string;
     suspendedAt?: string;
     suspendedReason?: string;
+    deletedAt?: string;
+    deletedReason?: string;
     stats: {
         uploads?: number;
         rosterCount?: number;
@@ -337,7 +341,7 @@ export interface AdminUserDetailDto extends AdminUserDto {
 
 export interface UserQuery {
     role?: UserRole | 'All';
-    status?: AccountStatus | 'All';
+    status?: AccountStatus | 'All' | 'Deleted';
     verification?: VerificationStatus | 'All';
     search?: string;
     page?: number;

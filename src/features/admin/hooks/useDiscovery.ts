@@ -13,12 +13,13 @@ import type {
     CreateLeaderboardExclusionRequest,
     CurationOverrideQuery,
     FeaturedQuery,
-    GiftLeaderboardQuery,
     HotReleasesQuery,
     LeaderboardExclusionQuery,
     LeaderboardPreviewQuery,
+    MostGiftedQuery,
     NewReleasesQuery,
     TopChartsQuery,
+    TopGiversQuery,
     TrendingQuery,
     UpsertCurationOverrideRequest,
     UpsertFeaturedRequest,
@@ -59,7 +60,7 @@ export const useNewReleases = (query: NewReleasesQuery) =>
         staleTime: 30_000,
     });
 
-export const useMostGifted = (query: GiftLeaderboardQuery) =>
+export const useMostGifted = (query: MostGiftedQuery) =>
     useQuery({
         queryKey: adminKeys.discovery.mostGifted(query),
         queryFn: () => discoveryService.getMostGifted(query),
@@ -67,7 +68,7 @@ export const useMostGifted = (query: GiftLeaderboardQuery) =>
         staleTime: 30_000,
     });
 
-export const useTopGivers = (query: GiftLeaderboardQuery) =>
+export const useTopGivers = (query: TopGiversQuery) =>
     useQuery({
         queryKey: adminKeys.discovery.topGivers(query),
         queryFn: () => discoveryService.getTopGivers(query),

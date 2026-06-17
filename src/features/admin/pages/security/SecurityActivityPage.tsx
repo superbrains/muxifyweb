@@ -16,6 +16,7 @@ import {
 import type { DataColumn, KpiItem } from '../../components/ui';
 import { CustomMenu } from '@shared/components';
 import { SecurityPanelBody } from '../../components/security/SecurityPanelBody';
+import { useUserDeleteActions } from '../../components/users/useUserDeleteActions';
 import { adminDateTime, adminRelative, formatCount } from '../../lib/format';
 import { roleLabel } from '../../lib/statusColor';
 import { PLATFORM_ROLES } from '../../config/adminRoles';
@@ -51,6 +52,7 @@ const SecurityActivityPage: React.FC = () => {
     const { data, isLoading, error } = useSecurityActivity(query);
     const { data: summary } = useSecuritySummary();
     const lock = useLockUser();
+    const deleteActions = useUserDeleteActions();
 
     const kpiItems: KpiItem[] = [
         { label: 'Active sessions', value: formatCount(summary?.activeSessions) },
@@ -128,6 +130,7 @@ const SecurityActivityPage: React.FC = () => {
                                 value: 'profile',
                                 onClick: () => navigate(`/admin/users/${r.userId}`),
                             },
+                            ...deleteActions.menuOptions({ id: r.userId, name: r.name }),
                         ]}
                     />
                 </Box>
@@ -236,6 +239,8 @@ const SecurityActivityPage: React.FC = () => {
                 tone="danger"
                 isLoading={lock.isPending}
             />
+
+            {deleteActions.modals}
         </AdminPageLayout>
     );
 };

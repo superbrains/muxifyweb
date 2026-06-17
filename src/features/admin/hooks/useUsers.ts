@@ -98,6 +98,62 @@ export const useActivateUser = () => {
     });
 };
 
+export const useSoftDeleteUser = () => {
+    const qc = useQueryClient();
+    const toast = useChakraToast();
+    return useMutation({
+        mutationFn: ({ userId, reason }: { userId: string; reason: string }) =>
+            adminService.softDeleteUser(userId, reason),
+        onSuccess: (_data, { userId }) => {
+            toast.success('Account soft-deleted', 'The account is hidden but can be restored.');
+            invalidateUserViews(qc, userId);
+        },
+        onError: (err) => {
+            toast.error(
+                'Could not soft-delete account',
+                getApiErrorMessage(err, 'Please try again.'),
+            );
+        },
+    });
+};
+
+export const useRestoreUser = () => {
+    const qc = useQueryClient();
+    const toast = useChakraToast();
+    return useMutation({
+        mutationFn: (userId: string) => adminService.restoreUser(userId),
+        onSuccess: (_data, userId) => {
+            toast.success('Account restored', 'The account is active again.');
+            invalidateUserViews(qc, userId);
+        },
+        onError: (err) => {
+            toast.error(
+                'Could not restore account',
+                getApiErrorMessage(err, 'Please try again.'),
+            );
+        },
+    });
+};
+
+export const usePermanentDeleteUser = () => {
+    const qc = useQueryClient();
+    const toast = useChakraToast();
+    return useMutation({
+        mutationFn: ({ userId, reason }: { userId: string; reason: string }) =>
+            adminService.permanentDeleteUser(userId, reason),
+        onSuccess: (_data, { userId }) => {
+            toast.success('User permanently deleted', 'This cannot be undone.');
+            invalidateUserViews(qc, userId);
+        },
+        onError: (err) => {
+            toast.error(
+                'Could not delete user',
+                getApiErrorMessage(err, 'This user may have financial or content records — soft-delete instead.'),
+            );
+        },
+    });
+};
+
 export const useChangeUserRole = () => {
     const qc = useQueryClient();
     const toast = useChakraToast();

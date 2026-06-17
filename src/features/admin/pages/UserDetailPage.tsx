@@ -13,6 +13,7 @@ import { UserSecurityTab } from '../components/users/detail/UserSecurityTab';
 import { UserAuditTab } from '../components/users/detail/UserAuditTab';
 import { ConfirmActionModal } from '../components/ui';
 import { useActivateUser, useSuspendUser, useUser, useUserProfile } from '../hooks/useUsers';
+import { useUserDeleteActions } from '../components/users/useUserDeleteActions';
 import { useHasPermission } from '../hooks/useAdminManagement';
 import { useLockUser } from '../hooks/useSecurity';
 import { roleLabel } from '../lib/statusColor';
@@ -36,6 +37,7 @@ const UserDetailPage: React.FC = () => {
     const suspend = useSuspendUser();
     const activate = useActivateUser();
     const lock = useLockUser();
+    const deleteActions = useUserDeleteActions();
 
     const tabs = React.useMemo(() => {
         const list = [
@@ -71,6 +73,7 @@ const UserDetailPage: React.FC = () => {
                         onActivate={() => setActivateOpen(true)}
                         onChangeRole={() => setRoleOpen(true)}
                         onLock={() => setLockOpen(true)}
+                        deleteMenuOptions={deleteActions.menuOptions(data)}
                         actionPending={suspend.isPending || activate.isPending}
                     />
 
@@ -156,6 +159,8 @@ const UserDetailPage: React.FC = () => {
                         onClose={() => setRoleOpen(false)}
                         user={data}
                     />
+
+                    {deleteActions.modals}
                 </>
             )}
         </AdminPageLayout>

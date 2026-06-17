@@ -15,6 +15,7 @@ import {
 import type { DataColumn, KpiItem } from '../components/ui';
 import { CustomMenu, ConfirmModal } from '@shared/components';
 import { useActivateUser, useSuspendUser, useUsers, useUsersSummary } from '../hooks/useUsers';
+import { useUserDeleteActions } from '../components/users/useUserDeleteActions';
 import { roleLabel } from '../lib/statusColor';
 import { adminDate, adminRelative, formatCount } from '../lib/format';
 import { PLATFORM_ROLES } from '../config/adminRoles';
@@ -50,6 +51,7 @@ const UsersPage: React.FC = () => {
     );
     const suspend = useSuspendUser();
     const activate = useActivateUser();
+    const deleteActions = useUserDeleteActions();
 
     const kpiItems: KpiItem[] = [
         { label: 'Total users', value: formatCount(summary?.total) },
@@ -131,18 +133,23 @@ const UsersPage: React.FC = () => {
                                 value: 'view',
                                 onClick: () => navigate(`/admin/users/${u.id}`),
                             },
-                            u.status === 'Suspended'
-                                ? {
-                                      label: 'Reactivate account',
-                                      value: 'activate',
-                                      onClick: () => setActivateTarget(u),
-                                  }
-                                : {
-                                      label: 'Suspend account',
-                                      value: 'suspend',
-                                      color: '#C53030',
-                                      onClick: () => setSuspendTarget(u),
-                                  },
+                            ...(u.isDeleted
+                                ? []
+                                : [
+                                      u.status === 'Suspended'
+                                          ? {
+                                                label: 'Reactivate account',
+                                                value: 'activate',
+                                                onClick: () => setActivateTarget(u),
+                                            }
+                                          : {
+                                                label: 'Suspend account',
+                                                value: 'suspend',
+                                                color: '#C53030',
+                                                onClick: () => setSuspendTarget(u),
+                                            },
+                                  ]),
+                            ...deleteActions.menuOptions(u),
                         ]}
                     />
                 </Box>
@@ -254,6 +261,8 @@ const UsersPage: React.FC = () => {
                 confirmColor="blue"
                 isLoading={activate.isPending}
             />
+
+            {deleteActions.modals}
         </AdminPageLayout>
     );
 };

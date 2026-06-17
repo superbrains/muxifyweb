@@ -36,6 +36,48 @@ export const DISCOVERY_CONTENT_TYPE_OPTIONS = [
     { value: 'Playlist', label: 'Playlists' },
 ];
 
+/**
+ * The mobile app reads every discovery surface in two verticals (music tracks vs videos).
+ * `vertical` decides which feed query the admin mirror calls.
+ */
+export const DISCOVERY_VERTICAL_OPTIONS = [
+    { value: 'music', label: 'Music' },
+    { value: 'video', label: 'Video' },
+];
+
+/**
+ * Creator-category filter — mirrors the mobile home tabs. The token maps to a creator role on
+ * the backend (`?category=`). 'All' clears the filter.
+ */
+export const CREATOR_CATEGORY_OPTIONS = [
+    { value: 'All', label: 'All creators' },
+    { value: 'artist', label: 'Artists' },
+    { value: 'dj', label: 'DJs' },
+    { value: 'podcaster', label: 'Podcasters' },
+    { value: 'creator', label: 'Creators' },
+];
+
+/** Video sub-segment filter (video vertical only) — mirrors the mobile music/content split. */
+export const VIDEO_TYPE_OPTIONS = [
+    { value: 'All', label: 'All videos' },
+    { value: 'music', label: 'Music videos' },
+    { value: 'content', label: 'Content videos' },
+];
+
+/** The four most-gifted dimensions the mobile spotlight exposes. */
+export const MOST_GIFTED_VARIANT_OPTIONS = [
+    { value: 'tracks', label: 'Tracks' },
+    { value: 'artists', label: 'Artists' },
+    { value: 'videos', label: 'Videos' },
+    { value: 'creators', label: 'Creators' },
+];
+
+/** Gift-leaderboard window — the mobile spotlight toggles between this week and all-time. */
+export const GIFT_PERIOD_OPTIONS = [
+    { value: 'Week', label: 'This week' },
+    { value: 'AllTime', label: 'All time' },
+];
+
 /** Curation surfaces an override / featured item can target. */
 export type DiscoverySurface =
     | 'Trending'
@@ -81,29 +123,47 @@ export interface AdminTrendingItemDto {
 
 export type AdminTrendingPageDto = PagedResult<AdminTrendingItemDto>;
 
+/**
+ * Shared filter shape for the trending-family surfaces. `vertical` picks the music-track vs video
+ * feed query; `category` is the creator-category role; `videoType` narrows the video segment;
+ * `genre` is a genre NAME (music vertical). All mirror the mobile feed query params 1:1.
+ */
 export interface TrendingQuery {
+    vertical?: string;
+    category?: string;
     period?: string;
-    contentType?: string;
-    genreId?: string;
+    videoType?: string;
+    genre?: string;
     page?: number;
     pageSize?: number;
 }
 
 export interface TopChartsQuery {
+    vertical?: string;
+    category?: string;
     period?: string;
-    contentType?: string;
+    videoType?: string;
+    genre?: string;
     page?: number;
     pageSize?: number;
 }
 
 export interface HotReleasesQuery {
-    period?: string;
+    vertical?: string;
+    category?: string;
+    videoType?: string;
+    genre?: string;
+    days?: number;
     page?: number;
     pageSize?: number;
 }
 
 export interface NewReleasesQuery {
-    genreId?: string;
+    vertical?: string;
+    category?: string;
+    videoType?: string;
+    genre?: string;
+    days?: number;
     page?: number;
     pageSize?: number;
 }
@@ -125,6 +185,27 @@ export interface AdminMostGiftedDto {
     overrideId?: string | null;
 }
 
+/**
+ * Unified most-gifted row across every mobile variant (tracks / artists / videos / creators).
+ * Content variants (tracks/videos) carry `contentType` + override overlay (curate via the override
+ * modal); entity variants (artists/creators) carry `followerCount` and are managed via exclusions.
+ */
+export interface AdminMostGiftedRowDto {
+    variant: string;
+    rank: number;
+    id: string;
+    name: string;
+    artistName?: string | null;
+    artistId?: string | null;
+    imageUrl?: string | null;
+    totalGiftsReceived: number;
+    totalGiftValue: number;
+    followerCount?: number | null;
+    contentType?: string | null;
+    overrideAction?: string | null;
+    overrideId?: string | null;
+}
+
 export interface AdminTopGiversDto {
     rank: number;
     userId: string;
@@ -138,7 +219,17 @@ export interface AdminTopGiversDto {
     overrideId?: string | null;
 }
 
-export interface GiftLeaderboardQuery {
+/** Most-gifted query: `variant` selects tracks/artists/videos/creators; `category` is the creator role. */
+export interface MostGiftedQuery {
+    variant?: string;
+    category?: string;
+    period?: string;
+    take?: number;
+}
+
+/** Top-givers query: `vertical` selects the music vs video gift scope. */
+export interface TopGiversQuery {
+    vertical?: string;
     period?: string;
     take?: number;
 }

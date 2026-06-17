@@ -19,6 +19,13 @@ import { useHasPermission } from '../../hooks/useAdminManagement';
 import { useFlagPasswordReset, useForceLogout, useUnlockUser } from '../../hooks/useSecurity';
 import type { AdminUserDetailDto, AdminUserProfileDto } from '../../types';
 
+interface DeleteMenuOption {
+    label: string;
+    value: string;
+    color?: string;
+    onClick: () => void;
+}
+
 interface UserDetailHeaderProps {
     user: AdminUserDetailDto;
     profile?: AdminUserProfileDto;
@@ -27,6 +34,8 @@ interface UserDetailHeaderProps {
     onActivate: () => void;
     onChangeRole: () => void;
     onLock: () => void;
+    /** Soft-delete / restore / permanent-delete actions (empty without UsersDelete). */
+    deleteMenuOptions?: DeleteMenuOption[];
     actionPending?: boolean;
 }
 
@@ -94,10 +103,12 @@ export const UserDetailHeader: React.FC<UserDetailHeaderProps> = ({
     onActivate,
     onChangeRole,
     onLock,
+    deleteMenuOptions = [],
     actionPending,
 }) => {
     const navigate = useNavigate();
     const suspended = user.status === 'Suspended';
+    const deleted = user.isDeleted;
     const isAdmin = user.role === 'admin';
     const tint = identityTint(user.name);
 
@@ -178,7 +189,7 @@ export const UserDetailHeader: React.FC<UserDetailHeaderProps> = ({
                                 View finance
                             </Button>
                         )}
-                        {canSecurity && (
+                        {!deleted && canSecurity && (
                             <CustomMenu
                                 options={[
                                     {
@@ -206,33 +217,40 @@ export const UserDetailHeader: React.FC<UserDetailHeaderProps> = ({
                                 ]}
                             />
                         )}
-                        <Button
-                            size="sm"
-                            fontSize="xs"
-                            fontWeight="medium"
-                            borderRadius="10px"
-                            variant="outline"
-                            onClick={onChangeRole}
-                            disabled={actionPending || isAdmin}
-                            title={isAdmin ? 'Admin role changes go through Admin Management.' : undefined}
-                        >
-                            Change role
-                        </Button>
-                        <Button
-                            size="sm"
-                            fontSize="xs"
-                            fontWeight="medium"
-                            borderRadius="10px"
-                            onClick={suspended ? onActivate : onSuspend}
-                            disabled={actionPending}
-                            bg={suspended ? '#16A34A' : 'white'}
-                            color={suspended ? 'white' : '#C53030'}
-                            borderWidth={suspended ? '0' : '1px'}
-                            borderColor="#FECACA"
-                            _hover={{ bg: suspended ? '#15803D' : '#FEF2F2' }}
-                        >
-                            {suspended ? 'Reactivate account' : 'Suspend account'}
-                        </Button>
+                        {!deleted && (
+                            <Button
+                                size="sm"
+                                fontSize="xs"
+                                fontWeight="medium"
+                                borderRadius="10px"
+                                variant="outline"
+                                onClick={onChangeRole}
+                                disabled={actionPending || isAdmin}
+                                title={isAdmin ? 'Admin role changes go through Admin Management.' : undefined}
+                            >
+                                Change role
+                            </Button>
+                        )}
+                        {!deleted && (
+                            <Button
+                                size="sm"
+                                fontSize="xs"
+                                fontWeight="medium"
+                                borderRadius="10px"
+                                onClick={suspended ? onActivate : onSuspend}
+                                disabled={actionPending}
+                                bg={suspended ? '#16A34A' : 'white'}
+                                color={suspended ? 'white' : '#C53030'}
+                                borderWidth={suspended ? '0' : '1px'}
+                                borderColor="#FECACA"
+                                _hover={{ bg: suspended ? '#15803D' : '#FEF2F2' }}
+                            >
+                                {suspended ? 'Reactivate account' : 'Suspend account'}
+                            </Button>
+                        )}
+                        {deleteMenuOptions.length > 0 && (
+                            <CustomMenu options={deleteMenuOptions} />
+                        )}
                     </HStack>
                 </HStack>
 
@@ -265,7 +283,25 @@ export const UserDetailHeader: React.FC<UserDetailHeaderProps> = ({
                 )}
             </Box>
 
-            {suspended && (
+            {deleted && (
+                <HStack bg="#FEF2F2" borderTop="1px solid" borderColor="#FECACA" px={5} py={3} gap={2.5} align="start">
+                    <Box color="#C53030" mt={0.5}>
+                        <FiAlertTriangle size={14} />
+                    </Box>
+                    <Box>
+                        <Text fontSize="xs" fontWeight="semibold" color="#C53030">
+                            Account soft-deleted {user.deletedAt ? `on ${adminDateTime(user.deletedAt)}` : ''}
+                        </Text>
+                        {user.deletedReason && (
+                            <Text fontSize="xs" color="#9B2C2C" mt={0.5}>
+                                {user.deletedReason}
+                            </Text>
+                        )}
+                    </Box>
+                </HStack>
+            )}
+
+            {!deleted && suspended && (
                 <HStack bg="#FEF2F2" borderTop="1px solid" borderColor="#FECACA" px={5} py={3} gap={2.5} align="start">
                     <Box color="#C53030" mt={0.5}>
                         <FiAlertTriangle size={14} />

@@ -7,6 +7,7 @@ import type { DataColumn, KpiItem } from '../../components/ui';
 import { adminDate, adminRelative, formatCount, formatMinorAmount } from '../../lib/format';
 import { medalStyle } from '../../lib/statusColor';
 import { useActivateUser, useSuspendUser, useUsers, useUsersSummary } from '../../hooks/useUsers';
+import { useUserDeleteActions } from '../../components/users/useUserDeleteActions';
 import type { AdminUserDto, UserQuery } from '../../types';
 import { PLATFORM_ROLES, type PlatformRole } from '../../config/adminRoles';
 
@@ -18,6 +19,7 @@ export const ROLE_STATUS_OPTIONS = [
     { value: 'Pending', label: 'Pending' },
     { value: 'Suspended', label: 'Suspended' },
     { value: 'Deactivated', label: 'Deactivated' },
+    { value: 'Deleted', label: 'Deleted' },
 ];
 
 export const ROLE_VERIFICATION_OPTIONS = [
@@ -183,6 +185,7 @@ export const useRoleUsers = (
     const { data: summary } = useUsersSummary(role);
     const suspend = useSuspendUser();
     const activate = useActivateUser();
+    const deleteActions = useUserDeleteActions();
 
     const plural = PLATFORM_ROLES[role].plural;
     const kpiItems: KpiItem[] = [
@@ -244,9 +247,14 @@ export const useRoleUsers = (
                     <CustomMenu
                         options={[
                             { label: 'View profile', value: 'view', onClick: () => navigate(`/admin/users/${u.id}`) },
-                            u.status === 'Suspended'
-                                ? { label: 'Reactivate account', value: 'activate', onClick: () => setActivateTarget(u) }
-                                : { label: 'Suspend account', value: 'suspend', color: '#C53030', onClick: () => setSuspendTarget(u) },
+                            ...(u.isDeleted
+                                ? []
+                                : [
+                                      u.status === 'Suspended'
+                                          ? { label: 'Reactivate account', value: 'activate', onClick: () => setActivateTarget(u) }
+                                          : { label: 'Suspend account', value: 'suspend', color: '#C53030', onClick: () => setSuspendTarget(u) },
+                                  ]),
+                            ...deleteActions.menuOptions(u),
                         ]}
                     />
                 </Box>
@@ -270,6 +278,7 @@ export const useRoleUsers = (
         setSuspendTarget,
         activateTarget,
         setActivateTarget,
+        deleteActions,
         pageSize: PAGE_SIZE,
     };
 };

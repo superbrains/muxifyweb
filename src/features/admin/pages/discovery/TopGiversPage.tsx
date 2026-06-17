@@ -15,20 +15,26 @@ import type { DataColumn, KpiItem } from '../../components/ui';
 import { formatCount } from '../../lib/format';
 import { useHasPermission } from '../../hooks/useAdminManagement';
 import { useCreateExclusion, useTopGivers } from '../../hooks/useDiscovery';
-import { DISCOVERY_PERIOD_OPTIONS, type AdminTopGiversDto } from '../../types/discovery';
+import {
+    DISCOVERY_VERTICAL_OPTIONS,
+    GIFT_PERIOD_OPTIONS,
+    type AdminTopGiversDto,
+} from '../../types/discovery';
 import { CurationStatusBadge, LeaderboardPodium, RankBadge } from './discoveryShared';
 import type { PodiumEntry } from './discoveryShared';
 import { LinkBtn } from './discoveryShared';
 
-const LEADERBOARD_TYPE = 'top-gifters';
-
-/** Top givers — ranked fans by gifting spend, with leaderboard exclusion control. */
+/** Top givers — ranked fans by gifting spend (music or video scope), with leaderboard exclusion control. */
 const TopGiversPage: React.FC = () => {
     const canManageLeaderboard = useHasPermission('LeaderboardManage');
     const canManageDiscovery = useHasPermission('DiscoveryManage');
     const canManage = canManageLeaderboard || canManageDiscovery;
+    const [vertical, setVertical] = React.useState('music');
     const [period, setPeriod] = React.useState('Week');
-    const { data, isLoading, error } = useTopGivers({ period, take: 50 });
+    const { data, isLoading, error } = useTopGivers({ vertical, period, take: 50 });
+
+    // Mobile splits top-givers by gift scope; each vertical has its own exclusion list.
+    const leaderboardType = vertical === 'video' ? 'top-givers-video' : 'top-gifters';
 
     const createExclusion = useCreateExclusion();
     const [excludeTarget, setExcludeTarget] = React.useState<AdminTopGiversDto | null>(null);
@@ -114,7 +120,10 @@ const TopGiversPage: React.FC = () => {
                 {podium.length > 0 && <LeaderboardPodium entries={podium} />}
 
                 <FilterBar
-                    filters={[{ key: 'period', value: period, onChange: setPeriod, options: DISCOVERY_PERIOD_OPTIONS }]}
+                    filters={[
+                        { key: 'vertical', value: vertical, onChange: setVertical, options: DISCOVERY_VERTICAL_OPTIONS, width: '130px' },
+                        { key: 'period', value: period, onChange: setPeriod, options: GIFT_PERIOD_OPTIONS, width: '140px' },
+                    ]}
                 />
 
                 {error ? (
@@ -139,7 +148,7 @@ const TopGiversPage: React.FC = () => {
                     excludeTarget &&
                     createExclusion.mutate(
                         {
-                            leaderboardType: LEADERBOARD_TYPE,
+                            leaderboardType,
                             entityId: excludeTarget.userId,
                             entityType: 'User',
                             reason,

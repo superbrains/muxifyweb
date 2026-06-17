@@ -163,14 +163,15 @@ export const ContentCell: React.FC<{
  * Metric chips — plays / likes / shares / gift coins.
  * ------------------------------------------------------------------ */
 
-const MetricChip: React.FC<{ icon: IconType; value?: number }> = ({ icon, value }) => (
-    <HStack gap={1} bg="gray.50" px={2} py={1} borderRadius="6px" flexShrink={0}>
-        <Icon as={icon} boxSize="10px" color="#94A3B8" />
-        <Text fontSize="10px" fontWeight="medium" color="gray.600">
-            {formatCount(value)}
-        </Text>
-    </HStack>
-);
+const MetricChip: React.FC<{ icon: IconType; value?: number }> = ({ icon, value }) =>
+    value === undefined ? null : (
+        <HStack gap={1} bg="gray.50" px={2} py={1} borderRadius="6px" flexShrink={0}>
+            <Icon as={icon} boxSize="10px" color="#94A3B8" />
+            <Text fontSize="10px" fontWeight="medium" color="gray.600">
+                {formatCount(value)}
+            </Text>
+        </HStack>
+    );
 
 export const MetricChips: React.FC<{
     plays?: number;
