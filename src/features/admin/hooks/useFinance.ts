@@ -89,11 +89,25 @@ export const useFinanceGifts = (query: GiftQuery) =>
         staleTime: 30_000,
     });
 
+export const useFinanceGiftSummary = (range: { from?: string; to?: string }) =>
+    useQuery({
+        queryKey: adminKeys.finance.giftSummary(range),
+        queryFn: () => financeService.getGiftSummary(range),
+        staleTime: 30_000,
+    });
+
 export const useFinanceUnlocks = (query: UnlockQuery) =>
     useQuery({
         queryKey: adminKeys.finance.unlocks(query),
         queryFn: () => financeService.getUnlocks(query),
         placeholderData: keepPreviousData,
+        staleTime: 30_000,
+    });
+
+export const useFinanceUnlockSummary = (query: { kind?: string; from?: string; to?: string }) =>
+    useQuery({
+        queryKey: adminKeys.finance.unlockSummary(query),
+        queryFn: () => financeService.getUnlockSummary(query),
         staleTime: 30_000,
     });
 
@@ -253,6 +267,20 @@ export const useRefundPurchase = () =>
         (v: { id: string; reason: string }) => financeService.refundPurchase(v.id, { reason: v.reason }),
         'Purchase refunded',
         'The purchase was refunded.',
+    );
+
+export const useRefundContentUnlock = () =>
+    useFinanceAction(
+        (v: { id: string; reason: string }) => financeService.refundContentUnlock(v.id, { reason: v.reason }),
+        'Unlock refunded',
+        'The unlock was refunded and the fan was credited back.',
+    );
+
+export const useRefundAirtimeUnlock = () =>
+    useFinanceAction(
+        (v: { id: string; reason: string }) => financeService.refundAirtimeUnlock(v.id, { reason: v.reason }),
+        'Airtime unlock refunded',
+        'The airtime unlock was marked as refunded.',
     );
 
 // ----- Maker-checker (dual-approval) -----

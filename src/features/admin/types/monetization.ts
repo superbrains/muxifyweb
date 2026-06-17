@@ -218,6 +218,99 @@ export interface ReasonRequest {
 }
 
 /* ------------------------------------------------------------------ *
+ * Commission configuration (editable platform fee + per-type overrides)
+ * ------------------------------------------------------------------ */
+
+export interface CommissionSettingsDto {
+    currency: string;
+    platformFeePercent: number;
+    /** Per-type override for gifts; null = inherit the default. */
+    giftFeePercent?: number | null;
+    /** Per-type override for content unlocks; null = inherit the default. */
+    contentUnlockFeePercent?: number | null;
+}
+
+export interface UpdateCommissionSettingsRequest {
+    platformFeePercent: number;
+    giftFeePercent?: number | null;
+    contentUnlockFeePercent?: number | null;
+}
+
+/* ------------------------------------------------------------------ *
+ * Per-artist commission waivers / discounts
+ * ------------------------------------------------------------------ */
+
+export interface CommissionWaiverDto {
+    id: string;
+    artistId: string;
+    artistName: string;
+    feePercent: number;
+    reason: string;
+    isActive: boolean;
+    effectiveFrom: string;
+    effectiveTo?: string | null;
+    createdByUserId: string;
+    createdAt: string;
+}
+
+export interface UpsertCommissionWaiverRequest {
+    artistId: string;
+    feePercent: number;
+    reason: string;
+    effectiveFrom?: string | null;
+    effectiveTo?: string | null;
+}
+
+/* ------------------------------------------------------------------ *
+ * Split templates (reusable split layouts) + contributor management
+ * ------------------------------------------------------------------ */
+
+export interface SplitTemplateRecipientDto {
+    recipientUserId: string;
+    role: string;
+    percentBps: number;
+}
+
+export interface SplitTemplateDto {
+    id: string;
+    name: string;
+    description?: string | null;
+    recipients: SplitTemplateRecipientDto[];
+    createdByUserId: string;
+    createdAt: string;
+}
+
+export interface UpsertSplitTemplateRequest {
+    name: string;
+    description?: string | null;
+    recipients: SplitTemplateRecipientDto[];
+}
+
+export interface ApplyTemplateRequest {
+    templateId: string;
+}
+
+export interface AddContributorRequest {
+    trackId: string;
+    inviteeEmail: string;
+    displayName: string;
+    /** "Producer" or "Songwriter". */
+    recipientRole: string;
+    percentBps: number;
+}
+
+export interface EditContributorRequest {
+    trackId: string;
+    contributorUserId: string;
+    percentBps: number;
+}
+
+export interface RemoveContributorRequest {
+    trackId: string;
+    contributorUserId: string;
+}
+
+/* ------------------------------------------------------------------ *
  * Sponsorships (CRUD + lifecycle)
  * ------------------------------------------------------------------ */
 

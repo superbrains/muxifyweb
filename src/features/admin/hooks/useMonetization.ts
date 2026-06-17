@@ -14,6 +14,8 @@ import {
 } from '../services/monetizationService';
 import { adminKeys } from './adminKeys';
 import type {
+    AddContributorRequest,
+    ApplyTemplateRequest,
     AssignDisputeRequest,
     CreateDisputeRequest,
     CreateSponsorshipRequest,
@@ -21,12 +23,17 @@ import type {
     DisputeNoteRequest,
     DisputeQuery,
     DisputeStatusRequest,
+    EditContributorRequest,
     ReasonRequest,
+    RemoveContributorRequest,
     ResolveDisputeRequest,
     RoyaltyTracksQuery,
     SponsorshipQuery,
+    UpdateCommissionSettingsRequest,
     UpdateSplitsRequest,
     UpdateSponsorshipRequest,
+    UpsertCommissionWaiverRequest,
+    UpsertSplitTemplateRequest,
 } from '../types/monetization';
 
 /* --------------------------------- Queries -------------------------------- */
@@ -52,6 +59,28 @@ export const useRoyalties = (range: DateRangeQuery) =>
         queryKey: adminKeys.monetization.royalties(range),
         queryFn: () => monetizationService.getRoyalties(range),
         placeholderData: keepPreviousData,
+        staleTime: 30_000,
+    });
+
+export const useCommissionSettings = () =>
+    useQuery({
+        queryKey: adminKeys.monetization.commissionSettings,
+        queryFn: () => monetizationService.getCommissionSettings(),
+        staleTime: 30_000,
+    });
+
+export const useCommissionWaivers = (activeOnly?: boolean) =>
+    useQuery({
+        queryKey: adminKeys.monetization.commissionWaivers(activeOnly ?? 'all'),
+        queryFn: () => monetizationService.getWaivers(activeOnly),
+        placeholderData: keepPreviousData,
+        staleTime: 30_000,
+    });
+
+export const useSplitTemplates = () =>
+    useQuery({
+        queryKey: adminKeys.royalties.templates,
+        queryFn: () => royaltyService.getTemplates(),
         staleTime: 30_000,
     });
 
@@ -109,6 +138,8 @@ type QC = ReturnType<typeof useQueryClient>;
 
 const invalidateRoyalties = (qc: QC) =>
     qc.invalidateQueries({ queryKey: adminKeys.royalties.root });
+const invalidateCommission = (qc: QC) =>
+    qc.invalidateQueries({ queryKey: adminKeys.monetization.root });
 const invalidateSponsorships = (qc: QC) =>
     qc.invalidateQueries({ queryKey: adminKeys.sponsorships.root });
 const invalidateDisputes = (qc: QC) =>
@@ -180,6 +211,102 @@ export const useResolveTrackDispute = () =>
             royaltyService.resolveDispute(trackId, payload),
         'Split dispute resolved.',
         'Could not resolve dispute',
+        invalidateRoyalties,
+    );
+
+/* ------------------------------ Commission -------------------------------- */
+
+export const useUpdateCommissionSettings = () =>
+    useMonetizationMutation(
+        (payload: UpdateCommissionSettingsRequest) =>
+            monetizationService.updateCommissionSettings(payload),
+        'Commission settings saved.',
+        'Could not save commission settings',
+        invalidateCommission,
+    );
+
+export const useCreateWaiver = () =>
+    useMonetizationMutation(
+        (payload: UpsertCommissionWaiverRequest) => monetizationService.createWaiver(payload),
+        'Commission override created.',
+        'Could not create override',
+        invalidateCommission,
+    );
+
+export const useUpdateWaiver = () =>
+    useMonetizationMutation(
+        ({ id, payload }: { id: string; payload: UpsertCommissionWaiverRequest }) =>
+            monetizationService.updateWaiver(id, payload),
+        'Commission override updated.',
+        'Could not update override',
+        invalidateCommission,
+    );
+
+export const useDeactivateWaiver = () =>
+    useMonetizationMutation(
+        (id: string) => monetizationService.deactivateWaiver(id),
+        'Commission override deactivated.',
+        'Could not deactivate override',
+        invalidateCommission,
+    );
+
+/* ------------------------- Split templates & contributors ----------------- */
+
+export const useCreateTemplate = () =>
+    useMonetizationMutation(
+        (payload: UpsertSplitTemplateRequest) => royaltyService.createTemplate(payload),
+        'Template created.',
+        'Could not create template',
+        invalidateRoyalties,
+    );
+
+export const useUpdateTemplate = () =>
+    useMonetizationMutation(
+        ({ id, payload }: { id: string; payload: UpsertSplitTemplateRequest }) =>
+            royaltyService.updateTemplate(id, payload),
+        'Template updated.',
+        'Could not update template',
+        invalidateRoyalties,
+    );
+
+export const useDeleteTemplate = () =>
+    useMonetizationMutation(
+        (id: string) => royaltyService.deleteTemplate(id),
+        'Template deleted.',
+        'Could not delete template',
+        invalidateRoyalties,
+    );
+
+export const useApplyTemplate = () =>
+    useMonetizationMutation(
+        ({ trackId, payload }: { trackId: string; payload: ApplyTemplateRequest }) =>
+            royaltyService.applyTemplate(trackId, payload),
+        'Template applied.',
+        'Could not apply template',
+        invalidateRoyalties,
+    );
+
+export const useAddContributor = () =>
+    useMonetizationMutation(
+        (payload: AddContributorRequest) => royaltyService.addContributor(payload),
+        'Contributor added.',
+        'Could not add contributor',
+        invalidateRoyalties,
+    );
+
+export const useEditContributor = () =>
+    useMonetizationMutation(
+        (payload: EditContributorRequest) => royaltyService.editContributor(payload),
+        'Contributor updated.',
+        'Could not update contributor',
+        invalidateRoyalties,
+    );
+
+export const useRemoveContributor = () =>
+    useMonetizationMutation(
+        (payload: RemoveContributorRequest) => royaltyService.removeContributor(payload),
+        'Contributor removed.',
+        'Could not remove contributor',
         invalidateRoyalties,
     );
 

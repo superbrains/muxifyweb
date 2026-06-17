@@ -1,102 +1,53 @@
 import React from 'react';
-import { Text } from '@chakra-ui/react';
-import { FiGift } from 'react-icons/fi';
-import { AdminError, AdminPageLayout, DataTable, StatusBadge } from '../../components/ui';
-import type { DataColumn } from '../../components/ui';
-import { IdentityCell } from '../../components/ui';
-import { adminDateTime, formatCount } from '../../lib/format';
-import { useFinanceGifts } from '../../hooks/useFinance';
-import type { FinanceGift, GiftQuery } from '../../types/finance';
+import { Button, HStack } from '@chakra-ui/react';
+import { AdminPageLayout } from '../../components/ui';
+import GiftCatalog from './gifts/GiftCatalog';
+import GiftTransactions from './gifts/GiftTransactions';
 
-const PAGE_SIZE = 20;
+type TabKey = 'transactions' | 'catalog';
 
-/** Gifts ledger — reuses the finance gifts feed. */
+const ACCENT = '#f94444';
+
+const TABS: [TabKey, string][] = [
+    ['transactions', 'Transactions'],
+    ['catalog', 'Catalog'],
+];
+
+/**
+ * Gifts management console — the single home for gifting on the platform.
+ * "Transactions" is the live gift ledger (KPIs, filters, reversal, export);
+ * "Catalog" manages the gift types fans can send (create/edit/activate, images).
+ */
 const GiftsPage: React.FC = () => {
-    const [query, setQuery] = React.useState<GiftQuery>({ page: 1, pageSize: PAGE_SIZE });
-    const { data, isLoading, error } = useFinanceGifts(query);
-
-    const columns: DataColumn<FinanceGift>[] = [
-        {
-            key: 'sender',
-            header: 'Sender',
-            render: (g) => <IdentityCell name={g.senderName} />,
-        },
-        {
-            key: 'recipient',
-            header: 'Recipient',
-            render: (g) => (
-                <IdentityCell
-                    name={g.recipientName ?? '—'}
-                    secondary={g.recipientKind}
-                />
-            ),
-        },
-        {
-            key: 'gift',
-            header: 'Gift',
-            render: (g) => (
-                <Text fontSize="xs" color="gray.700">
-                    {g.giftType}
-                </Text>
-            ),
-        },
-        {
-            key: 'value',
-            header: 'Coins',
-            align: 'right',
-            render: (g) => (
-                <Text fontSize="xs" fontWeight="semibold" color="gray.800">
-                    {formatCount(g.coinValue)}
-                </Text>
-            ),
-        },
-        {
-            key: 'state',
-            header: 'State',
-            render: (g) => (
-                <StatusBadge status={g.reversed ? 'Reversed' : g.acknowledged ? 'Acknowledged' : 'Sent'} />
-            ),
-        },
-        {
-            key: 'sent',
-            header: 'Sent',
-            render: (g) => (
-                <Text fontSize="xs" color="gray.500">
-                    {adminDateTime(g.sentAt)}
-                </Text>
-            ),
-        },
-    ];
+    const [tab, setTab] = React.useState<TabKey>('transactions');
 
     return (
         <AdminPageLayout
             title="Gifts"
-            subtitle="Coin gifts sent across the platform — fan-to-creator and fan-to-fan."
+            subtitle="Coin gifts across the platform — manage the gift catalog and review the gift ledger."
             breadcrumbs={[{ label: 'Monetization' }, { label: 'Gifts' }]}
+            toolbar={
+                <HStack gap={2} flexWrap="wrap">
+                    {TABS.map(([key, label]) => (
+                        <Button
+                            key={key}
+                            size="sm"
+                            fontSize="xs"
+                            borderRadius="999px"
+                            onClick={() => setTab(key)}
+                            bg={tab === key ? ACCENT : 'white'}
+                            color={tab === key ? 'white' : 'gray.700'}
+                            border="1px solid"
+                            borderColor={tab === key ? ACCENT : 'gray.200'}
+                            _hover={{ bg: tab === key ? '#e53939' : 'gray.50' }}
+                        >
+                            {label}
+                        </Button>
+                    ))}
+                </HStack>
+            }
         >
-            {error ? (
-                <AdminError error={error} message="Could not load gifts." />
-            ) : (
-                <DataTable
-                    columns={columns}
-                    rows={data?.items ?? []}
-                    rowKey={(g) => g.id}
-                    loading={isLoading && !data}
-                    emptyIcon={FiGift}
-                    emptyTitle="No gifts"
-                    emptyDescription="No gifts match the current filters."
-                    pagination={
-                        data
-                            ? {
-                                  page: data.page,
-                                  pageSize: data.pageSize,
-                                  total: data.total,
-                                  onPageChange: (page) => setQuery((q) => ({ ...q, page })),
-                              }
-                            : undefined
-                    }
-                />
-            )}
+            {tab === 'transactions' ? <GiftTransactions /> : <GiftCatalog />}
         </AdminPageLayout>
     );
 };

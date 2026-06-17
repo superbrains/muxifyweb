@@ -38,7 +38,9 @@ export const adminKeys = {
             ['admin', 'finance', 'creator', artistId, 'earnings', query] as const,
         creatorSplits: (artistId: string) => ['admin', 'finance', 'creator', artistId, 'splits'] as const,
         gifts: (query: unknown) => ['admin', 'finance', 'gifts', query] as const,
+        giftSummary: (range: unknown) => ['admin', 'finance', 'gifts', 'summary', range] as const,
         unlocks: (query: unknown) => ['admin', 'finance', 'unlocks', query] as const,
+        unlockSummary: (query: unknown) => ['admin', 'finance', 'unlocks', 'summary', query] as const,
         withdrawals: (query: unknown) => ['admin', 'finance', 'withdrawals', query] as const,
         withdrawal: (id: string) => ['admin', 'finance', 'withdrawal', id] as const,
         payouts: (query: unknown) => ['admin', 'finance', 'payouts', query] as const,
@@ -104,13 +106,17 @@ export const adminKeys = {
         revenue: (range: unknown) => ['admin', 'monetization', 'revenue', range] as const,
         commission: (range: unknown) => ['admin', 'monetization', 'commission', range] as const,
         royalties: (range: unknown) => ['admin', 'monetization', 'royalties', range] as const,
+        commissionSettings: ['admin', 'monetization', 'commission', 'settings'] as const,
+        commissionWaivers: (activeOnly: unknown) =>
+            ['admin', 'monetization', 'commission', 'waivers', activeOnly] as const,
     },
-    // Royalty splits (per-track recipients / freeze / dispute / audit)
+    // Royalty splits (per-track recipients / freeze / dispute / audit / templates)
     royalties: {
         root: ['admin', 'royalties'] as const,
         tracks: (query: unknown) => ['admin', 'royalties', 'tracks', query] as const,
         track: (id: string) => ['admin', 'royalties', 'track', id] as const,
         audit: (id: string) => ['admin', 'royalties', 'track', id, 'audit'] as const,
+        templates: ['admin', 'royalties', 'templates'] as const,
     },
     // Sponsorships (CRUD + lifecycle)
     sponsorships: {

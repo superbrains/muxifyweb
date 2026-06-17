@@ -6,7 +6,6 @@ import {
     HStack,
     Icon,
     IconButton,
-    Image,
     Portal,
     SimpleGrid,
     Spinner,
@@ -14,36 +13,26 @@ import {
     Input,
     VStack,
 } from '@chakra-ui/react';
-import { MdClose, MdAddPhotoAlternate } from 'react-icons/md';
+import { MdClose } from 'react-icons/md';
+import { useNavigate } from 'react-router-dom';
 import { AdminPageHeader } from '../components/AdminPageHeader';
 import { AdminError, AdminLoading } from '../components/AdminStateBlock';
 import { AdminTable, type AdminTableColumn } from '../components/AdminTable';
 import { ConfirmModal } from '@shared/components';
-import { useChakraToast } from '@shared/hooks';
-import { useAuthedImageSrc } from '@/shared/hooks/useAuthedImageSrc';
-import { compressImage } from '@/shared/lib/fileUtils';
-import { coinEconomyService } from '../services/coinEconomyService';
 import {
-    useAvailableGiftTypes,
     useCoinEconomySettings,
     useCoinPackages,
     useCreateCoinPackage,
-    useCreateGiftType,
-    useGiftTypes,
     useSetCoinPackageActive,
-    useSetGiftTypeActive,
     useUpdateCoinEconomySettings,
     useUpdateCoinPackage,
-    useUpdateGiftType,
 } from '../hooks/useCoinEconomy';
 import type {
     AdminCoinPackage,
-    AdminGiftType,
     UpsertCoinPackageRequest,
-    UpsertGiftTypeRequest,
 } from '../types/coinEconomy';
 
-type TabKey = 'rate' | 'packages' | 'gifts';
+type TabKey = 'rate' | 'packages';
 
 const ACCENT = '#f94444';
 const nf = new Intl.NumberFormat('en-NG');
@@ -56,6 +45,7 @@ const naira = (kobo: number) => `₦${nf.format(Math.round(kobo) / 100)}`;
 
 const CoinEconomyPage: React.FC = () => {
     const [tab, setTab] = React.useState<TabKey>('rate');
+    const navigate = useNavigate();
 
     return (
         <VStack
@@ -68,14 +58,13 @@ const CoinEconomyPage: React.FC = () => {
         >
             <AdminPageHeader
                 title="Coin Economy"
-                subtitle="Set the coin↔Naira rate, the platform fee, top-up packages and gifts"
+                subtitle="Set the coin↔Naira rate, the platform fee and top-up packages"
             />
 
             <HStack gap={2} flexWrap="wrap">
                 {([
                     ['rate', 'Conversion & Fee'],
                     ['packages', 'Coin Packages'],
-                    ['gifts', 'Gifts'],
                 ] as [TabKey, string][]).map(([key, label]) => (
                     <Button
                         key={key}
@@ -92,11 +81,23 @@ const CoinEconomyPage: React.FC = () => {
                         {label}
                     </Button>
                 ))}
+                <Button
+                    size="sm"
+                    fontSize="xs"
+                    borderRadius="999px"
+                    variant="outline"
+                    borderColor="gray.200"
+                    color="gray.600"
+                    ml={{ base: 0, sm: 'auto' }}
+                    onClick={() => navigate('/admin/monetization/gifts')}
+                    _hover={{ bg: 'gray.50' }}
+                >
+                    Manage gifts →
+                </Button>
             </HStack>
 
             {tab === 'rate' && <ConversionTab />}
             {tab === 'packages' && <PackagesTab />}
-            {tab === 'gifts' && <GiftsTab />}
         </VStack>
     );
 };
@@ -478,375 +479,6 @@ const PackageDialog: React.FC<{
                         {priceNum > 0 && coinsNum > 0 && Math.abs(implied - rate) / rate > 0.01
                             ? ` — differs from the global ${rate} coins/₦`
                             : ''}
-                    </Text>
-                </Box>
-                <DialogActions onClose={onClose} onConfirm={submit} disabled={!valid} loading={pending} />
-            </VStack>
-        </DialogShell>
-    );
-};
-
-/* ===================================================================== */
-/* Tab 3 — Gifts                                                         */
-/* ===================================================================== */
-
-const GiftsTab: React.FC = () => {
-    const { data: settings } = useCoinEconomySettings();
-    const { data, isLoading, error } = useGiftTypes();
-    const setActive = useSetGiftTypeActive();
-    const [editing, setEditing] = React.useState<AdminGiftType | null>(null);
-    const [creating, setCreating] = React.useState(false);
-    const [toggle, setToggle] = React.useState<AdminGiftType | null>(null);
-
-    const rate = settings?.coinsPerNairaMajor ?? 50;
-
-    const columns: AdminTableColumn<AdminGiftType>[] = [
-        {
-            key: 'gift',
-            header: 'Gift',
-            render: (g) => (
-                <HStack gap={2}>
-                    <GiftImage icon={g.icon} />
-                    <Box>
-                        <Text fontSize="xs" fontWeight="semibold" color="gray.800">
-                            {g.name}
-                            {g.isPremium && (
-                                <Text as="span" color={ACCENT} ml={1} fontSize="10px">
-                                    PREMIUM
-                                </Text>
-                            )}
-                        </Text>
-                        <Text fontSize="10px" color="gray.500">
-                            {g.giftType}
-                        </Text>
-                    </Box>
-                </HStack>
-            ),
-        },
-        {
-            key: 'cost',
-            header: 'Coin cost',
-            render: (g) => (
-                <Text fontSize="xs" color="gray.700">
-                    {nf.format(g.coinCost)}
-                </Text>
-            ),
-        },
-        {
-            key: 'naira',
-            header: 'Artist value',
-            render: (g) => (
-                <Text fontSize="xs" color="gray.500">
-                    {rate > 0 ? `≈ ₦${nf.format(g.coinCost / rate)}` : '—'}
-                </Text>
-            ),
-        },
-        {
-            key: 'active',
-            header: 'Status',
-            render: (g) => (
-                <Text fontSize="xs" color={g.isActive ? 'green.600' : 'gray.400'}>
-                    {g.isActive ? 'Active' : 'Inactive'}
-                </Text>
-            ),
-        },
-        {
-            key: 'actions',
-            header: '',
-            align: 'right',
-            render: (g) => (
-                <HStack gap={2} justify="flex-end" onClick={(e) => e.stopPropagation()}>
-                    <LinkBtn onClick={() => setEditing(g)}>Edit</LinkBtn>
-                    <LinkBtn color={g.isActive ? '#C53030' : 'green.600'} onClick={() => setToggle(g)}>
-                        {g.isActive ? 'Deactivate' : 'Activate'}
-                    </LinkBtn>
-                </HStack>
-            ),
-        },
-    ];
-
-    return (
-        <>
-            <HStack justify="flex-end">
-                <Button
-                    size="sm"
-                    fontSize="xs"
-                    bg={ACCENT}
-                    color="white"
-                    _hover={{ bg: '#e53939' }}
-                    onClick={() => setCreating(true)}
-                >
-                    + Add gift
-                </Button>
-            </HStack>
-
-            {isLoading && !data ? (
-                <AdminLoading />
-            ) : error ? (
-                <AdminError error={error} message="Could not load gifts." />
-            ) : (
-                <AdminTable
-                    columns={columns}
-                    rows={data ?? []}
-                    rowKey={(g) => g.id}
-                    emptyTitle="No gifts configured"
-                    emptyDescription="Add the gifts fans can send to artists."
-                />
-            )}
-
-            {(creating || editing) && (
-                <GiftDialog
-                    rate={rate}
-                    gift={editing}
-                    onClose={() => {
-                        setCreating(false);
-                        setEditing(null);
-                    }}
-                />
-            )}
-
-            <ConfirmModal
-                isOpen={toggle !== null}
-                onClose={() => setToggle(null)}
-                onConfirm={() => {
-                    if (!toggle) return;
-                    setActive.mutate(
-                        { id: toggle.id, active: !toggle.isActive },
-                        { onSuccess: () => setToggle(null) },
-                    );
-                }}
-                title={toggle?.isActive ? 'Deactivate gift?' : 'Activate gift?'}
-                message={
-                    toggle?.isActive
-                        ? `${toggle?.name} will no longer be sendable by fans.`
-                        : `${toggle?.name ?? 'This gift'} will become sendable again.`
-                }
-                confirmText={toggle?.isActive ? 'Deactivate' : 'Activate'}
-                confirmColor={toggle?.isActive ? 'red' : 'blue'}
-                isLoading={setActive.isPending}
-            />
-        </>
-    );
-};
-
-/** True when an icon value is an uploaded image (URL/proxy path) rather than a legacy emoji. */
-const isGiftImageUrl = (icon?: string | null): boolean =>
-    typeof icon === 'string' && (icon.startsWith('http') || icon.startsWith('/'));
-
-/** Renders a gift's icon: an uploaded image (via the JWT media proxy) or a legacy emoji fallback. */
-const GiftImage: React.FC<{ icon?: string | null; size?: number }> = ({ icon, size = 28 }) => {
-    const resolved = useAuthedImageSrc(isGiftImageUrl(icon) ? (icon as string) : undefined);
-    if (isGiftImageUrl(icon)) {
-        return (
-            <Box
-                w={`${size}px`}
-                h={`${size}px`}
-                borderRadius="md"
-                overflow="hidden"
-                bg="gray.100"
-                flexShrink={0}
-            >
-                {resolved && <Image src={resolved} alt="gift" w="full" h="full" objectFit="cover" />}
-            </Box>
-        );
-    }
-    return <Text fontSize="md">{icon}</Text>;
-};
-
-/** Click-to-upload gift image field with preview. Stores the returned media-proxy URL in `value`. */
-const GiftImageField: React.FC<{ value: string; onChange: (url: string) => void }> = ({ value, onChange }) => {
-    const toast = useChakraToast();
-    const fileRef = React.useRef<HTMLInputElement>(null);
-    const [uploading, setUploading] = React.useState(false);
-    const [localPreview, setLocalPreview] = React.useState<string | null>(null);
-    const resolved = useAuthedImageSrc(isGiftImageUrl(value) ? value : undefined);
-    const isLegacyEmoji = !!value && !isGiftImageUrl(value);
-    const previewSrc = localPreview ?? (isGiftImageUrl(value) ? resolved : undefined);
-
-    const onFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        e.target.value = '';
-        if (!file) return;
-        if (!file.type.startsWith('image/')) {
-            toast.error('Invalid file type', 'Please select an image file.');
-            return;
-        }
-        if (file.size > 2 * 1024 * 1024) {
-            toast.error('File too large', 'Please select an image smaller than 2MB.');
-            return;
-        }
-        try {
-            setLocalPreview(await compressImage(file, 256, 256, 0.8));
-        } catch {
-            /* preview is best-effort */
-        }
-        setUploading(true);
-        try {
-            const { imageUrl } = await coinEconomyService.uploadGiftImage(file);
-            onChange(imageUrl);
-        } catch {
-            toast.error('Upload failed', 'Could not upload the gift image. Please try again.');
-            setLocalPreview(null);
-        } finally {
-            setUploading(false);
-        }
-    };
-
-    return (
-        <HStack gap={3} align="center">
-            <Box
-                position="relative"
-                w="64px"
-                h="64px"
-                borderRadius="md"
-                border="1px dashed"
-                borderColor="gray.300"
-                bg="gray.50"
-                display="flex"
-                alignItems="center"
-                justifyContent="center"
-                cursor="pointer"
-                overflow="hidden"
-                flexShrink={0}
-                onClick={() => fileRef.current?.click()}
-            >
-                {uploading ? (
-                    <Spinner size="sm" color={ACCENT} />
-                ) : previewSrc ? (
-                    <Image src={previewSrc} alt="gift" w="full" h="full" objectFit="cover" />
-                ) : isLegacyEmoji ? (
-                    <Text fontSize="2xl">{value}</Text>
-                ) : (
-                    <Icon as={MdAddPhotoAlternate} boxSize={6} color="gray.400" />
-                )}
-            </Box>
-            <VStack align="start" gap={0.5}>
-                <Button size="xs" variant="outline" onClick={() => fileRef.current?.click()} loading={uploading}>
-                    {isGiftImageUrl(value) || isLegacyEmoji ? 'Change image' : 'Upload image'}
-                </Button>
-                <Text fontSize="10px" color="gray.500">
-                    PNG, JPG or WebP · ≤ 2MB
-                </Text>
-            </VStack>
-            <input
-                ref={fileRef}
-                type="file"
-                accept="image/png,image/jpeg,image/webp"
-                style={{ display: 'none' }}
-                onChange={onFile}
-            />
-        </HStack>
-    );
-};
-
-const GiftDialog: React.FC<{
-    rate: number;
-    gift: AdminGiftType | null;
-    onClose: () => void;
-}> = ({ rate, gift, onClose }) => {
-    const create = useCreateGiftType();
-    const update = useUpdateGiftType();
-    const { data: available } = useAvailableGiftTypes();
-    const isEdit = gift !== null;
-
-    const [giftType, setGiftType] = React.useState(gift?.giftType ?? '');
-    const [name, setName] = React.useState(gift?.name ?? '');
-    const [description, setDescription] = React.useState(gift?.description ?? '');
-    const [coinCost, setCoinCost] = React.useState(String(gift?.coinCost ?? ''));
-    const [icon, setIcon] = React.useState(gift?.icon ?? '');
-    const [animation, setAnimation] = React.useState(gift?.animation ?? '');
-    const [displayOrder, setDisplayOrder] = React.useState(String(gift?.displayOrder ?? 0));
-    const [isPremium, setIsPremium] = React.useState(gift?.isPremium ?? false);
-    const [minLevel, setMinLevel] = React.useState(
-        gift?.minLevelRequired != null ? String(gift.minLevelRequired) : '',
-    );
-
-    const options = available ?? [];
-    React.useEffect(() => {
-        if (!isEdit && !giftType && options.length > 0) setGiftType(options[0].giftType);
-    }, [isEdit, giftType, options]);
-
-    const costNum = Number(coinCost) || 0;
-    const valid = name.trim() && icon.trim() && costNum > 0 && (isEdit || giftType);
-    const pending = create.isPending || update.isPending;
-
-    const submit = () => {
-        const payload: UpsertGiftTypeRequest = {
-            giftType: isEdit && gift ? gift.giftType : giftType,
-            name: name.trim(),
-            description: description.trim() || null,
-            coinCost: costNum,
-            icon: icon.trim(),
-            animation: animation.trim() || null,
-            displayOrder: Number(displayOrder) || 0,
-            isPremium,
-            minLevelRequired: minLevel.trim() ? Number(minLevel) : null,
-        };
-        const opts = { onSuccess: onClose };
-        if (isEdit && gift) update.mutate({ id: gift.id, payload }, opts);
-        else create.mutate(payload, opts);
-    };
-
-    return (
-        <DialogShell title={isEdit ? 'Edit gift' : 'New gift'} onClose={onClose}>
-            <VStack align="stretch" gap={3}>
-                <FieldRow label="Gift type">
-                    {isEdit ? (
-                        <Input value={giftType} disabled size="sm" />
-                    ) : options.length === 0 ? (
-                        <Text fontSize="xs" color="gray.500">
-                            All gift types are already configured.
-                        </Text>
-                    ) : (
-                        <select
-                            value={giftType}
-                            onChange={(e) => setGiftType(e.target.value)}
-                            style={{
-                                fontSize: '12px',
-                                padding: '8px 12px',
-                                borderRadius: '6px',
-                                border: '1px solid #E2E8F0',
-                                background: 'white',
-                                width: '100%',
-                            }}
-                        >
-                            {options.map((o) => (
-                                <option key={o.giftType} value={o.giftType}>
-                                    {o.giftType}
-                                </option>
-                            ))}
-                        </select>
-                    )}
-                </FieldRow>
-                <FieldRow label="Gift image">
-                    <GiftImageField value={icon} onChange={setIcon} />
-                </FieldRow>
-                <SimpleGrid columns={2} gap={3}>
-                    <FieldRow label="Name">
-                        <Input value={name} onChange={(e) => setName(e.target.value)} size="sm" />
-                    </FieldRow>
-                    <FieldRow label="Coin cost">
-                        <Input type="number" value={coinCost} onChange={(e) => setCoinCost(e.target.value)} size="sm" />
-                    </FieldRow>
-                    <FieldRow label="Display order">
-                        <Input type="number" value={displayOrder} onChange={(e) => setDisplayOrder(e.target.value)} size="sm" />
-                    </FieldRow>
-                    <FieldRow label="Animation (optional)">
-                        <Input value={animation} onChange={(e) => setAnimation(e.target.value)} size="sm" />
-                    </FieldRow>
-                    <FieldRow label="Min level (optional)">
-                        <Input type="number" value={minLevel} onChange={(e) => setMinLevel(e.target.value)} size="sm" />
-                    </FieldRow>
-                </SimpleGrid>
-                <FieldRow label="Description (optional)">
-                    <Input value={description} onChange={(e) => setDescription(e.target.value)} size="sm" />
-                </FieldRow>
-                <Checkbox checked={isPremium} onChange={setIsPremium} label="Premium gift" />
-                <Box bg="gray.50" borderRadius="md" p={2.5}>
-                    <Text fontSize="11px" color="gray.600">
-                        {costNum > 0 && rate > 0
-                            ? `Fan pays ${nf.format(costNum)} coins · artist value ≈ ₦${nf.format(costNum / rate)} (before fee)`
-                            : 'Enter a coin cost to preview the Naira value.'}
                     </Text>
                 </Box>
                 <DialogActions onClose={onClose} onConfirm={submit} disabled={!valid} loading={pending} />

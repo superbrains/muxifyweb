@@ -1,8 +1,18 @@
 import { api } from '@shared/services/api';
 import type {
+    AddContributorRequest,
+    ApplyTemplateRequest,
     AssignDisputeRequest,
+    CommissionSettingsDto,
     CommissionSummaryDto,
+    CommissionWaiverDto,
     CreateDisputeRequest,
+    EditContributorRequest,
+    RemoveContributorRequest,
+    SplitTemplateDto,
+    UpdateCommissionSettingsRequest,
+    UpsertCommissionWaiverRequest,
+    UpsertSplitTemplateRequest,
     CreateSponsorshipRequest,
     DateRangeQuery,
     DisputeDetailDto,
@@ -84,6 +94,33 @@ export const monetizationService = {
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
     },
+
+    /* --- Commission configuration (the editable platform fee + overrides) --- */
+    getCommissionSettings: async (): Promise<CommissionSettingsDto> => {
+        const { data } = await api.get<CommissionSettingsDto>(`${MONETIZATION}/commission/settings`);
+        return data;
+    },
+    updateCommissionSettings: async (payload: UpdateCommissionSettingsRequest): Promise<void> => {
+        await api.put(`${MONETIZATION}/commission/settings`, payload);
+    },
+
+    /* --- Per-artist commission waivers / discounts --- */
+    getWaivers: async (activeOnly?: boolean): Promise<CommissionWaiverDto[]> => {
+        const { data } = await api.get<CommissionWaiverDto[]>(`${MONETIZATION}/commission/waivers`, {
+            params: clean({ activeOnly }),
+        });
+        return data;
+    },
+    createWaiver: async (payload: UpsertCommissionWaiverRequest): Promise<CommissionWaiverDto> => {
+        const { data } = await api.post<CommissionWaiverDto>(`${MONETIZATION}/commission/waivers`, payload);
+        return data;
+    },
+    updateWaiver: async (id: string, payload: UpsertCommissionWaiverRequest): Promise<void> => {
+        await api.put(`${MONETIZATION}/commission/waivers/${id}`, payload);
+    },
+    deactivateWaiver: async (id: string): Promise<void> => {
+        await api.post(`${MONETIZATION}/commission/waivers/${id}/deactivate`);
+    },
 };
 
 export const royaltyService = {
@@ -115,6 +152,36 @@ export const royaltyService = {
     getAudit: async (trackId: string): Promise<RoyaltyAuditEntryDto[]> => {
         const { data } = await api.get<RoyaltyAuditEntryDto[]>(`${ROYALTIES}/tracks/${trackId}/audit`);
         return data;
+    },
+
+    /* --- Split templates --- */
+    getTemplates: async (): Promise<SplitTemplateDto[]> => {
+        const { data } = await api.get<SplitTemplateDto[]>(`${ROYALTIES}/templates`);
+        return data;
+    },
+    createTemplate: async (payload: UpsertSplitTemplateRequest): Promise<SplitTemplateDto> => {
+        const { data } = await api.post<SplitTemplateDto>(`${ROYALTIES}/templates`, payload);
+        return data;
+    },
+    updateTemplate: async (id: string, payload: UpsertSplitTemplateRequest): Promise<void> => {
+        await api.put(`${ROYALTIES}/templates/${id}`, payload);
+    },
+    deleteTemplate: async (id: string): Promise<void> => {
+        await api.delete(`${ROYALTIES}/templates/${id}`);
+    },
+    applyTemplate: async (trackId: string, payload: ApplyTemplateRequest): Promise<void> => {
+        await api.post(`${ROYALTIES}/tracks/${trackId}/apply-template`, payload);
+    },
+
+    /* --- Contributor management (add / edit / remove) --- */
+    addContributor: async (payload: AddContributorRequest): Promise<void> => {
+        await api.post(`/admin/splits/contributors`, payload);
+    },
+    editContributor: async (payload: EditContributorRequest): Promise<void> => {
+        await api.put(`/admin/splits/contributors`, payload);
+    },
+    removeContributor: async (payload: RemoveContributorRequest): Promise<void> => {
+        await api.delete(`/admin/splits/contributors`, { data: payload });
     },
 };
 

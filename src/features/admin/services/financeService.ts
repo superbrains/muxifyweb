@@ -8,10 +8,12 @@ import type {
     FinanceApprovalSummaryDto,
     FanLedger,
     FinanceGift,
+    FinanceGiftSummary,
     FinanceOverview,
     FinanceTransaction,
     FinanceTransactionDetail,
     FinanceUnlock,
+    FinanceUnlockSummary,
     GiftQuery,
     PagedResult,
     PayoutAccountDto,
@@ -93,10 +95,25 @@ export const financeService = {
         return data;
     },
 
+    getGiftSummary: async (range: { from?: string; to?: string }): Promise<FinanceGiftSummary> => {
+        const { data } = await api.get<FinanceGiftSummary>(`${BASE}/gifts/summary`, { params: clean(range) });
+        return data;
+    },
+
     getUnlocks: async (query: UnlockQuery): Promise<PagedResult<FinanceUnlock>> => {
         const { data } = await api.get<PagedResult<FinanceUnlock>>(`${BASE}/unlocks`, { params: clean(query) });
         return data;
     },
+
+    getUnlockSummary: async (query: { kind?: string; from?: string; to?: string }): Promise<FinanceUnlockSummary> => {
+        const { data } = await api.get<FinanceUnlockSummary>(`${BASE}/unlocks/summary`, { params: clean(query) });
+        return data;
+    },
+
+    refundContentUnlock: (id: string, body: { reason: string }) =>
+        api.post(`${BASE}/unlocks/${id}/refund`, body),
+    refundAirtimeUnlock: (id: string, body: { reason: string }) =>
+        api.post(`${BASE}/unlocks/airtime/${id}/refund`, body),
 
     getWithdrawals: async (query: WithdrawalQuery): Promise<PagedResult<WithdrawalListItem>> => {
         const { data } = await api.get<PagedResult<WithdrawalListItem>>(`${BASE}/withdrawals`, {

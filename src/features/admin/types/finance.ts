@@ -133,6 +133,21 @@ export interface FinanceGift {
     sentAt: string;
 }
 
+export interface GiftTypeBreakdown {
+    giftType: string;
+    count: number;
+    coinTotal: number;
+}
+
+export interface FinanceGiftSummary {
+    totalGifts: number;
+    totalCoinValue: number;
+    reversedCount: number;
+    toArtistsCount: number;
+    toFansCount: number;
+    byType: GiftTypeBreakdown[];
+}
+
 export interface FinanceUnlock {
     id: string;
     kind: string;
@@ -147,6 +162,22 @@ export interface FinanceUnlock {
     phoneNumber?: string | null;
     status?: string | null;
     createdAt: string;
+}
+
+export interface AirtimeStatusCount {
+    status: string;
+    count: number;
+    amount: number;
+}
+
+export interface FinanceUnlockSummary {
+    totalContentUnlocks: number;
+    totalCoinsSpent: number;
+    trackUnlockCount: number;
+    videoUnlockCount: number;
+    totalAirtimeUnlocks: number;
+    totalAirtimeAmount: number;
+    airtimeByStatus: AirtimeStatusCount[];
 }
 
 export interface WithdrawalListItem {
