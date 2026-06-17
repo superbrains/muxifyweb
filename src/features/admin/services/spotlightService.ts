@@ -1,5 +1,5 @@
 import { api } from '@shared/services/api';
-import type { AdminSpotlight, UpsertSpotlightRequest } from '../types/spotlight';
+import type { AdminSpotlight, SpotlightArtistResult, UpsertSpotlightRequest } from '../types/spotlight';
 
 const BASE = '/admin/spotlight';
 
@@ -33,5 +33,14 @@ export const spotlightService = {
         formData.append('file', file);
         const { data } = await api.post<{ imageUrl: string }>(`${BASE}/image`, formData);
         return data;
+    },
+
+    /** Searches Muxify artists for an Artist-type spotlight. Mirrors the shared ArtistAutocomplete. */
+    async searchArtists(q: string, signal?: AbortSignal): Promise<SpotlightArtistResult[]> {
+        const { data } = await api.get<{ artists: SpotlightArtistResult[] }>('/search', {
+            params: { q: q.trim(), type: 'artists', pageSize: 8 },
+            signal,
+        });
+        return data.artists ?? [];
     },
 };

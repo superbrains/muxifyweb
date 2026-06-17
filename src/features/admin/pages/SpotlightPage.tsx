@@ -30,6 +30,7 @@ import { useChakraToast } from '@shared/hooks';
 import { useAuthedImageSrc } from '@/shared/hooks/useAuthedImageSrc';
 import { compressImage } from '@/shared/lib/fileUtils';
 import { spotlightService } from '../services/spotlightService';
+import { SpotlightEntityPicker } from '../components/SpotlightEntityPicker';
 import {
     useSpotlights,
     useCreateSpotlight,
@@ -228,6 +229,13 @@ const SpotlightDialog: React.FC<{ item?: AdminSpotlight; onClose: () => void }> 
     const [endDate, setEndDate] = React.useState(toLocalInput(item?.endDate ?? undefined));
 
     const needsContentId = CONTENT_TYPES.includes(type);
+
+    /** Switching type invalidates a previously chosen entity (a track id ≠ an album id). */
+    const onTypeChange = (next: SpotlightType) => {
+        if (next !== type) setContentId('');
+        setType(next);
+    };
+
     const valid =
         title.trim().length > 0 &&
         imageUrl.trim().length > 0 &&
@@ -273,7 +281,7 @@ const SpotlightDialog: React.FC<{ item?: AdminSpotlight; onClose: () => void }> 
                     <FieldRow label="Type">
                         <select
                             value={type}
-                            onChange={(e) => setType(e.target.value as SpotlightType)}
+                            onChange={(e) => onTypeChange(e.target.value as SpotlightType)}
                             style={{
                                 fontSize: '12px',
                                 padding: '8px 12px',
@@ -295,12 +303,18 @@ const SpotlightDialog: React.FC<{ item?: AdminSpotlight; onClose: () => void }> 
                     </FieldRow>
                 </SimpleGrid>
                 {needsContentId ? (
-                    <FieldRow label={`${type} ID`}>
-                        <Input
+                    <FieldRow label={`Featured ${type === 'NewRelease' ? 'new release' : type.toLowerCase()}`}>
+                        <SpotlightEntityPicker
+                            type={type}
                             value={contentId}
-                            onChange={(e) => setContentId(e.target.value)}
-                            size="sm"
-                            placeholder="GUID of the target content"
+                            initialLabel={item?.title}
+                            onSelect={(p) => {
+                                setContentId(p.id);
+                                if (!title.trim()) setTitle(p.title);
+                                if (!subtitle.trim() && p.subtitle) setSubtitle(p.subtitle);
+                                if (!imageUrl.trim() && p.imageUrl) setImageUrl(p.imageUrl);
+                            }}
+                            onClear={() => setContentId('')}
                         />
                     </FieldRow>
                 ) : (
