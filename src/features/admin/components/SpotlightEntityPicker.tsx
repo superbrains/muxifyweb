@@ -247,7 +247,6 @@ export const SpotlightEntityPicker: React.FC<SpotlightEntityPickerProps> = ({
                 </Box>
                 <Text
                     as="button"
-                    type="button"
                     fontSize="11px"
                     fontWeight="medium"
                     color={ACCENT}
