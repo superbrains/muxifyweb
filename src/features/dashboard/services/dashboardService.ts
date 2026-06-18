@@ -233,9 +233,13 @@ export const dashboardService = {
   /**
    * Get recent sales/transactions
    * @param take - Number of records to retrieve (default: 10)
+   * @param mediaType - Optional content scope ("Music" | "Video").
    */
-  getRecentSales: (take: number = 10) =>
-    api.get<RecentSalesDto>(`/dashboard/recent-sales?take=${take}`),
+  getRecentSales: (take: number = 10, mediaType?: "Music" | "Video") => {
+    const params = new URLSearchParams({ take: String(take) });
+    if (mediaType) params.set("mediaType", mediaType);
+    return api.get<RecentSalesDto>(`/dashboard/recent-sales?${params.toString()}`);
+  },
 
   /**
    * Get dashboard analytics with chart data.
@@ -243,8 +247,14 @@ export const dashboardService = {
    *   `from`/`to` range is supplied.
    * @param from - Optional custom range start (YYYY-MM-DD).
    * @param to - Optional custom range end (YYYY-MM-DD).
+   * @param mediaType - Optional content scope ("Music" | "Video").
    */
-  getAnalytics: (period: AnalyticsPeriod = "7d", from?: string, to?: string) => {
+  getAnalytics: (
+    period: AnalyticsPeriod = "7d",
+    from?: string,
+    to?: string,
+    mediaType?: "Music" | "Video"
+  ) => {
     const params = new URLSearchParams();
     if (from && to) {
       params.set("from", from);
@@ -252,6 +262,7 @@ export const dashboardService = {
     } else {
       params.set("period", period);
     }
+    if (mediaType) params.set("mediaType", mediaType);
     return api.get<DashboardAnalyticsDto>(`/dashboard/analytics?${params.toString()}`);
   },
 

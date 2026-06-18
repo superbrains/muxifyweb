@@ -126,6 +126,96 @@ export interface ArtistTopFansLeaderboardDto {
 }
 
 // ============================================
+// Artist Top Unlockers DTOs
+// ============================================
+
+/**
+ * Content vertical scope for artist fan analytics.
+ */
+export type FanMediaType = 'music' | 'video';
+
+/**
+ * DTO for an artist's top unlocker entry (a fan ranked by content unlocked).
+ */
+export interface ArtistTopUnlockerDto {
+  rank: number;
+  userId: string;
+  username?: string;
+  displayName?: string;
+  avatarUrl?: string;
+  unlockCount: number;
+  totalCoinsSpent: number;
+}
+
+/**
+ * DTO for an artist's top unlockers leaderboard response.
+ */
+export interface ArtistTopUnlockersLeaderboardDto {
+  artistId: string;
+  entries: ArtistTopUnlockerDto[];
+  period: string;
+  lastUpdated?: string;
+}
+
+// ============================================
+// Fan Country Breakdown DTOs
+// ============================================
+
+/**
+ * Engagement dimension a country breakdown is grouped over.
+ */
+export type CountryDimension = 'plays' | 'gifts' | 'unlocks';
+
+/**
+ * DTO for a single country row in a fan country breakdown.
+ */
+export interface CountryStatDto {
+  rank: number;
+  country: string;
+  count: number;
+  value: number;
+}
+
+/**
+ * DTO for an artist's fan engagement broken down by country.
+ */
+export interface FanCountryBreakdownDto {
+  artistId: string;
+  dimension: string;
+  entries: CountryStatDto[];
+  period: string;
+  lastUpdated?: string;
+}
+
+// ============================================
+// Fan Engagement Summary DTO
+// ============================================
+
+/**
+ * A single fan-engagement metric with its trend vs the previous period.
+ */
+export interface FanMetricDto {
+  value: number;
+  previous: number;
+  percentChange: number;
+  isPositiveChange: boolean;
+}
+
+/**
+ * Media-aware summary of an artist's fan engagement (drives the KPI strip).
+ */
+export interface FanEngagementSummaryDto {
+  artistId: string;
+  plays: FanMetricDto;
+  followers: FanMetricDto;
+  gifts: FanMetricDto;
+  unlocks: FanMetricDto;
+  totalGiftValue: number;
+  totalUnlockCoins: number;
+  period: string;
+}
+
+// ============================================
 // Request Parameters
 // ============================================
 

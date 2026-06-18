@@ -12,8 +12,13 @@ import type {
   MostSharedLeaderboardDto,
   TopSinglesLeaderboardDto,
   MostGiftedContentLeaderboardDto,
+  ArtistTopUnlockersLeaderboardDto,
+  FanCountryBreakdownDto,
+  FanEngagementSummaryDto,
   LeaderboardPeriod,
   LeaderboardScope,
+  FanMediaType,
+  CountryDimension,
 } from '../types';
 
 const LEADERBOARD_BASE = '/leaderboard';
@@ -156,16 +161,80 @@ export const leaderboardService = {
   async getArtistTopFans(
     artistId: string,
     take = 10,
-    period: LeaderboardPeriod = 'all-time'
+    period: LeaderboardPeriod = 'all-time',
+    mediaType?: FanMediaType
   ): Promise<ArtistTopFansLeaderboardDto> {
     try {
       const response = await axiosInstance.get<ArtistTopFansLeaderboardDto>(
         `${LEADERBOARD_BASE}/artist/${artistId}/top-fans`,
-        { params: { take, period } }
+        { params: { take, period, mediaType } }
       );
       return response.data;
     } catch (error) {
       throw new Error(getApiErrorMessage(error, 'Failed to fetch artist top fans'));
+    }
+  },
+
+  /**
+   * GET /api/v1/leaderboard/artist/{artistId}/top-unlockers
+   * Get the fans who unlocked the most of an artist's content.
+   */
+  async getArtistTopUnlockers(
+    artistId: string,
+    take = 10,
+    period: LeaderboardPeriod = 'all-time',
+    mediaType?: FanMediaType
+  ): Promise<ArtistTopUnlockersLeaderboardDto> {
+    try {
+      const response = await axiosInstance.get<ArtistTopUnlockersLeaderboardDto>(
+        `${LEADERBOARD_BASE}/artist/${artistId}/top-unlockers`,
+        { params: { take, period, mediaType } }
+      );
+      return response.data;
+    } catch (error) {
+      throw new Error(getApiErrorMessage(error, 'Failed to fetch artist top unlockers'));
+    }
+  },
+
+  /**
+   * GET /api/v1/leaderboard/artist/{artistId}/country-breakdown
+   * Break an artist's plays, gifts or unlocks down by the fan's country.
+   */
+  async getFanCountryBreakdown(
+    artistId: string,
+    dimension: CountryDimension,
+    take = 10,
+    period: LeaderboardPeriod = 'all-time',
+    mediaType?: FanMediaType
+  ): Promise<FanCountryBreakdownDto> {
+    try {
+      const response = await axiosInstance.get<FanCountryBreakdownDto>(
+        `${LEADERBOARD_BASE}/artist/${artistId}/country-breakdown`,
+        { params: { dimension, take, period, mediaType } }
+      );
+      return response.data;
+    } catch (error) {
+      throw new Error(getApiErrorMessage(error, 'Failed to fetch fan country breakdown'));
+    }
+  },
+
+  /**
+   * GET /api/v1/leaderboard/artist/{artistId}/fan-summary
+   * Get an artist's media-aware fan engagement KPI summary.
+   */
+  async getFanEngagementSummary(
+    artistId: string,
+    period: LeaderboardPeriod = 'all-time',
+    mediaType?: FanMediaType
+  ): Promise<FanEngagementSummaryDto> {
+    try {
+      const response = await axiosInstance.get<FanEngagementSummaryDto>(
+        `${LEADERBOARD_BASE}/artist/${artistId}/fan-summary`,
+        { params: { period, mediaType } }
+      );
+      return response.data;
+    } catch (error) {
+      throw new Error(getApiErrorMessage(error, 'Failed to fetch fan engagement summary'));
     }
   },
 

@@ -226,7 +226,7 @@ export type TimeFilter = 'daily' | 'weekly' | 'monthly' | 'yearly';
 /**
  * Maps TimeFilter to LeaderboardPeriod
  */
-export function mapTimeFilterToPeriod(filter: TimeFilter): 'day' | 'week' | 'month' | 'all-time' {
+export function mapTimeFilterToPeriod(filter: TimeFilter): 'day' | 'week' | 'month' | 'year' | 'all-time' {
   switch (filter) {
     case 'daily':
       return 'day';
@@ -235,7 +235,7 @@ export function mapTimeFilterToPeriod(filter: TimeFilter): 'day' | 'week' | 'mon
     case 'monthly':
       return 'month';
     case 'yearly':
-      return 'all-time';
+      return 'year';
     default:
       return 'all-time';
   }
