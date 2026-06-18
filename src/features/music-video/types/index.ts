@@ -14,6 +14,14 @@ export interface SingleItem {
   audioFile?: File;
   audioData?: string; // Base64 data for file reconstruction
   audioName?: string; // Original filename
+  /** Original uploaded audio filename (from the API DTO), retained for edit prepopulation. */
+  filename?: string;
+  /** Uploaded audio file size in bytes (from the API DTO), retained for edit prepopulation. */
+  fileSize?: number;
+  /** Artist lyrics (plain text or synced LRC) retained for edit prepopulation. */
+  lrcContent?: string | null;
+  /** ISRC code retained for edit prepopulation. */
+  isrc?: string;
   genre: string[];
   releaseType: string[];
   unlockCost: string[];
@@ -101,6 +109,14 @@ export interface VideoItem {
   videoFile: File;
   videoData?: string; // Base64 data for file reconstruction
   videoName?: string; // Original filename
+  /** Original uploaded video filename (from the API DTO), retained for edit prepopulation. */
+  filename?: string;
+  /** Uploaded video file size in bytes (from the API DTO), retained for edit prepopulation. */
+  fileSize?: number;
+  /** Video description retained for edit prepopulation. */
+  description?: string;
+  /** Video type (e.g. MusicVideo, Lyric) retained for edit prepopulation. */
+  videoType?: string;
   thumbnails?: string[]; // Preserve extra thumbnails for editing
   thumbnailData?: string[]; // Base64 data for thumbnail reconstruction
   thumbnailNames?: string[]; // Original filenames

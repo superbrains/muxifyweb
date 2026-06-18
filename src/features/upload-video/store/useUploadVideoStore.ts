@@ -7,8 +7,14 @@ interface UploadFile {
   size: string;
   progress: number;
   status: "uploading" | "ready" | "error";
-  file: File;
+  /** A newly-picked local file. Undefined when this represents an already-uploaded
+   *  ("existing") asset loaded for editing — in that case `existingUrl`/`remoteId` are set. */
+  file?: File;
   url?: string;
+  /** Remote URL (thumbnail proxy path or stream URL) for an already-uploaded asset shown on edit. */
+  existingUrl?: string;
+  /** Backend id of the existing video this asset belongs to (edit mode). */
+  remoteId?: string;
 }
 
 interface VideoUploadState {

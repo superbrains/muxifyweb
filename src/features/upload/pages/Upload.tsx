@@ -10,10 +10,24 @@ import { useMusicStore } from '@musicVideo/store/useMusicStore';
 import { useVideoStore } from '@musicVideo/store/useVideoStore';
 import { useUploadMusicStore } from '@uploadMusic/store/useUploadMusicStore';
 import { useUploadVideoStore } from '@uploadVideo/store/useUploadVideoStore';
-import { base64ToFile, getMimeTypeFromFilename } from '@shared/lib/fileUtils';
+import { formatFileSize } from '@uploadMusic/services/uploadMusicService';
 import { useUserType } from '@/features/auth/hooks/useUserType';
 import { ArtistDropdown } from '@/shared/components/ArtistDropdown';
 import { HStack } from '@chakra-ui/react';
+
+// Map a genre display string from the API (e.g. "Afrobeat", "Hip Hop", "R&B") onto the
+// option `value` used by the upload FormSelects so it shows as selected on edit. Falls back
+// to a lowercased/hyphenated form when no special-case applies.
+const normalizeGenre = (genre: string): string => {
+    const key = genre.trim().toLowerCase();
+    const specials: Record<string, string> = {
+        'r&b': 'rnb',
+        'rnb': 'rnb',
+        'hip hop': 'hip-hop',
+        'hip-hop': 'hip-hop',
+    };
+    return specials[key] ?? key.replace(/\s+/g, '-');
+};
 
 export const Upload: React.FC = () => {
     const { activeTab, setActiveTab, albumTab, setAlbumTab, startEditing, isEditing, stopEditing } = useUploadStore();
@@ -30,6 +44,8 @@ export const Upload: React.FC = () => {
         mixSetUnlockCost,
         mixSetAllowSponsorship,
         mixSetReleaseYear,
+        mixSetLyrics,
+        mixSetIsrc,
         mixAddTrack,
         mixSetCoverArt,
         resetMix,
@@ -42,7 +58,6 @@ export const Upload: React.FC = () => {
         albumSetUnlockCost,
         albumSetAllowSponsorship,
         albumSetReleaseYear,
-        albumAddTrack,
         albumSetCoverArt,
         resetAlbum,
     } = useUploadMusicStore();
@@ -80,46 +95,42 @@ export const Upload: React.FC = () => {
             startEditing('mix', mixId);
             const item = getSingleById(mixId);
             if (item) {
-                // Reset and populate all fields
+                // Reset, then prepopulate from the cached record. The underlying audio file
+                // can't be swapped (no backend endpoint) so it's shown read-only; cover art,
+                // metadata and lyrics remain editable.
                 resetMix();
                 mixSetTrackTitle(item.title || '');
                 mixSetSelectedArtists(item.artists || []);
-                if (item.genre) mixSetGenre(item.genre);
-                if (item.releaseType) mixSetReleaseType(item.releaseType);
-                if (item.unlockCost) mixSetUnlockCost(item.unlockCost);
-                if (item.allowSponsorship) mixSetAllowSponsorship(item.allowSponsorship);
+                if (item.genre?.length) mixSetGenre(item.genre.map(normalizeGenre));
+                if (item.releaseType?.length) mixSetReleaseType(item.releaseType);
+                if (item.unlockCost?.length) mixSetUnlockCost(item.unlockCost);
+                if (item.allowSponsorship?.length) mixSetAllowSponsorship(item.allowSponsorship);
                 if (item.releaseYear) mixSetReleaseYear(item.releaseYear);
+                mixSetLyrics(item.lrcContent ?? '');
+                if (item.isrc) mixSetIsrc(item.isrc);
 
-                // Reconstruct files from base64 data
-                try {
-                    if (item.audioData && item.audioName) {
-                        const audioFile = base64ToFile(item.audioData, item.audioName, getMimeTypeFromFilename(item.audioName));
-                        const uploadTrack = {
-                            id: item.id,
-                            name: item.audioName,
-                            size: ((audioFile.size / (1024 * 1024)).toFixed(2) + ' MB'),
-                            progress: 100,
-                            status: 'ready' as const,
-                            file: audioFile,
-                            title: item.title || item.audioName,
-                        };
-                        mixAddTrack(uploadTrack);
-                    }
+                // Existing uploaded audio — display only (filename + size), not replaceable.
+                mixAddTrack({
+                    id: item.id,
+                    remoteId: item.id,
+                    name: item.filename || item.title || 'Current audio file',
+                    size: item.fileSize ? formatFileSize(item.fileSize) : '',
+                    progress: 100,
+                    status: 'ready' as const,
+                    title: item.title || item.filename || '',
+                });
 
-                    if (item.coverArtData && item.coverArtName) {
-                        const coverArtFile = base64ToFile(item.coverArtData, item.coverArtName, getMimeTypeFromFilename(item.coverArtName));
-                        const uploadCoverArt = {
-                            id: `cover-${item.id}`,
-                            name: item.coverArtName,
-                            size: ((coverArtFile.size / (1024 * 1024)).toFixed(2) + ' MB'),
-                            progress: 100,
-                            status: 'ready' as const,
-                            file: coverArtFile,
-                        };
-                        mixSetCoverArt(uploadCoverArt);
-                    }
-                } catch (error) {
-                    console.error('Error reconstructing files:', error);
+                // Existing cover art — rendered from its proxy URL, replaceable.
+                if (item.coverArt) {
+                    mixSetCoverArt({
+                        id: `cover-${item.id}`,
+                        remoteId: item.id,
+                        name: item.coverArtName || 'Current cover',
+                        size: '',
+                        progress: 100,
+                        status: 'ready' as const,
+                        existingUrl: item.coverArt,
+                    });
                 }
             }
         } else if (albumId) {
@@ -142,46 +153,24 @@ export const Upload: React.FC = () => {
                 albumSetTrackTitles(titles);
                 albumSetTrackArtists(artistsByTrack);
 
-                if (item.genre) albumSetGenre(item.genre);
-                if (item.releaseType) albumSetReleaseType(item.releaseType);
-                if (item.unlockCost) albumSetUnlockCost(item.unlockCost);
-                if (item.allowSponsorship) albumSetAllowSponsorship(item.allowSponsorship);
+                if (item.genre?.length) albumSetGenre(item.genre.map(normalizeGenre));
+                if (item.releaseType?.length) albumSetReleaseType(item.releaseType);
+                if (item.unlockCost?.length) albumSetUnlockCost(item.unlockCost);
+                if (item.allowSponsorship?.length) albumSetAllowSponsorship(item.allowSponsorship);
                 if (item.releaseYear) albumSetReleaseYear(item.releaseYear);
 
-                // Reconstruct files from base64 data
-                try {
-                    // Reconstruct album tracks
-                    item.tracks?.forEach((t) => {
-                        if (t.audioData && t.audioName) {
-                            const audioFile = base64ToFile(t.audioData, t.audioName, getMimeTypeFromFilename(t.audioName));
-                            const uploadTrack = {
-                                id: t.id,
-                                name: t.audioName,
-                                size: ((audioFile.size / (1024 * 1024)).toFixed(2) + ' MB'),
-                                progress: 100,
-                                status: 'ready' as const,
-                                file: audioFile,
-                                title: t.title || t.audioName,
-                            };
-                            albumAddTrack(uploadTrack);
-                        }
+                // Existing cover art — rendered from its proxy URL, replaceable. (Album track
+                // binaries are managed by the dedicated album editor at /upload/album/:id.)
+                if (item.coverArt) {
+                    albumSetCoverArt({
+                        id: `cover-${item.id}`,
+                        remoteId: item.id,
+                        name: item.coverArtName || 'Current cover',
+                        size: '',
+                        progress: 100,
+                        status: 'ready' as const,
+                        existingUrl: item.coverArt,
                     });
-
-                    // Reconstruct cover art
-                    if (item.coverArtData && item.coverArtName) {
-                        const coverArtFile = base64ToFile(item.coverArtData, item.coverArtName, getMimeTypeFromFilename(item.coverArtName));
-                        const uploadCoverArt = {
-                            id: `cover-${item.id}`,
-                            name: item.coverArtName,
-                            size: ((coverArtFile.size / (1024 * 1024)).toFixed(2) + ' MB'),
-                            progress: 100,
-                            status: 'ready' as const,
-                            file: coverArtFile,
-                        };
-                        albumSetCoverArt(uploadCoverArt);
-                    }
-                } catch (error) {
-                    console.error('Error reconstructing files:', error);
                 }
             }
         } else if (videoId) {
@@ -189,60 +178,41 @@ export const Upload: React.FC = () => {
             startEditing('video', videoId);
             const item = getVideoItemById(videoId);
             if (item) {
-                // Reset video upload state
                 resetVideoUpload();
 
-                // Reconstruct files from base64 data
-                try {
-                    // Reconstruct video file
-                    if (item.videoData && item.videoName) {
-                        const videoFile = base64ToFile(item.videoData, item.videoName, getMimeTypeFromFilename(item.videoName));
-                        const uploadFile = {
-                            id: videoId,
-                            name: item.videoName,
-                            size: ((videoFile.size / (1024 * 1024)).toFixed(2) + ' MB'),
-                            progress: 100,
-                            status: 'ready' as const,
-                            file: videoFile,
-                            url: URL.createObjectURL(videoFile),
-                        };
-                        setVideoFile(uploadFile);
-                    }
+                // Existing uploaded video — display only (filename + size), not replaceable.
+                setVideoFile({
+                    id: videoId,
+                    remoteId: videoId,
+                    name: item.filename || item.title || 'Current video file',
+                    size: item.fileSize ? formatFileSize(item.fileSize) : '',
+                    progress: 100,
+                    status: 'ready' as const,
+                });
 
-                    // Reconstruct thumbnails
-                    if (item.thumbnailData && item.thumbnailNames) {
-                        item.thumbnailData.forEach((data, index) => {
-                            if (data && item.thumbnailNames?.[index]) {
-                                const thumbnailFile = base64ToFile(data, item.thumbnailNames[index], getMimeTypeFromFilename(item.thumbnailNames[index]));
-                                const uploadThumbnail = {
-                                    id: `thumb-${videoId}-${index}`,
-                                    name: item.thumbnailNames[index],
-                                    size: ((thumbnailFile.size / (1024 * 1024)).toFixed(2) + ' MB'),
-                                    progress: 100,
-                                    status: 'ready' as const,
-                                    file: thumbnailFile,
-                                    url: URL.createObjectURL(thumbnailFile),
-                                };
-                                addThumbnail(uploadThumbnail);
-                            }
-                        });
-                    }
-
-                    // Populate form fields
-                    if (item.trackLinks) {
-                        item.trackLinks.forEach(link => {
-                            if (link.trim()) {
-                                addTrackLink();
-                                updateTrackLink(0, link);
-                            }
-                        });
-                    }
-                    if (item.releaseType) setVideoReleaseType(item.releaseType);
-                    if (item.unlockCost) setVideoUnlockCost(item.unlockCost);
-                    if (item.allowSponsorship) setVideoAllowSponsorship(item.allowSponsorship);
-                } catch (error) {
-                    console.error('Error reconstructing video files:', error);
+                // Existing thumbnail — rendered from its proxy URL, replaceable.
+                if (item.thumbnail) {
+                    addThumbnail({
+                        id: `thumb-${videoId}`,
+                        remoteId: videoId,
+                        name: 'Current thumbnail',
+                        size: '',
+                        progress: 100,
+                        status: 'ready' as const,
+                        existingUrl: item.thumbnail,
+                    });
                 }
+
+                if (item.trackLinks?.length) {
+                    item.trackLinks.forEach((link, index) => {
+                        if (!link.trim()) return;
+                        if (index > 0) addTrackLink();
+                        updateTrackLink(index, link);
+                    });
+                }
+                if (item.releaseType?.length) setVideoReleaseType(item.releaseType);
+                if (item.unlockCost?.length) setVideoUnlockCost(item.unlockCost);
+                if (item.allowSponsorship?.length) setVideoAllowSponsorship(item.allowSponsorship);
             }
         } else if (isEditing) {
             // Ensure we clear editing if navigated without params

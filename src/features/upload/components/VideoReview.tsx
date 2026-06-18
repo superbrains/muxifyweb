@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { Box, Button, Flex, Icon, Text, VStack, Image, Spinner } from '@chakra-ui/react';
+import { Box, Button, Flex, Icon, Text, VStack, Spinner } from '@chakra-ui/react';
 import { FiArrowRight, FiArrowLeft } from 'react-icons/fi';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useUploadVideoStore } from '../../upload-video/store/useUploadVideoStore';
 import { VideoPlayer } from '../../upload-video/components';
 import { UploadSuccessPage, ReleaseScheduler } from './';
 import { UploadProgressModal } from '@shared/components';
+import { AuthedImage } from '@shared/components/AuthedImage';
 import type { UploadProgressDetail } from '@shared/types/upload';
 
 interface VideoReviewProps {
@@ -147,9 +148,20 @@ export const VideoReview: React.FC<VideoReviewProps> = ({
                 {/* Left Section - Video Player and Form Fields */}
                 <Box flex="1" minW={0}>
                     <VStack align="stretch" gap={5}>
-                        {/* Video Player */}
+                        {/* Video Player (new upload) or current-file card (editing) */}
                         {videoFile && (
-                            <VideoPlayer videoFile={videoFile} showRemove={false} />
+                            videoFile.file ? (
+                                <VideoPlayer videoFile={videoFile} showRemove={false} />
+                            ) : (
+                                <Box bg="white" border="1px solid" borderColor="gray.200" borderRadius="md" p={4}>
+                                    <Text fontSize="14px" color="gray.900" lineClamp={1}>
+                                        {videoFile.name}
+                                    </Text>
+                                    <Text fontSize="12px" color="primary.500" mt={0.5}>
+                                        Current video{videoFile.size ? ` · ${videoFile.size}` : ''}
+                                    </Text>
+                                </Box>
+                            )
                         )}
 
                         {/* Release Type */}
@@ -246,8 +258,8 @@ export const VideoReview: React.FC<VideoReviewProps> = ({
                         {/* Thumbnail Preview */}
                         {selectedThumbnail && (
                             <Box>
-                                <Image
-                                    src={selectedThumbnail.url}
+                                <AuthedImage
+                                    src={selectedThumbnail.url ?? selectedThumbnail.existingUrl}
                                     alt="Video thumbnail"
                                     w="full"
                                     h="400px"

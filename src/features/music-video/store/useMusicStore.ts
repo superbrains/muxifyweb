@@ -91,6 +91,12 @@ function trackDtoToSingleItem(track: TrackDto): SingleItem {
     unlocks: 0, // Not in TrackDto, default to 0
     gifts: 0, // Not in TrackDto, default to 0
     coverArt: track.thumbnail || "",
+    // Retain the fields the list/detail call already returns so the edit form can
+    // prepopulate the existing audio file and lyrics without an extra fetch.
+    filename: track.filename,
+    fileSize: track.fileSize,
+    lrcContent: track.lrcContent ?? null,
+    isrc: track.isrc,
     genre: track.genre ? [track.genre] : [],
     releaseType: [],
     unlockCost: [],

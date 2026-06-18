@@ -6,7 +6,10 @@ interface UploadFile {
   size: string;
   progress: number;
   status: "uploading" | "ready" | "error";
-  file: File;
+  /** Undefined for an already-uploaded ("existing") asset loaded for editing. */
+  file?: File;
+  existingUrl?: string;
+  remoteId?: string;
 }
 
 interface Track extends UploadFile {

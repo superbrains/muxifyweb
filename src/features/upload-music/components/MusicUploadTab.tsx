@@ -16,7 +16,9 @@ interface UploadFile {
     size: string;
     progress: number;
     status: 'uploading' | 'ready' | 'error';
-    file: File;
+    file?: File;
+    existingUrl?: string;
+    remoteId?: string;
 }
 
 interface Track extends UploadFile {
@@ -287,6 +289,7 @@ export const MusicUploadTab: React.FC<MusicUploadTabProps> = ({ albumTab, setAlb
                     releaseTypeOptions={releaseTypeOptions}
                     unlockCostOptions={unlockCostOptions}
                     sponsorshipOptions={sponsorshipOptions}
+                    isEditing={isEditing}
                 />
             ) : (
                 /* Album tab funnels to the dedicated draft → tracks → publish editor.

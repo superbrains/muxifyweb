@@ -8,8 +8,10 @@ interface UploadFile {
     size: string;
     progress: number;
     status: 'uploading' | 'ready' | 'error';
-    file: File;
+    file?: File;
     url?: string;
+    existingUrl?: string;
+    remoteId?: string;
 }
 
 interface VideoPlayerProps {

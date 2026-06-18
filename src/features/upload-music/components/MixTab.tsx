@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Flex, VStack } from '@chakra-ui/react';
+import { Box, Flex, VStack, Text } from '@chakra-ui/react';
 import {
     FileUploadArea,
     UploadedFileCard,
@@ -7,6 +7,7 @@ import {
     ReleaseYearInput,
     Artist,
 } from '@upload/components';
+import { AuthedImage } from '@shared/components/AuthedImage';
 import { UploadFileIcon, UploadImageIcon } from '@/shared/icons/CustomIcons';
 import { LyricsField } from './LyricsField';
 
@@ -16,7 +17,9 @@ interface UploadFile {
     size: string;
     progress: number;
     status: 'uploading' | 'ready' | 'error';
-    file: File;
+    file?: File;
+    existingUrl?: string;
+    remoteId?: string;
 }
 
 interface MixTabProps {
@@ -50,6 +53,8 @@ interface MixTabProps {
     releaseTypeOptions: { label: string; value: string }[];
     unlockCostOptions: { label: string; value: string }[];
     sponsorshipOptions: { label: string; value: string }[];
+    /** Editing an existing track: the audio binary can't be replaced, only shown. */
+    isEditing?: boolean;
 }
 
 export const MixTab: React.FC<MixTabProps> = ({
@@ -83,6 +88,7 @@ export const MixTab: React.FC<MixTabProps> = ({
     releaseTypeOptions,
     unlockCostOptions,
     sponsorshipOptions,
+    isEditing = false,
 }) => {
 
     return (
@@ -91,31 +97,43 @@ export const MixTab: React.FC<MixTabProps> = ({
             {/* Left Section */}
             <Box flex="1" minW={0}>
                 <VStack align="stretch" gap={5}>
-                    {/* File Upload */}
-                    <FileUploadArea
-                        accept=".mp3,.m4a"
-                        maxSize={50}
-                        onFileSelect={onAudioFileSelect}
-                        onFileReady={onAudioFileReady}
-                        title="Upload a new file"
-                        supportedFormats="Support M4A, MP3"
-                        Icon={UploadFileIcon}
-                        fileType="audio"
-                    />
+                    {/* File Upload — hidden when editing: the audio binary can't be replaced. */}
+                    {!isEditing && (
+                        <FileUploadArea
+                            accept=".mp3,.m4a"
+                            maxSize={50}
+                            onFileSelect={onAudioFileSelect}
+                            onFileReady={onAudioFileReady}
+                            title="Upload a new file"
+                            supportedFormats="Support M4A, MP3"
+                            Icon={UploadFileIcon}
+                            fileType="audio"
+                        />
+                    )}
 
                     {/* Ready Tracks */}
-                    {tracks.map((track) => (
-                        <UploadedFileCard
-                            key={track.id}
-                            fileName={track.name}
-                            fileSize={track.size}
-                            progress={track.progress}
-                            status={track.status}
-                            onRemove={() => onRemoveTrack(track.id)}
-                            type="audio"
-                            file={track.file}
-                        />
-                    ))}
+                    {tracks.map((track) => {
+                        const isExisting = !track.file;
+                        return (
+                            <Box key={track.id}>
+                                <UploadedFileCard
+                                    fileName={track.name}
+                                    fileSize={track.size}
+                                    progress={track.progress}
+                                    status={track.status}
+                                    // Existing (already-uploaded) audio can't be removed/replaced.
+                                    onRemove={isExisting ? undefined : () => onRemoveTrack(track.id)}
+                                    type="audio"
+                                    file={track.file}
+                                />
+                                {isExisting && (
+                                    <Text fontSize="11px" color="gray.500" mt={1}>
+                                        This is the current audio file. It can&apos;t be replaced after upload.
+                                    </Text>
+                                )}
+                            </Box>
+                        );
+                    })}
 
                     {/* Album Art Cover */}
                     <Box>
@@ -131,14 +149,33 @@ export const MixTab: React.FC<MixTabProps> = ({
                         />
                         {coverArt && (
                             <Box mt={3}>
-                                <UploadedFileCard
-                                    fileName={coverArt.name}
-                                    fileSize={coverArt.size}
-                                    progress={coverArt.progress}
-                                    status={coverArt.status}
-                                    onRemove={onRemoveCoverArt}
-                                    type="image"
-                                />
+                                {coverArt.existingUrl && !coverArt.file ? (
+                                    // Existing cover art rendered from its (auth-gated) proxy URL.
+                                    <Box
+                                        w="160px"
+                                        aspectRatio={1}
+                                        borderRadius="lg"
+                                        overflow="hidden"
+                                        border="1px solid"
+                                        borderColor="gray.200"
+                                    >
+                                        <AuthedImage
+                                            src={coverArt.existingUrl}
+                                            w="full"
+                                            h="full"
+                                            objectFit="cover"
+                                        />
+                                    </Box>
+                                ) : (
+                                    <UploadedFileCard
+                                        fileName={coverArt.name}
+                                        fileSize={coverArt.size}
+                                        progress={coverArt.progress}
+                                        status={coverArt.status}
+                                        onRemove={onRemoveCoverArt}
+                                        type="image"
+                                    />
+                                )}
                             </Box>
                         )}
                     </Box>

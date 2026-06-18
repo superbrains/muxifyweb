@@ -165,8 +165,8 @@ export const uploadMusicService = {
   },
 
   /**
-   * Upload cover art for an existing track
-   * This creates a new FormData request with only the cover art
+   * Replace the cover art of an existing track.
+   * PATCH /api/v1/music/{id}/cover-art  (multipart form field: `coverArt`)
    */
   uploadCoverArt: async (
     trackId: string,
@@ -176,8 +176,8 @@ export const uploadMusicService = {
     const formData = new FormData();
     formData.append('coverArt', coverArt);
 
-    const response = await axiosInstance.post<TrackDto>(
-      `/music/${trackId}/cover`,
+    const response = await axiosInstance.patch<TrackDto>(
+      `/music/${trackId}/cover-art`,
       formData,
       {
         headers: {

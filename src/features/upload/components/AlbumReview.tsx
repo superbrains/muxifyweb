@@ -64,7 +64,7 @@ export const AlbumReview: React.FC = () => {
 
     const readyTracks = tracks.filter(track => track.status === 'ready');
     const firstTrack = tracks[0];
-    const coverArtUrl = coverArt ? URL.createObjectURL(coverArt.file) : '';
+    const coverArtUrl = coverArt?.file ? URL.createObjectURL(coverArt.file) : '';
 
     const genreLabels: Record<string, string> = {
         'afrobeat': 'Afrobeat',

@@ -11,6 +11,7 @@ import {
 } from '@chakra-ui/react';
 import { FiCheck } from 'react-icons/fi';
 import { useUploadMusicStore } from '@uploadMusic/store/useUploadMusicStore';
+import { AuthedImage } from '@shared/components/AuthedImage';
 import { ReviewTrackItem, ReleaseScheduler } from './';
 import { formatPercentBps } from '@/features/record-label/lib/format';
 import { detectLyricsFormat } from '@uploadMusic/lib/lyricsFormat';
@@ -44,7 +45,9 @@ export const MixReview: React.FC = () => {
     };
 
     const firstTrack = tracks[0];
-    const coverArtUrl = coverArt ? URL.createObjectURL(coverArt.file) : '';
+    // A newly-picked cover yields an object URL; an existing cover uses its (auth-gated) proxy URL.
+    const coverArtUrl = coverArt?.file ? URL.createObjectURL(coverArt.file) : '';
+    const coverArtExistingUrl = !coverArt?.file ? coverArt?.existingUrl : undefined;
 
     const genreLabels: Record<string, string> = {
         'afrobeat': 'Afrobeat',
@@ -311,6 +314,28 @@ export const MixReview: React.FC = () => {
                                     h="400px"
                                     objectFit="cover"
                                     borderRadius="lg"
+                                />
+                            ) : coverArtExistingUrl ? (
+                                <AuthedImage
+                                    src={coverArtExistingUrl}
+                                    alt="Album Cover"
+                                    w="full"
+                                    h="400px"
+                                    objectFit="cover"
+                                    borderRadius="lg"
+                                    fallback={
+                                        <Box
+                                            w="full"
+                                            h="400px"
+                                            bg="gray.100"
+                                            borderRadius="lg"
+                                            display="flex"
+                                            alignItems="center"
+                                            justifyContent="center"
+                                        >
+                                            <Text color="gray.400">Loading cover…</Text>
+                                        </Box>
+                                    }
                                 />
                             ) : (
                                 <Box

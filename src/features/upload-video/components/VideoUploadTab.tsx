@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Box, Button, Flex, VStack, Text, Icon, HStack, Grid, Image } from '@chakra-ui/react';
+import { Box, Button, Flex, VStack, Text, Icon, HStack, Grid } from '@chakra-ui/react';
 import { FiArrowRight, FiPlus } from 'react-icons/fi';
 import { MdClose } from 'react-icons/md';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -9,6 +9,7 @@ import { useUploadVideoStore } from '../store/useUploadVideoStore';
 import { useUploadStore } from '@upload/store/useUploadStore';
 import { VideoPlayer } from './VideoPlayer';
 import { URLInput } from '@shared/components';
+import { AuthedImage } from '@shared/components/AuthedImage';
 
 interface UploadFile {
     id: string;
@@ -16,8 +17,10 @@ interface UploadFile {
     size: string;
     progress: number;
     status: 'uploading' | 'ready' | 'error';
-    file: File;
+    file?: File;
     url?: string;
+    existingUrl?: string;
+    remoteId?: string;
 }
 
 const releaseTypeOptions = [
@@ -94,8 +97,8 @@ const ThumbnailGrid: React.FC<{
                         borderColor: index === selectedThumbnailIndex ? 'primary.500' : 'gray.300'
                     }}
                 >
-                    <Image
-                        src={thumbnail.url}
+                    <AuthedImage
+                        src={thumbnail.url ?? thumbnail.existingUrl}
                         alt={`Thumbnail ${index + 1}`}
                         w="full"
                         h="full"
@@ -171,7 +174,7 @@ export const VideoUploadTab: React.FC = () => {
     const handleVideoFileReady = (file: UploadFile) => {
         const videoWithUrl = {
             ...file,
-            url: URL.createObjectURL(file.file),
+            url: file.file ? URL.createObjectURL(file.file) : file.url,
         };
         setVideoFile(videoWithUrl);
     };
@@ -185,7 +188,7 @@ export const VideoUploadTab: React.FC = () => {
         console.log('[VideoUploadTab] handleThumbnailReady called for:', file.id, file.name);
         const thumbnailWithUrl = {
             ...file,
-            url: URL.createObjectURL(file.file),
+            url: file.file ? URL.createObjectURL(file.file) : file.url,
         };
         console.log('[VideoUploadTab] Adding thumbnail to store:', thumbnailWithUrl.id);
         addThumbnail(thumbnailWithUrl);
@@ -271,23 +274,40 @@ export const VideoUploadTab: React.FC = () => {
                 {/* Left Section */}
                 <Box flex="1" minW={0}>
                     <VStack align="stretch" gap={6}>
-                        {/* Upload a new file */}
+                        {/* Upload a new file — hidden when editing: the video binary can't be replaced. */}
                         <Box>
-                            <FileUploadArea
-                                accept=".mp4,.mov"
-                                maxSize={50}
-                                onFileSelect={handleVideoFileSelect}
-                                onFileReady={handleVideoFileReady}
-                                title="Upload a new file"
-                                supportedFormats="Support MP4, Mov"
-                                Icon={UploadFileIcon}
-                                fileType="video"
-                            />
+                            {!isEditing && (
+                                <FileUploadArea
+                                    accept=".mp4,.mov"
+                                    maxSize={50}
+                                    onFileSelect={handleVideoFileSelect}
+                                    onFileReady={handleVideoFileReady}
+                                    title="Upload a new file"
+                                    supportedFormats="Support MP4, Mov"
+                                    Icon={UploadFileIcon}
+                                    fileType="video"
+                                />
+                            )}
 
-                            {/* Video Player */}
+                            {/* Video preview / current file */}
                             {videoFile && (
                                 <Box mt={4}>
-                                    <VideoPlayer videoFile={videoFile} onRemove={handleRemoveVideo} />
+                                    {videoFile.file ? (
+                                        <VideoPlayer videoFile={videoFile} onRemove={handleRemoveVideo} />
+                                    ) : (
+                                        // Existing (already-uploaded) video — read-only.
+                                        <Box bg="white" border="1px solid" borderColor="gray.200" borderRadius="md" p={4}>
+                                            <Text fontSize="14px" color="gray.900" lineClamp={1}>
+                                                {videoFile.name}
+                                            </Text>
+                                            <Text fontSize="12px" color="primary.500" mt={0.5}>
+                                                Current video{videoFile.size ? ` · ${videoFile.size}` : ''}
+                                            </Text>
+                                            <Text fontSize="11px" color="gray.500" mt={1}>
+                                                This is the current video file. It can&apos;t be replaced after upload.
+                                            </Text>
+                                        </Box>
+                                    )}
                                 </Box>
                             )}
                         </Box>

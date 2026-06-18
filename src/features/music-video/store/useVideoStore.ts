@@ -57,6 +57,12 @@ function videoDtoToVideoItem(video: VideoDto): VideoItem {
     gifts: 0, // Not in VideoDto, default to 0
     thumbnail: video.thumbnail || "",
     videoFile: undefined as unknown as File, // Not available from API
+    // Retain the fields the list/detail call already returns so the edit form can
+    // prepopulate the existing video file and metadata without an extra fetch.
+    filename: video.filename,
+    fileSize: video.fileSize,
+    description: video.description,
+    videoType: video.videoType,
     releaseType: video.videoType ? [video.videoType] : [],
     unlockCost: [],
     allowSponsorship: [],

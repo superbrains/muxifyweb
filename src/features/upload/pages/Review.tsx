@@ -19,6 +19,8 @@ import { ArtistDropdown } from '@/shared/components/ArtistDropdown';
 import type { ArtistOnboardingData } from '@/features/auth/store/useUserManagementStore';
 import { useUploadMusic } from '@uploadMusic/hooks/useUploadMusic';
 import { useUploadVideo } from '@/features/upload-video/hooks/useUploadVideo';
+import { uploadMusicService } from '@uploadMusic/services/uploadMusicService';
+import { videoService } from '@/features/upload-video/services/videoService';
 import { useChakraToast } from '@shared/hooks';
 
 const isArtistData = (data: unknown): data is ArtistOnboardingData =>
@@ -29,8 +31,8 @@ export const Review: React.FC = () => {
     const { mix, album, resetMix, resetAlbum } = useUploadMusicStore();
     const videoUpload = useUploadVideoStore();
     const { resetVideoUpload } = useUploadVideoStore();
-    const { addSingle, addAlbum, updateSingle, updateAlbum } = useMusicStore();
-    const { addVideoItem, updateVideoItem } = useVideoStore();
+    const { addSingle, addAlbum, updateSingle, updateAlbum, updateTrack: updateTrackApi } = useMusicStore();
+    const { addVideoItem, updateVideoItem, updateVideo: updateVideoApi, getVideoItemById } = useVideoStore();
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
     const { isPodcaster, isCreator, isRecordLabel } = useUserType();
@@ -94,7 +96,57 @@ export const Review: React.FC = () => {
         };
 
         try {
-            if (activeTab === 'music') {
+            // =================================================================
+            // EDIT MODE — update the existing record via the proper endpoints.
+            // The audio/video binary is never re-uploaded (no backend endpoint);
+            // only metadata, cover art / thumbnail and lyrics can change.
+            // =================================================================
+            if (isEditingMix) {
+                // Replace cover art only if the artist picked a new file.
+                if (mix.coverArt?.file) {
+                    await uploadMusicService.uploadCoverArt(mixId!, mix.coverArt.file);
+                }
+                // Sync lyrics: non-empty → upsert; empty → clear the artist override.
+                try {
+                    const trimmedLyrics = mix.lyrics?.trim();
+                    if (trimmedLyrics) {
+                        await uploadMusicService.updateTrackLyrics(mixId!, mix.lyrics);
+                    } else {
+                        await uploadMusicService.deleteTrackLyrics(mixId!);
+                    }
+                } catch (lyricsError) {
+                    console.warn('Lyrics update failed (non-fatal):', lyricsError);
+                }
+                // Metadata. Only send fields the edit form actually exposes; the rest
+                // stay unchanged on the server (undefined = no change).
+                await updateTrackApi(mixId!, {
+                    title: mix.trackTitle || undefined,
+                    genre: mix.genre.join(', ') || undefined,
+                    isrc: mix.rights.isrc || undefined,
+                    allowSponsorship: mix.allowSponsorship[0] === 'yes',
+                });
+                toast.success('Changes saved', 'Your track has been updated.');
+            } else if (isEditingVideo) {
+                const existing = getVideoItemById(videoId!);
+                // Replace thumbnail only if the artist picked a new file.
+                const newThumb = videoUpload.thumbnails.find((t) => t.file)?.file;
+                if (newThumb) {
+                    await videoService.uploadThumbnail(videoId!, newThumb);
+                }
+                // Keep the existing title/description/type; only sponsorship is editable
+                // in the video edit UI today.
+                await updateVideoApi(videoId!, {
+                    title: existing?.title,
+                    description: existing?.description,
+                    videoType: existing?.videoType,
+                    allowSponsorship: videoUpload.allowSponsorship[0] === 'yes',
+                });
+                toast.success('Changes saved', 'Your video has been updated.');
+            } else if (isEditingAlbum) {
+                // Albums are edited from the dedicated album editor.
+                navigate(`/upload/album/${albumId}`);
+                return;
+            } else if (activeTab === 'music') {
                 const currentArtistName = getCurrentArtistName();
 
                 // Publish Single/Mix
@@ -132,7 +184,7 @@ export const Review: React.FC = () => {
 
                     if (trackResult) {
                         // Also save to local store for offline access/caching
-                        const coverArtData = mix.coverArt ? await fileToBase64(mix.coverArt.file) : undefined;
+                        const coverArtData = mix.coverArt?.file ? await fileToBase64(mix.coverArt.file) : undefined;
                         const audioData = await fileToBase64(audioFile);
 
                         const singleItem: SingleItem = {
@@ -144,7 +196,7 @@ export const Review: React.FC = () => {
                             plays: 0,
                             unlocks: 0,
                             gifts: 0,
-                            coverArt: trackResult.thumbnail || (mix.coverArt ? URL.createObjectURL(mix.coverArt.file) : ''),
+                            coverArt: trackResult.thumbnail || (mix.coverArt?.file ? URL.createObjectURL(mix.coverArt.file) : ''),
                             coverArtData,
                             coverArtName: mix.coverArt?.name,
                             audioFile: audioFile,
@@ -179,6 +231,8 @@ export const Review: React.FC = () => {
                     // Upload each track in the album to the backend
                     for (let i = 0; i < album.tracks.length; i++) {
                         const track = album.tracks[i];
+                        // Create-only path: every album track here is a freshly-picked file.
+                        if (!track.file) continue;
                         const trackTitle = album.trackTitles[track.id] || track.name?.split('.')[0] || `Track ${i + 1}`;
                         const trackArtists = album.trackArtists[track.id] || album.selectedArtists.map(a => a.name);
 
@@ -210,9 +264,9 @@ export const Review: React.FC = () => {
                     }
 
                     // All tracks uploaded successfully - save album to local store
-                    const coverArtData = album.coverArt ? await fileToBase64(album.coverArt.file) : undefined;
+                    const coverArtData = album.coverArt?.file ? await fileToBase64(album.coverArt.file) : undefined;
                     const trackAudioData = await Promise.all(
-                        album.tracks.map(track => fileToBase64(track.file))
+                        album.tracks.map(track => (track.file ? fileToBase64(track.file) : Promise.resolve(undefined)))
                     );
 
                     const albumItem: AlbumItem = {
@@ -225,14 +279,14 @@ export const Review: React.FC = () => {
                         plays: 0,
                         unlocks: 0,
                         gifts: 0,
-                        coverArt: album.coverArt ? URL.createObjectURL(album.coverArt.file) : '',
+                        coverArt: album.coverArt?.file ? URL.createObjectURL(album.coverArt.file) : '',
                         coverArtData,
                         coverArtName: album.coverArt?.name,
                         tracks: album.tracks.map((track, index) => ({
                             id: uploadedTracks[index]?.backendId || track.id,
                             title: album.trackTitles[track.id] || track.name?.split('.')[0] || `Track ${index + 1}`,
                             duration: '2:45',
-                            audioFile: track.file,
+                            audioFile: track.file as File,
                             audioData: trackAudioData[index],
                             audioName: track.name,
                             artists: album.trackArtists[track.id] || [],
