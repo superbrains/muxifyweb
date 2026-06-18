@@ -39,6 +39,10 @@ export type DisputeSubjectType =
     | 'Withdrawal'
     | 'AdCampaign'
     | 'AdWallet'
+    | 'Earning'
+    | 'Split'
+    | 'Track'
+    | 'Video'
     | 'Other';
 
 export type SplitDisputeStatus = 'None' | 'UnderReview' | 'Resolved';
@@ -81,14 +85,33 @@ export const DISPUTE_TYPE_OPTIONS = [
 
 export const DISPUTE_SUBJECT_TYPE_OPTIONS = [
     { value: 'All', label: 'All subjects' },
+    { value: 'Track', label: 'Track copyright' },
+    { value: 'Video', label: 'Video copyright' },
+    { value: 'Withdrawal', label: 'Withdrawal' },
+    { value: 'Earning', label: 'Earning' },
+    { value: 'Split', label: 'Royalty split' },
     { value: 'CoinPurchase', label: 'Coin purchase' },
     { value: 'Gift', label: 'Gift' },
     { value: 'Unlock', label: 'Unlock' },
-    { value: 'Withdrawal', label: 'Withdrawal' },
     { value: 'AdCampaign', label: 'Ad campaign' },
     { value: 'AdWallet', label: 'Ad wallet' },
     { value: 'Other', label: 'Other' },
 ];
+
+/** Human label for a dispute subject type (used in the list + detail drawer). */
+export const DISPUTE_SUBJECT_LABEL: Record<string, string> = {
+    Track: 'Track copyright',
+    Video: 'Video copyright',
+    Withdrawal: 'Withdrawal',
+    Earning: 'Earning',
+    Split: 'Royalty split',
+    CoinPurchase: 'Coin purchase',
+    Gift: 'Gift',
+    Unlock: 'Unlock',
+    AdCampaign: 'Ad campaign',
+    AdWallet: 'Ad wallet',
+    Other: 'Other',
+};
 
 /** Subject types specific to advertising disputes (Group 7 reuse). */
 export const AD_DISPUTE_SUBJECT_TYPE_OPTIONS = [
@@ -395,6 +418,16 @@ export interface DisputeEventDto {
     createdAt: string;
 }
 
+export interface DisputeAttachmentDto {
+    id: string;
+    fileName: string;
+    contentType: string;
+    /** Authenticated proxy path (GET /api/v1/media/file/...). */
+    url: string;
+    sizeBytes: number;
+    createdAt: string;
+}
+
 export interface DisputeDetailDto {
     id: string;
     reference: string;
@@ -414,6 +447,7 @@ export interface DisputeDetailDto {
     linkedTransactionId?: string | null;
     createdAt: string;
     events: DisputeEventDto[];
+    attachments?: DisputeAttachmentDto[];
 }
 
 export interface DisputeQuery {

@@ -7,6 +7,7 @@ import {
     Icon,
     IconButton,
     Input,
+    Link,
     Portal,
     SimpleGrid,
     Spinner,
@@ -15,9 +16,12 @@ import {
     VStack,
 } from '@chakra-ui/react';
 import { MdClose } from 'react-icons/md';
-import { FiAlertCircle } from 'react-icons/fi';
+import { FiAlertCircle, FiFileText, FiPaperclip } from 'react-icons/fi';
 import { Select } from '@shared/components';
+import { AuthedImage } from '@shared/components/AuthedImage';
 import { useChakraToast } from '@shared/hooks';
+import { useAuthedImageSrc } from '@shared/hooks/useAuthedImageSrc';
+import { isImageAttachment, formatFileSize } from '@/features/disputes/lib/disputeFamily';
 import {
     AdminError,
     AdminLoading,
@@ -45,11 +49,15 @@ import {
 import {
     DISPUTE_STATUS_OPTIONS,
     DISPUTE_SUBJECT_TYPE_OPTIONS,
+    DISPUTE_SUBJECT_LABEL,
     DISPUTE_TYPE_OPTIONS,
     type CreateDisputeRequest,
+    type DisputeAttachmentDto,
     type DisputeListItemDto,
     type DisputeQuery,
 } from '../../types/monetization';
+
+const subjectLabel = (s: string): string => DISPUTE_SUBJECT_LABEL[s] ?? s;
 
 const PAGE_SIZE = 20;
 
@@ -71,7 +79,7 @@ const DisputesPage: React.FC = () => {
                         {d.reference}
                     </Text>
                     <Text fontSize="10px" color="gray.500">
-                        {d.subjectType}
+                        {subjectLabel(d.subjectType)}
                     </Text>
                 </VStack>
             ),
@@ -291,7 +299,7 @@ const DisputeDrawer: React.FC<{
             open={disputeId !== null}
             onClose={onClose}
             title={data?.reference ?? 'Dispute'}
-            subtitle={data ? `${data.type} · ${data.subjectType}` : undefined}
+            subtitle={data ? `${data.type} · ${subjectLabel(data.subjectType)}` : undefined}
             size="lg"
             footer={
                 canManage && data ? (
@@ -462,6 +470,22 @@ const DisputeDrawer: React.FC<{
                         </Box>
                     )}
 
+                    {data.attachments && data.attachments.length > 0 && (
+                        <Box>
+                            <HStack gap={1.5} mb={2} color="gray.900">
+                                <FiPaperclip size={12} />
+                                <Text fontSize="xs" fontWeight="semibold">
+                                    Evidence ({data.attachments.length})
+                                </Text>
+                            </HStack>
+                            <SimpleGrid columns={3} gap={2}>
+                                {data.attachments.map((a) => (
+                                    <DisputeAttachmentCell key={a.id} attachment={a} />
+                                ))}
+                            </SimpleGrid>
+                        </Box>
+                    )}
+
                     <Box>
                         <Text fontSize="xs" fontWeight="semibold" color="gray.900" mb={2}>
                             Case timeline
@@ -502,6 +526,66 @@ const DetailRow: React.FC<{ label: string; value: React.ReactNode }> = ({ label,
         </Text>
     </HStack>
 );
+
+/** One evidence file: image thumbnail or a download chip, fetched via the authed proxy. */
+const DisputeAttachmentCell: React.FC<{ attachment: DisputeAttachmentDto }> = ({ attachment }) => {
+    const blobUrl = useAuthedImageSrc(attachment.url);
+    const isImage = isImageAttachment(attachment.contentType);
+
+    return (
+        <Link
+            href={blobUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            _hover={{ textDecoration: 'none' }}
+            aria-disabled={!blobUrl}
+        >
+            {isImage ? (
+                <Box
+                    borderRadius="8px"
+                    overflow="hidden"
+                    border="1px solid"
+                    borderColor="gray.200"
+                    _hover={{ borderColor: 'primary.500' }}
+                >
+                    <AuthedImage
+                        src={attachment.url}
+                        alt={attachment.fileName}
+                        w="full"
+                        h="64px"
+                        objectFit="cover"
+                        fallback={
+                            <Box h="64px" bg="gray.50" display="flex" alignItems="center" justifyContent="center" color="gray.400">
+                                <FiFileText />
+                            </Box>
+                        }
+                    />
+                </Box>
+            ) : (
+                <VStack
+                    gap={1}
+                    bg="gray.50"
+                    borderRadius="8px"
+                    border="1px solid"
+                    borderColor="gray.200"
+                    p={2}
+                    h="64px"
+                    justify="center"
+                    color="gray.600"
+                    _hover={{ borderColor: 'primary.500' }}
+                >
+                    <FiFileText />
+                    <Text fontSize="9px" color="gray.500" lineClamp={1} maxW="full">
+                        {attachment.fileName}
+                    </Text>
+                </VStack>
+            )}
+            <Text fontSize="9px" color="gray.400" mt={0.5} lineClamp={1}>
+                {attachment.fileName} · {formatFileSize(attachment.sizeBytes)}
+            </Text>
+        </Link>
+    );
+};
 
 /* -------------------------------- Open case ------------------------------- */
 

@@ -451,6 +451,12 @@ export interface ModerationQuery {
      * per-role moderation queues).
      */
     ownerRole?: string;
+    /**
+     * When true, returns only contested reports (DisputedAt set) across every
+     * status — the status filter is ignored. Drives the "Disputed" pill, which
+     * otherwise can't reach disputes that have left the Pending status.
+     */
+    disputed?: boolean;
     page?: number;
     pageSize?: number;
 }

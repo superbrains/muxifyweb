@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Box, HStack, Tag, Text, VStack } from '@chakra-ui/react';
+import { HStack, Tag, Text, VStack } from '@chakra-ui/react';
 import { FiAlertCircle, FiFlag } from 'react-icons/fi';
 import {
     AdminError,
@@ -72,11 +72,7 @@ export const ModerationPanel: React.FC<ModerationPanelProps> = ({ ownerRole }) =
     const { data, isLoading, error } = useModerationItems(query);
     const { data: stats } = useModerationStats(ownerRole);
 
-    const visibleItems = React.useMemo(() => {
-        const items = data?.items ?? [];
-        if (activePill === 'Disputed') return items.filter((m) => !!m.disputedAt);
-        return items;
-    }, [activePill, data?.items]);
+    const visibleItems = data?.items ?? [];
 
     const kpis = stats
         ? [
@@ -211,9 +207,13 @@ export const ModerationPanel: React.FC<ModerationPanelProps> = ({ ownerRole }) =
                         onChange: (v) => {
                             const pill = v as ModerationStatus | 'All' | 'Disputed';
                             setActivePill(pill);
-                            const backendStatus: ModerationStatus | 'All' =
-                                pill === 'Disputed' ? 'Pending' : pill;
-                            setQuery((q) => ({ ...q, status: backendStatus, page: 1 }));
+                            // "Disputed" is a cross-status server filter, not a status.
+                            setQuery((q) => ({
+                                ...q,
+                                disputed: pill === 'Disputed' ? true : undefined,
+                                status: pill === 'Disputed' ? undefined : pill,
+                                page: 1,
+                            }));
                         },
                         options: STATUS_FILTER_OPTIONS,
                         width: '150px',
@@ -266,13 +266,6 @@ export const ModerationPanel: React.FC<ModerationPanelProps> = ({ ownerRole }) =
                                 : undefined
                         }
                     />
-                    {activePill === 'Disputed' && data && data.total > data.pageSize && (
-                        <Box px={1}>
-                            <Text fontSize="10px" color="gray.500">
-                                Disputed filter is client-side on the current page.
-                            </Text>
-                        </Box>
-                    )}
                 </>
             )}
 
