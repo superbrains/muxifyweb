@@ -124,7 +124,16 @@ const aggregateGiftBreakdown = (giftSales: RecentSaleDto[]): GiftBreakdownItem[]
 // Hook Implementation
 // ============================================================================
 
-export const useSalesReport = (timeFilter: TimeFilter = "daily") => {
+/** A user-selected custom date window (ISO YYYY-MM-DD), overriding the preset tabs. */
+export interface CustomRange {
+  from: string;
+  to: string;
+}
+
+export const useSalesReport = (
+  timeFilter: TimeFilter = "daily",
+  customRange: CustomRange | null = null
+) => {
   const [analytics, setAnalytics] = useState<DashboardAnalyticsDto | null>(null);
   const [recentSales, setRecentSales] = useState<RecentSalesDto | null>(null);
   const [topTracks, setTopTracks] = useState<TopTracksDto | null>(null);
@@ -163,9 +172,14 @@ export const useSalesReport = (timeFilter: TimeFilter = "daily") => {
       const topTracksPeriod = mapTimeFilterToTopTracksPeriod(timeFilter);
 
       const [analyticsResponse, salesResponse, topTracksResponse, unlockStatsResponse] = await Promise.all([
-        dashboardService.getAnalytics(analyticsPeriod),
+        // When a custom range is active, drive analytics by from/to; otherwise use the preset period.
+        customRange
+          ? dashboardService.getAnalytics(analyticsPeriod, customRange.from, customRange.to)
+          : dashboardService.getAnalytics(analyticsPeriod),
         dashboardService.getRecentSales(50), // Get more sales for gift breakdown
-        dashboardService.getTopTracks(topTracksPeriod, 10),
+        // The top-tracks endpoint only accepts preset periods (no from/to); fall
+        // back to all-time when a custom range is active.
+        dashboardService.getTopTracks(customRange ? "all-time" : topTracksPeriod, 10),
         dashboardService.getUnlockStats(),
       ]);
 
@@ -180,7 +194,7 @@ export const useSalesReport = (timeFilter: TimeFilter = "daily") => {
     } finally {
       setIsLoading(false);
     }
-  }, [timeFilter, toast]);
+  }, [timeFilter, customRange, toast]);
 
   /**
    * Refresh analytics for a specific period

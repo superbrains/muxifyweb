@@ -80,6 +80,12 @@ export interface DashboardAnalyticsDto {
   newFollowers: number;
   totalGiftsReceived: number;
   totalContentUnlocks: number;
+  // Unlock breakdown by media type + coin/earning totals for the Sales Report
+  musicUnlocks: number;
+  videoUnlocks: number;
+  totalUnlockEarningsDisplay: number;
+  totalUnlockCoins: number;
+  totalCoinsEarned: number;
   // Trend vs the immediately-preceding equal-length window (drives card labels)
   earningsPercentChange: number;
   earningsIsPositive: boolean;

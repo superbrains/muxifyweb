@@ -19,15 +19,18 @@ import {
     FiTrendingUp,
     FiTrendingDown
 } from 'react-icons/fi';
-import { CalendarIcon, UploadIcon, PaymentsIcon, MusicFilledIcon, VideoPlayIcon, MusicPlayIcon, GiftBananaIcon, GiftBoxingIcon, GiftCatIcon, GiftFlowerIcon, GiftDonutIcon, GiftPotatoIcon } from '@/shared/icons/CustomIcons';
+import { UploadIcon, PaymentsIcon, MusicFilledIcon, VideoPlayIcon, MusicPlayIcon, GiftBananaIcon, GiftBoxingIcon, GiftCatIcon, GiftFlowerIcon, GiftDonutIcon, GiftPotatoIcon } from '@/shared/icons/CustomIcons';
 import { useUserType } from '@/features/auth/hooks/useUserType';
 import { ArtistDropdown } from '@/shared/components/ArtistDropdown';
-import { useSalesReport } from '../hooks/useSalesReport';
+import { useSalesReport, type CustomRange } from '../hooks/useSalesReport';
 import {
     mapAnalyticsToRevenueChart,
     getAnalyticsCategories,
     mapAnalyticsToEarningsComparisonChart,
+    calculateYAxisMax,
 } from '@/features/dashboard/utils/chartMappers';
+import { DashboardDateFilter, type DashboardDateSelection } from '@/features/dashboard/components/DashboardDateFilter';
+import { exportSalesReportCsv } from '../lib/exportSalesReportCsv';
 
 // Gift icon mapping based on gift type
 const GIFT_ICONS: Record<string, React.ElementType> = {
@@ -63,6 +66,9 @@ const GiftBreakdownIcon: React.FC<{ imageUrl?: string; fallback: React.ElementTy
 
 export const SalesReport: React.FC = () => {
     const [timeFilter, setTimeFilter] = useState<'daily' | 'weekly' | 'monthly' | 'yearly'>('daily');
+    // A custom date range (set via Filter Duration) overrides the preset tabs.
+    const [customRange, setCustomRange] = useState<CustomRange | null>(null);
+    const [dateLabel, setDateLabel] = useState('Filter Duration');
     const { isRecordLabel } = useUserType();
 
     // Fetch sales report data from API
@@ -74,7 +80,7 @@ export const SalesReport: React.FC = () => {
         unlockStats,
         isLoading,
         error,
-    } = useSalesReport(timeFilter);
+    } = useSalesReport(timeFilter, customRange);
 
     const timeTabs = [
         { id: 'daily', label: 'Daily' },
@@ -82,6 +88,52 @@ export const SalesReport: React.FC = () => {
         { id: 'monthly', label: 'Monthly' },
         { id: 'yearly', label: 'Yearly' },
     ];
+
+    // Map the date filter's selection to either a custom range or a preset tab.
+    const handleDateApply = (selection: DashboardDateSelection) => {
+        if (selection.kind === 'range') {
+            setCustomRange({ from: selection.from, to: selection.to });
+            setDateLabel(selection.label);
+        } else {
+            // A preset/today selection clears the custom range and reactivates the tabs.
+            setCustomRange(null);
+            setDateLabel('Filter Duration');
+            const presetToTab: Record<string, 'daily' | 'weekly' | 'monthly' | 'yearly'> = {
+                '7d': 'daily',
+                '30d': 'weekly',
+                '90d': 'monthly',
+                '12m': 'yearly',
+            };
+            if (selection.kind === 'today') {
+                setTimeFilter('daily');
+            } else {
+                setTimeFilter(presetToTab[selection.period] ?? 'daily');
+            }
+        }
+    };
+
+    // Clicking a tab always clears any active custom range.
+    const handleTabChange = (tabId: string) => {
+        setCustomRange(null);
+        setDateLabel('Filter Duration');
+        setTimeFilter(tabId as 'daily' | 'weekly' | 'monthly' | 'yearly');
+    };
+
+    // Build the CSV for the current view and trigger a download.
+    const handleExport = () => {
+        if (!analytics) return;
+        const label = customRange ? dateLabel : timeFilter;
+        const slug = customRange ? `${customRange.from}_${customRange.to}` : timeFilter;
+        exportSalesReportCsv(`sales-report-${slug}`, {
+            analytics,
+            topTracks,
+            unlockStats,
+            giftBreakdown,
+            giftCount: giftSales.length,
+            totalGiftValue,
+            periodLabel: label,
+        });
+    };
 
     // Map gift breakdown to display format with icons
     const giftingData = useMemo(() => {
@@ -113,11 +165,10 @@ export const SalesReport: React.FC = () => {
         return getAnalyticsCategories(analytics);
     }, [analytics]);
 
-    // Calculate dynamic Y-axis max for revenue chart
+    // Y-axis max that hugs the actual data (rounded up to a "nice" number),
+    // so small revenues fill the chart instead of being dwarfed by a fixed 100 floor.
     const revenueYAxisMax = useMemo(() => {
-        const allValues = revenueChartSeries.flatMap((s) => s.data);
-        const maxValue = Math.max(...allValues, 100);
-        return Math.ceil(maxValue * 1.2);
+        return calculateYAxisMax(revenueChartSeries);
     }, [revenueChartSeries]);
 
     // Revenue Chart Options (dynamically configured)
@@ -284,7 +335,11 @@ export const SalesReport: React.FC = () => {
     // Derived display values from analytics
     const profitDisplay = analytics?.totalEarningsDisplay?.toLocaleString() || '0';
     const unlockedCount = analytics?.totalContentUnlocks?.toLocaleString() || '0';
-    const totalGiftsReceived = analytics?.totalGiftsReceived || 0;
+    const totalCoinsEarned = analytics?.totalCoinsEarned || 0;
+    const musicUnlocks = analytics?.musicUnlocks || 0;
+    const videoUnlocks = analytics?.videoUnlocks || 0;
+    const unlockEarningsDisplay = analytics?.totalUnlockEarningsDisplay?.toLocaleString() || '0';
+    const totalUnlockCoins = analytics?.totalUnlockCoins || 0;
 
     // Show loading state
     if (isLoading) {
@@ -319,33 +374,17 @@ export const SalesReport: React.FC = () => {
                   {/* Filter and Export Bar */}
             <Flex justify="space-between" align="center" wrap="wrap" gap={4}>
                 <HStack gap={3}>
-                    <AnimatedTabs
-                        tabs={timeTabs}
-                        activeTab={timeFilter}
-                        onTabChange={(tabId) => setTimeFilter(tabId as 'daily' | 'weekly' | 'monthly' | 'yearly')}
-                        selectedColor="red.500"
-                        size="sm"
-                    />
-                    <Button
-                        variant="outline"
-                        borderWidth="1px"
-                        borderColor="gray.blue.200"
-                        bg="white"
-                        size="xs"
-                        fontSize="10px"
-                        h="28px"
-                        _hover={{
-                            bg: "gray.50",
-                            borderColor: "gray.blue.300"
-                        }}
-                        rounded="5px"
-                        className='text-[#9cb1c5]'
-                        color="gray.blue.800"
-                        gap={2}
-                    >
-                        <CalendarIcon color="dark.800" boxSize={4} />
-                        Filter Duration
-                    </Button>
+                    {/* When a custom range is active the tabs are dimmed to show the range is in control. */}
+                    <Box opacity={customRange ? 0.4 : 1}>
+                        <AnimatedTabs
+                            tabs={timeTabs}
+                            activeTab={customRange ? '' : timeFilter}
+                            onTabChange={handleTabChange}
+                            selectedColor="red.500"
+                            size="sm"
+                        />
+                    </Box>
+                    <DashboardDateFilter label={dateLabel} onApply={handleDateApply} />
                 </HStack>
                 <Button
                     variant="outline"
@@ -360,7 +399,9 @@ export const SalesReport: React.FC = () => {
                     }}
                     rounded="5px"
                     color="gray.blue.800"
-                    gap={2}>
+                    gap={2}
+                    onClick={handleExport}
+                    disabled={isLoading || !analytics}>
                     <UploadIcon color="dark.800" boxSize={4} />
                     Export
                 </Button>
@@ -400,7 +441,7 @@ export const SalesReport: React.FC = () => {
                             </Text>
                             <HStack gap={2}>
                                 <PaymentsIcon color="red.500" boxSize={4} />
-                                <Text fontSize="sm" color="red.500">m{totalGiftsReceived.toLocaleString()}</Text>
+                                <Text fontSize="sm" color="red.500">m{totalCoinsEarned.toLocaleString()}</Text>
                             </HStack>
                             <Text fontSize="xs" color="gray.500">
                                 After Commission
@@ -426,16 +467,16 @@ export const SalesReport: React.FC = () => {
                             <HStack gap={2}>
                                 <Text fontSize="sm" color="gray.600">Total Unlocks</Text>
                                 <PaymentsIcon color="red.500" boxSize={4} />
-                                <Text fontSize="sm" color="red.500">m{totalGiftsReceived.toLocaleString()}</Text>
+                                <Text fontSize="sm" color="red.500">m{totalUnlockCoins.toLocaleString()}</Text>
                             </HStack>
                             <HStack gap={4}>
                                 <HStack gap={2}>
                                     <MusicFilledIcon color="red.500" boxSize={4} />
-                                    <Text fontSize="sm" color="gray.600">{Math.round((analytics?.totalContentUnlocks || 0) * 0.65).toLocaleString()}</Text>
+                                    <Text fontSize="sm" color="gray.600">{musicUnlocks.toLocaleString()}</Text>
                                 </HStack>
                                 <HStack gap={2}>
                                     <VideoPlayIcon color="red.500" boxSize={4} />
-                                    <Text fontSize="sm" color="gray.600">{Math.round((analytics?.totalContentUnlocks || 0) * 0.35).toLocaleString()}</Text>
+                                    <Text fontSize="sm" color="gray.600">{videoUnlocks.toLocaleString()}</Text>
                                 </HStack>
                             </HStack>
                             <HStack gap={2}>
@@ -518,11 +559,11 @@ export const SalesReport: React.FC = () => {
                             </Text>
                             <HStack gap={2}>
                                 <Text fontSize="xs" color="black" fontWeight="medium">
-                                    {unlockedCount} ~ N{profitDisplay} ~
+                                    {unlockedCount} ~ N{unlockEarningsDisplay} ~
                                 </Text>
                                 <PaymentsIcon color="red.500" boxSize={4} />
                                 <Text fontSize="xs" color="red.500" fontWeight="medium">
-                                    m{totalGiftsReceived.toLocaleString()}
+                                    m{totalUnlockCoins.toLocaleString()}
                                 </Text>
                             </HStack>
                         </HStack>
