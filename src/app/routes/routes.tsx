@@ -65,8 +65,12 @@ const ContributorClaimPage = lazy(() => import('@/features/contributor/pages/Con
 const ContributorCompleteProfilePage = lazy(() => import('@/features/contributor/pages/ContributorCompleteProfilePage'));
 const ContributorIdentityVerificationPage = lazy(() => import('@/features/contributor/pages/ContributorIdentityVerificationPage'));
 const ContributorDashboardPage = lazy(() => import('@/features/contributor/pages/ContributorDashboardPage'));
+const ContributorEarningsPage = lazy(() => import('@/features/contributor/pages/ContributorEarningsPage'));
+const ContributorSplitsPage = lazy(() => import('@/features/contributor/pages/ContributorSplitsPage'));
 const ContributorPayoutAccountsPage = lazy(() => import('@/features/contributor/pages/ContributorPayoutAccountsPage'));
 const ContributorPayoutsPage = lazy(() => import('@/features/contributor/pages/ContributorPayoutsPage'));
+const ContributorDisputesPage = lazy(() => import('@/features/contributor/pages/ContributorDisputesPage'));
+const ContributorProfilePage = lazy(() => import('@/features/contributor/pages/ContributorProfilePage'));
 // Super Admin
 const AdminOverviewPage = lazy(() => import('@/features/admin/pages/AdminOverviewPage'));
 const VerificationCenterPage = lazy(() => import('@/features/admin/pages/VerificationCenterPage'));
@@ -234,12 +238,16 @@ export const appRoutes: RouteObject[] = [
             { path: '/sales-report', element: <SalesReport /> },
             { path: '/payments', element: <Payments /> },
             { path: '/settings', element: <Settings /> },
-            // Contributor (CR2) — authed onboarding + dashboard
+            // Contributor (CR2) — authed onboarding + self-service dashboard
             { path: '/contributor/complete-profile', element: <ContributorCompleteProfilePage /> },
             { path: '/contributor/identity-verification', element: <ContributorIdentityVerificationPage /> },
             { path: '/contributor/dashboard', element: <ContributorDashboardPage /> },
+            { path: '/contributor/earnings', element: <ContributorEarningsPage /> },
+            { path: '/contributor/splits', element: <ContributorSplitsPage /> },
             { path: '/contributor/payout-accounts', element: <ContributorPayoutAccountsPage /> },
             { path: '/contributor/payouts', element: <ContributorPayoutsPage /> },
+            { path: '/contributor/disputes', element: <ContributorDisputesPage /> },
+            { path: '/contributor/profile', element: <ContributorProfilePage /> },
             { path: '/music-videos', element: <MusicVideos /> },
             { path: '/music-videos/single/:id', element: <SingleDetail /> },
             { path: '/music-videos/album/:id', element: <AlbumDetail /> },

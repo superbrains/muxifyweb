@@ -2,175 +2,111 @@ import React from 'react';
 import {
     Box,
     Button,
-    Center,
-    Grid,
     HStack,
     Icon,
     Input,
-    Spinner,
     Text,
     VStack,
 } from '@chakra-ui/react';
-import { FiInbox } from 'react-icons/fi';
+import { useNavigate } from 'react-router-dom';
+import { FiAlertTriangle, FiInfo } from 'react-icons/fi';
 import { formatNaira } from '@shared/utils';
 import { useChakraToast } from '@shared/hooks';
 import { getApiErrorMessage } from '@/shared/lib/errorUtils';
+import { DataTable, KpiStrip, StatusBadge } from '@/features/admin/components/ui';
+import type { DataColumn, KpiItem } from '@/features/admin/components/ui';
 import {
     useContributorEarningsSummary,
+    useContributorProfile,
     useContributorPayoutMethods,
     useContributorWithdrawals,
+    useContributorPayouts,
     useRequestContributorWithdrawal,
 } from '../hooks/useContributor';
+import { ContributorPageShell } from '../components/ContributorPageShell';
 import type {
     ContributorWithdrawalDto,
-    ContributorWithdrawalStatus,
+    ContributorPayoutDto,
 } from '../services/contributorService';
 
-const STATUS_STYLE: Record<
-    ContributorWithdrawalStatus,
-    { bg: string; color: string; dot: string; label: string }
-> = {
-    Completed: { bg: '#E7FFF7', color: '#0F7B5C', dot: '#16A34A', label: 'Paid' },
-    Processing: { bg: '#ECF7FF', color: '#1D4ED8', dot: '#3B82F6', label: 'Processing' },
-    Pending: { bg: '#FFF9E6', color: '#92660C', dot: '#D97706', label: 'Pending Approval' },
-    Rejected: { bg: '#FEF2F2', color: '#C53030', dot: '#E53E3E', label: 'Rejected' },
-    Failed: { bg: '#FEF2F2', color: '#C53030', dot: '#E53E3E', label: 'Failed' },
-    Cancelled: { bg: '#F1F5F9', color: '#64748B', dot: '#94A3B8', label: 'Cancelled' },
-};
+const formatDate = (value: string) =>
+    new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
-const StatusBadge: React.FC<{ status: ContributorWithdrawalStatus }> = ({ status }) => {
-    const s = STATUS_STYLE[status] ?? STATUS_STYLE.Pending;
+const Notice: React.FC<{
+    tone: 'warning' | 'info';
+    icon: React.ElementType;
+    title: string;
+    description: string;
+    cta?: { label: string; onClick: () => void };
+}> = ({ tone, icon, title, description, cta }) => {
+    const c =
+        tone === 'warning'
+            ? { bg: '#FFF9E6', fg: '#92660C', icon: '#D97706' }
+            : { bg: '#ECF7FF', fg: '#1D4ED8', icon: '#3B82F6' };
     return (
-        <HStack
-            gap={1.5}
-            bg={s.bg}
-            color={s.color}
-            fontSize="10px"
-            fontWeight="semibold"
-            px={2.5}
-            py={1}
-            borderRadius="full"
-            display="inline-flex"
-            w="fit-content"
-        >
-            <Box boxSize="6px" borderRadius="full" bg={s.dot} />
-            <Text>{s.label}</Text>
-        </HStack>
-    );
-};
-
-const formatDateTime = (value: string) => {
-    const date = new Date(value);
-    const time = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-    const day = date.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
-    return `${time} - ${day}`;
-};
-
-const WithdrawalHistory: React.FC<{
-    withdrawals: ContributorWithdrawalDto[];
-    isLoading: boolean;
-}> = ({ withdrawals, isLoading }) => {
-    if (isLoading) {
-        return (
-            <Box border="1px solid" borderColor="gray.200" borderRadius="md" p={4} minH="400px">
-                <Center h="full">
-                    <Spinner color="primary.500" />
-                </Center>
-            </Box>
-        );
-    }
-
-    if (withdrawals.length === 0) {
-        return (
-            <Box
-                border="1px solid"
-                borderColor="gray.200"
-                borderRadius="md"
-                p={4}
-                minH="400px"
-                display="flex"
-                flexDirection="column"
-            >
-                <Text fontSize="sm" fontWeight="semibold" color="gray.900" mb={6} textAlign="center">
-                    Withdrawal Requests
+        <VStack align="start" gap={2} bg={c.bg} borderRadius="lg" p={4}>
+            <HStack gap={2}>
+                <Icon as={icon} color={c.icon} boxSize={4} />
+                <Text fontSize="sm" fontWeight="semibold" color={c.fg}>
+                    {title}
                 </Text>
-                <Center flex="1">
-                    <VStack gap={2}>
-                        <Icon as={FiInbox} boxSize={10} color="gray.300" />
-                        <Text fontSize="xs" color="gray.500">
-                            No withdrawal requests yet
-                        </Text>
-                    </VStack>
-                </Center>
-            </Box>
-        );
-    }
-
-    return (
-        <Box border="1px solid" borderColor="gray.200" borderRadius="md" p={6}>
-            <Text fontSize="sm" fontWeight="semibold" color="gray.900" mb={4}>
-                Withdrawal Requests
+            </HStack>
+            <Text fontSize="xs" color="gray.600">
+                {description}
             </Text>
-            <VStack align="stretch" gap={3} maxH="600px" overflowY="auto">
-                {withdrawals.map((w) => (
-                    <React.Fragment key={w.id}>
-                        <VStack align="stretch" gap={1.5}>
-                            <HStack justify="space-between" align="start">
-                                <VStack align="start" gap={0}>
-                                    <Text fontSize="xs" fontWeight="medium" color="gray.900">
-                                        {w.accountName}
-                                    </Text>
-                                    <Text fontSize="xs" color="gray.500">
-                                        {w.accountNumber} - {w.bankName}
-                                    </Text>
-                                </VStack>
-                                <VStack align="end" gap={0}>
-                                    <Text fontSize="13px" fontWeight="medium" color="gray.900">
-                                        {formatNaira(w.amountDisplay)}
-                                    </Text>
-                                    <Text fontSize="xs" color="gray.400">
-                                        {formatDateTime(w.requestedAt)}
-                                    </Text>
-                                </VStack>
-                            </HStack>
-                            <HStack justify="space-between" align="center">
-                                <StatusBadge status={w.status} />
-                                {w.netAmount > 0 && (
-                                    <Text fontSize="10px" color="gray.400">
-                                        Net {formatNaira(w.netAmountDisplay)}
-                                    </Text>
-                                )}
-                            </HStack>
-                            {w.status === 'Rejected' && w.rejectionReason && (
-                                <Box bg="red.50" borderRadius="md" px={3} py={2}>
-                                    <Text fontSize="11px" color="red.600">
-                                        <strong>Rejected:</strong> {w.rejectionReason}
-                                    </Text>
-                                </Box>
-                            )}
-                        </VStack>
-                        <hr />
-                    </React.Fragment>
-                ))}
-            </VStack>
-        </Box>
+            {cta && (
+                <Button
+                    size="xs"
+                    bg="white"
+                    color={c.fg}
+                    fontSize="xs"
+                    borderRadius="8px"
+                    border="1px solid"
+                    borderColor={c.icon}
+                    _hover={{ bg: 'white' }}
+                    onClick={cta.onClick}
+                >
+                    {cta.label}
+                </Button>
+            )}
+        </VStack>
     );
 };
 
 const ContributorPayoutsPage: React.FC = () => {
+    const navigate = useNavigate();
     const toast = useChakraToast();
     const summaryQuery = useContributorEarningsSummary();
+    const profileQuery = useContributorProfile();
     const methodsQuery = useContributorPayoutMethods();
     const withdrawalsQuery = useContributorWithdrawals({ pageSize: 20 });
+    const payoutsQuery = useContributorPayouts({ pageSize: 20 });
     const requestWithdrawal = useRequestContributorWithdrawal();
 
     const [amount, setAmount] = React.useState('');
 
     const summary = summaryQuery.data;
     const available = summary?.availableForWithdrawalDisplay ?? 0;
+    const isLabelManaged = summary?.isLabelManaged ?? false;
+    const isVerified = profileQuery.data?.verificationStatus === 'Verified';
     const methods = methodsQuery.data?.payoutMethods ?? [];
     const defaultMethod = methods.find((m) => m.isDefault) ?? methods[0] ?? null;
     const withdrawals = withdrawalsQuery.data?.withdrawals ?? [];
+    const payouts = payoutsQuery.data?.payouts ?? [];
+
+    const kpis: KpiItem[] = [
+        { label: 'Available to withdraw', value: formatNaira(available), tone: 'success' },
+        {
+            label: 'Pending withdrawal',
+            value: formatNaira(summary?.pendingWithdrawalDisplay ?? 0),
+            tone: 'warning',
+        },
+        {
+            label: 'Total withdrawn',
+            value: formatNaira(summary?.totalWithdrawnDisplay ?? 0),
+            tone: 'neutral',
+        },
+    ];
 
     const handleSubmit = async () => {
         const value = parseFloat(amount);
@@ -186,7 +122,6 @@ const ContributorPayoutsPage: React.FC = () => {
             toast.error('No payout account', 'Add a payout account before requesting a withdrawal.');
             return;
         }
-
         try {
             const res = await requestWithdrawal.mutateAsync({
                 amountInSmallestUnit: Math.round(value * 100),
@@ -198,107 +133,194 @@ const ContributorPayoutsPage: React.FC = () => {
             setAmount('');
             toast.success(
                 'Withdrawal requested',
-                res.message ?? 'Your request is now awaiting admin approval.',
+                res.message ?? 'Your request is now awaiting approval.',
             );
         } catch (err) {
             toast.error('Request failed', getApiErrorMessage(err, 'Could not submit your withdrawal request.'));
         }
     };
 
-    if (summaryQuery.isLoading) {
-        return (
-            <Center minH="60vh">
-                <Spinner size="xl" color="primary.500" />
-            </Center>
-        );
-    }
+    const withdrawalColumns: DataColumn<ContributorWithdrawalDto>[] = [
+        { key: 'date', header: 'Requested', render: (w) => (
+            <Text fontSize="xs" color="gray.600">{formatDate(w.requestedAt)}</Text>
+        ) },
+        { key: 'account', header: 'Destination', render: (w) => (
+            <VStack align="start" gap={0} minW={0}>
+                <Text fontSize="xs" fontWeight="medium" color="gray.900" lineClamp={1}>{w.accountName}</Text>
+                <Text fontSize="11px" color="gray.500" lineClamp={1}>{w.accountNumber} · {w.bankName}</Text>
+            </VStack>
+        ) },
+        { key: 'amount', header: 'Amount', align: 'right', render: (w) => (
+            <Text fontSize="xs" fontWeight="semibold" color="gray.900">{formatNaira(w.amountDisplay)}</Text>
+        ) },
+        { key: 'status', header: 'Status', align: 'right', render: (w) => (
+            <VStack align="end" gap={1}>
+                <StatusBadge status={w.status} />
+                {(w.rejectionReason || w.labelRejectionReason) && (
+                    <Text fontSize="10px" color="red.500" maxW="200px" textAlign="right" lineClamp={2}>
+                        {w.rejectionReason || w.labelRejectionReason}
+                    </Text>
+                )}
+            </VStack>
+        ) },
+    ];
+
+    const payoutColumns: DataColumn<ContributorPayoutDto>[] = [
+        { key: 'date', header: 'Date', render: (p) => (
+            <Text fontSize="xs" color="gray.600">{formatDate(p.initiatedAt)}</Text>
+        ) },
+        { key: 'ref', header: 'Reference', render: (p) => (
+            <Text fontSize="xs" color="gray.700" fontFamily="mono">{p.reference || '—'}</Text>
+        ) },
+        { key: 'amount', header: 'Amount', align: 'right', render: (p) => (
+            <Text fontSize="xs" color="gray.600">{formatNaira(p.amountDisplay)}</Text>
+        ) },
+        { key: 'net', header: 'Net', align: 'right', render: (p) => (
+            <Text fontSize="xs" fontWeight="semibold" color="gray.900">{formatNaira(p.netAmountDisplay)}</Text>
+        ) },
+        { key: 'status', header: 'Status', align: 'right', render: (p) => <StatusBadge status={p.status} /> },
+    ];
+
+    const canWithdraw = isVerified && !isLabelManaged && !!defaultMethod;
 
     return (
-        <Box bg="gray.50" minH="100vh" p={{ base: 4, md: 6 }}>
-            <Box bg="white" minH="90vh" p={{ base: 4, md: 6 }} borderRadius="10px">
-                <Text fontSize="2xl" fontWeight="bold" color="gray.900" mb={6}>
-                    Payouts
-                </Text>
+        <ContributorPageShell
+            title="Payouts"
+            subtitle="Withdraw your available balance and track every payout."
+        >
+            <KpiStrip items={kpis} columns={{ base: 3, md: 3, xl: 3 }} />
 
-                <Grid templateColumns={{ base: '1fr', lg: '1fr 1fr' }} gap={6}>
-                    {/* Request withdrawal */}
-                    <Box border="1px solid" borderColor="gray.200" borderRadius="md" p={6}>
-                        <HStack justify="flex-end" mb={4}>
-                            <VStack align="end" gap={0}>
-                                <Text fontSize="xs" color="gray.500">
-                                    Available Balance
-                                </Text>
-                                <Text fontSize="lg" fontWeight="bold" color="primary.500">
+            <Box
+                display="grid"
+                gridTemplateColumns={{ base: '1fr', lg: '380px 1fr' }}
+                gap={4}
+                alignItems="start"
+            >
+                {/* Request withdrawal */}
+                <Box bg="white" border="1px solid" borderColor="gray.100" borderRadius="xl" p={5}>
+                    <Text fontSize="sm" fontWeight="semibold" color="gray.900" mb={4}>
+                        Request a withdrawal
+                    </Text>
+
+                    {isLabelManaged ? (
+                        <Notice
+                            tone="info"
+                            icon={FiInfo}
+                            title="Managed by your record label"
+                            description="Your label triggers payouts on your behalf. Completed payouts appear under 'Payouts from your label' below."
+                        />
+                    ) : !isVerified ? (
+                        <Notice
+                            tone="warning"
+                            icon={FiAlertTriangle}
+                            title="Verify your account first"
+                            description="You need a verified contributor account before you can withdraw."
+                            cta={{ label: 'Go to profile', onClick: () => navigate('/contributor/profile') }}
+                        />
+                    ) : !defaultMethod ? (
+                        <Notice
+                            tone="warning"
+                            icon={FiAlertTriangle}
+                            title="Add a payout account"
+                            description="Add a bank account to receive your withdrawals."
+                            cta={{ label: 'Add account', onClick: () => navigate('/contributor/payout-accounts') }}
+                        />
+                    ) : (
+                        <VStack gap={4} align="stretch">
+                            <Box bg="primary.50" borderRadius="lg" px={4} py={3}>
+                                <Text fontSize="11px" color="gray.600">Available balance</Text>
+                                <Text fontSize="xl" fontWeight="bold" color="primary.600">
                                     {formatNaira(available)}
                                 </Text>
-                            </VStack>
-                        </HStack>
+                            </Box>
 
-                        {!defaultMethod ? (
-                            <VStack gap={2} py={8}>
-                                <Text fontSize="sm" color="gray.700" fontWeight="medium">
-                                    No payout account
+                            <Box>
+                                <Text fontSize="xs" fontWeight="medium" color="gray.700" mb={1}>
+                                    Destination account
                                 </Text>
-                                <Text fontSize="xs" color="gray.500" textAlign="center">
-                                    Add a payout account on the Payout Accounts page before requesting a
-                                    withdrawal.
-                                </Text>
-                            </VStack>
-                        ) : (
-                            <VStack gap={4} align="stretch">
-                                <Box>
-                                    <Text fontSize="xs" fontWeight="medium" color="gray.700" mb={1}>
-                                        Destination Account
-                                    </Text>
-                                    <Input
-                                        value={`${defaultMethod.accountName} · ${defaultMethod.maskedAccountNumber} (${defaultMethod.bankName})`}
-                                        readOnly
-                                        size="md"
-                                        bg="gray.50"
-                                        borderColor="gray.200"
-                                    />
-                                </Box>
-
-                                <Box>
-                                    <Text fontSize="xs" fontWeight="medium" color="gray.700" mb={1}>
-                                        Amount (NGN)
-                                    </Text>
-                                    <Input
-                                        type="number"
-                                        placeholder="0.00"
-                                        value={amount}
-                                        onChange={(e) => setAmount(e.target.value)}
-                                        size="md"
-                                        bg="gray.50"
-                                        borderColor="gray.200"
-                                        _focus={{ borderColor: 'primary.500', boxShadow: 'none' }}
-                                    />
-                                </Box>
-
-                                <Button
-                                    onClick={handleSubmit}
-                                    bg="primary.500"
-                                    color="white"
+                                <Input
+                                    value={`${defaultMethod.accountName} · ${defaultMethod.maskedAccountNumber} (${defaultMethod.bankName})`}
+                                    readOnly
                                     size="md"
-                                    fontSize="sm"
-                                    fontWeight="medium"
-                                    borderRadius="md"
-                                    _hover={{ bg: 'primary.600' }}
-                                    loading={requestWithdrawal.isPending}
-                                    loadingText="Submitting..."
-                                    disabled={!amount}
-                                >
-                                    Request Withdrawal
-                                </Button>
-                            </VStack>
-                        )}
-                    </Box>
+                                    bg="gray.50"
+                                    borderColor="gray.200"
+                                    fontSize="xs"
+                                />
+                            </Box>
 
-                    {/* History */}
-                    <WithdrawalHistory withdrawals={withdrawals} isLoading={withdrawalsQuery.isLoading} />
-                </Grid>
+                            <Box>
+                                <Text fontSize="xs" fontWeight="medium" color="gray.700" mb={1}>
+                                    Amount (NGN)
+                                </Text>
+                                <Input
+                                    type="number"
+                                    placeholder="0.00"
+                                    value={amount}
+                                    onChange={(e) => setAmount(e.target.value)}
+                                    size="md"
+                                    bg="gray.50"
+                                    borderColor="gray.200"
+                                    _focus={{ borderColor: 'primary.500', boxShadow: 'none' }}
+                                />
+                                <Text fontSize="11px" color="gray.400" mt={1}>
+                                    A processing fee may apply — you'll see the exact net amount on the request.
+                                </Text>
+                            </Box>
+
+                            <Button
+                                onClick={handleSubmit}
+                                bg="primary.500"
+                                color="white"
+                                size="md"
+                                fontSize="sm"
+                                fontWeight="medium"
+                                borderRadius="10px"
+                                _hover={{ bg: 'primary.600' }}
+                                loading={requestWithdrawal.isPending}
+                                loadingText="Submitting..."
+                                disabled={!amount || !canWithdraw}
+                            >
+                                Request withdrawal
+                            </Button>
+                        </VStack>
+                    )}
+                </Box>
+
+                {/* Withdrawal history */}
+                <Box bg="white" border="1px solid" borderColor="gray.100" borderRadius="xl" p={5}>
+                    <Text fontSize="sm" fontWeight="semibold" color="gray.900" mb={4}>
+                        Withdrawal requests
+                    </Text>
+                    <DataTable
+                        columns={withdrawalColumns}
+                        rows={withdrawals}
+                        rowKey={(w) => w.id}
+                        loading={withdrawalsQuery.isLoading}
+                        skeletonRows={5}
+                        emptyTitle="No withdrawal requests yet"
+                        emptyDescription="Your withdrawal requests and their status will appear here."
+                    />
+                </Box>
             </Box>
-        </Box>
+
+            {/* Label-triggered payouts */}
+            {(payouts.length > 0 || isLabelManaged) && (
+                <Box bg="white" border="1px solid" borderColor="gray.100" borderRadius="xl" p={5}>
+                    <Text fontSize="sm" fontWeight="semibold" color="gray.900" mb={4}>
+                        Payouts from your label
+                    </Text>
+                    <DataTable
+                        columns={payoutColumns}
+                        rows={payouts}
+                        rowKey={(p) => p.id}
+                        loading={payoutsQuery.isLoading}
+                        skeletonRows={4}
+                        emptyTitle="No label payouts yet"
+                        emptyDescription="Payouts your record label sends you will appear here."
+                    />
+                </Box>
+            )}
+        </ContributorPageShell>
     );
 };
 

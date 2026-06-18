@@ -1,191 +1,450 @@
 import React from 'react';
 import {
     Box,
-    Center,
-    Grid,
+    Button,
     HStack,
-    Spinner,
+    Icon,
+    SimpleGrid,
+    Skeleton,
     Text,
     VStack,
 } from '@chakra-ui/react';
+import { useNavigate } from 'react-router-dom';
+import {
+    FiAlertTriangle,
+    FiArrowRight,
+    FiGift,
+    FiInfo,
+    FiLock,
+    FiMusic,
+    FiRadio,
+    FiAward,
+    FiPlusCircle,
+} from 'react-icons/fi';
 import { formatNaira } from '@shared/utils';
+import { formatTrend } from '@/features/record-label/lib/format';
+import { KpiStrip, StatusBadge, resolveStatusStyle } from '@/features/admin/components/ui';
+import type { KpiItem } from '@/features/admin/components/ui';
 import {
     useContributorEarningsSummary,
     useContributorEarningsHistory,
+    useContributorProfile,
+    useContributorPayoutMethods,
 } from '../hooks/useContributor';
+import { ContributorPageShell } from '../components/ContributorPageShell';
+import { RaiseDisputeDialog } from '../components/RaiseDisputeDialog';
 import type { ContributorEarningType } from '../services/contributorService';
 
-const earningTypeLabel = (type: ContributorEarningType): string => {
-    switch (type) {
-        case 'gift':
-            return 'Gift';
-        case 'unlock':
-            return 'Content Unlock';
-        case 'streaming':
-            return 'Streaming';
-        case 'bonus':
-            return 'Bonus';
-        case 'referral':
-            return 'Referral';
-        case 'split':
-            return 'Split';
-        default:
-            return type;
-    }
+const earningMeta: Record<string, { label: string; icon: React.ElementType; color: string }> = {
+    gift: { label: 'Gifts', icon: FiGift, color: '#E53E3E' },
+    unlock: { label: 'Content unlocks', icon: FiLock, color: '#7C3AED' },
+    streaming: { label: 'Streaming', icon: FiRadio, color: '#3B82F6' },
+    bonus: { label: 'Bonuses', icon: FiAward, color: '#16A34A' },
+    referral: { label: 'Referrals', icon: FiArrowRight, color: '#D97706' },
+    split: { label: 'Splits', icon: FiMusic, color: '#0EA5E9' },
 };
 
-interface StatCardProps {
-    label: string;
-    value: string;
-    accent?: boolean;
-    helper?: string;
-}
+const earningTypeLabel = (type: ContributorEarningType | string): string =>
+    earningMeta[type]?.label ?? String(type);
 
-const StatCard: React.FC<StatCardProps> = ({ label, value, accent, helper }) => (
-    <Box
-        bg="white"
-        border="1px solid"
-        borderColor="gray.200"
-        borderRadius="xl"
-        p={5}
-    >
-        <Text fontSize="xs" color="gray.500" mb={1}>
-            {label}
-        </Text>
-        <Text fontSize="2xl" fontWeight="bold" color={accent ? 'primary.500' : 'gray.900'}>
-            {value}
-        </Text>
-        {helper && (
-            <Text fontSize="11px" color="gray.400" mt={1}>
-                {helper}
-            </Text>
-        )}
-    </Box>
-);
+/* ----------------------------------------------------------------- Banner */
+
+const Banner: React.FC<{
+    tone: 'warning' | 'info';
+    icon: React.ElementType;
+    title: string;
+    description: string;
+    cta?: { label: string; onClick: () => void };
+}> = ({ tone, icon, title, description, cta }) => {
+    const palette =
+        tone === 'warning'
+            ? { bg: '#FFF9E6', border: '#F3E2A8', fg: '#92660C', icon: '#D97706' }
+            : { bg: '#ECF7FF', border: '#CDE6FB', fg: '#1D4ED8', icon: '#3B82F6' };
+    return (
+        <HStack
+            bg={palette.bg}
+            border="1px solid"
+            borderColor={palette.border}
+            borderRadius="xl"
+            px={4}
+            py={3}
+            gap={3}
+            align="flex-start"
+        >
+            <Icon as={icon} color={palette.icon} boxSize={5} mt={0.5} flexShrink={0} />
+            <VStack align="start" gap={0} flex={1} minW={0}>
+                <Text fontSize="sm" fontWeight="semibold" color={palette.fg}>
+                    {title}
+                </Text>
+                <Text fontSize="xs" color="gray.600">
+                    {description}
+                </Text>
+            </VStack>
+            {cta && (
+                <Button
+                    size="xs"
+                    variant="outline"
+                    borderColor={palette.border}
+                    color={palette.fg}
+                    bg="white"
+                    fontSize="xs"
+                    borderRadius="8px"
+                    _hover={{ bg: 'white', borderColor: palette.icon }}
+                    onClick={cta.onClick}
+                    flexShrink={0}
+                >
+                    {cta.label}
+                </Button>
+            )}
+        </HStack>
+    );
+};
+
+/* -------------------------------------------------------------- Breakdown */
+
+const BreakdownBar: React.FC<{ type: string; amount: number; total: number }> = ({
+    type,
+    amount,
+    total,
+}) => {
+    const meta = earningMeta[type] ?? { label: type, icon: FiMusic, color: '#94A3B8' };
+    const pct = total > 0 ? Math.round((amount / total) * 100) : 0;
+    return (
+        <VStack align="stretch" gap={1.5}>
+            <HStack justify="space-between">
+                <HStack gap={2}>
+                    <Box boxSize="8px" borderRadius="full" bg={meta.color} />
+                    <Text fontSize="xs" color="gray.700" fontWeight="medium">
+                        {meta.label}
+                    </Text>
+                </HStack>
+                <Text fontSize="xs" color="gray.500" fontWeight="medium">
+                    {pct}%
+                </Text>
+            </HStack>
+            <Box bg="gray.100" borderRadius="full" h="6px" overflow="hidden">
+                <Box bg={meta.color} h="100%" w={`${pct}%`} borderRadius="full" transition="width 0.4s" />
+            </Box>
+        </VStack>
+    );
+};
+
+/* ------------------------------------------------------------------ Page */
 
 const ContributorDashboardPage: React.FC = () => {
+    const navigate = useNavigate();
     const summaryQuery = useContributorEarningsSummary();
-    const historyQuery = useContributorEarningsHistory({ pageSize: 20 });
+    const historyQuery = useContributorEarningsHistory({ pageSize: 6 });
+    const profileQuery = useContributorProfile();
+    const methodsQuery = useContributorPayoutMethods();
+    const [disputeOpen, setDisputeOpen] = React.useState(false);
 
     const summary = summaryQuery.data;
+    const profile = profileQuery.data;
     const earnings = historyQuery.data?.earnings ?? [];
+    const methods = methodsQuery.data?.payoutMethods ?? [];
 
-    if (summaryQuery.isLoading) {
-        return (
-            <Center minH="60vh">
-                <Spinner size="xl" color="primary.500" />
-            </Center>
-        );
-    }
+    const displayName = profile?.displayName?.split(' ')[0] || 'there';
+    const isVerified = profile?.verificationStatus === 'Verified';
+    const held = summary?.heldForFrozenSplitsDisplay ?? 0;
+    const isLabelManaged = summary?.isLabelManaged ?? false;
 
-    const growth = summary?.growthPercentage ?? 0;
-    const growthLabel =
-        growth === 0
-            ? 'No change vs last month'
-            : `${growth > 0 ? '+' : ''}${growth.toFixed(1)}% vs last month`;
+    const trend = summary
+        ? formatTrend(summary.earningsThisMonth ?? 0, summary.earningsLastMonth ?? 0)
+        : undefined;
+
+    const kpis: KpiItem[] = [
+        {
+            label: 'Available to withdraw',
+            value: formatNaira(summary?.availableForWithdrawalDisplay ?? 0),
+            tone: 'success',
+        },
+        {
+            label: 'Total earned',
+            value: formatNaira(summary?.totalEarnedDisplay ?? 0),
+            trend,
+            trendCaption: 'vs last month',
+        },
+        {
+            label: 'Pending withdrawal',
+            value: formatNaira(summary?.pendingWithdrawalDisplay ?? 0),
+            tone: 'warning',
+        },
+        {
+            label: 'Total withdrawn',
+            value: formatNaira(summary?.totalWithdrawnDisplay ?? 0),
+            tone: 'neutral',
+        },
+    ];
+
+    const breakdown = summary
+        ? [
+              { type: 'gift', amount: summary.giftEarnings ?? 0 },
+              { type: 'unlock', amount: summary.contentUnlockEarnings ?? 0 },
+              { type: 'streaming', amount: summary.streamingEarnings ?? 0 },
+              { type: 'bonus', amount: summary.bonusEarnings ?? 0 },
+          ]
+        : [];
+    const breakdownTotal = breakdown.reduce((sum, b) => sum + b.amount, 0);
+
+    const loading = summaryQuery.isLoading || profileQuery.isLoading;
 
     return (
-        <Box bg="gray.50" minH="100vh" p={{ base: 4, md: 6 }}>
-            <Text fontSize="2xl" fontWeight="bold" color="gray.900" mb={6}>
-                Contributor Dashboard
-            </Text>
+        <ContributorPageShell
+            title={loading ? 'Dashboard' : `Welcome back, ${displayName}`}
+            subtitle="Your earnings, payouts and account status at a glance."
+            actions={
+                <>
+                    <Button
+                        size="sm"
+                        variant="outline"
+                        borderColor="gray.200"
+                        color="gray.700"
+                        fontSize="xs"
+                        borderRadius="10px"
+                        _hover={{ bg: 'gray.50' }}
+                        onClick={() => setDisputeOpen(true)}
+                    >
+                        Raise a dispute
+                    </Button>
+                    <Button
+                        size="sm"
+                        bg="primary.500"
+                        color="white"
+                        fontSize="xs"
+                        borderRadius="10px"
+                        _hover={{ bg: 'primary.600' }}
+                        onClick={() => navigate('/contributor/payouts')}
+                    >
+                        Request payout
+                    </Button>
+                </>
+            }
+        >
+            {/* Status alerts */}
+            {!loading && !isVerified && (
+                <Banner
+                    tone="warning"
+                    icon={FiAlertTriangle}
+                    title="Verify your identity to unlock payouts"
+                    description={
+                        profile?.verificationStatus === 'Pending'
+                            ? 'Your verification is under review. You can request payouts once it is approved.'
+                            : 'You need a verified account before you can withdraw your earnings.'
+                    }
+                    cta={{ label: 'Go to profile', onClick: () => navigate('/contributor/profile') }}
+                />
+            )}
+            {!loading && held > 0 && (
+                <Banner
+                    tone="info"
+                    icon={FiInfo}
+                    title={`${formatNaira(held)} is temporarily held`}
+                    description="Some of the splits you earn from are under review. This amount is released automatically once they're cleared."
+                    cta={{ label: 'View splits', onClick: () => navigate('/contributor/splits') }}
+                />
+            )}
+            {!loading && isLabelManaged && (
+                <Banner
+                    tone="info"
+                    icon={FiInfo}
+                    title="Your payouts are managed by your record label"
+                    description="You can track everything here; your label triggers the actual payouts on your behalf."
+                />
+            )}
 
-            {/* Summary cards */}
-            <Grid
-                templateColumns={{ base: '1fr', sm: '1fr 1fr', lg: 'repeat(4, 1fr)' }}
-                gap={4}
-                mb={6}
-            >
-                <StatCard
-                    label="Available for withdrawal"
-                    value={formatNaira(summary?.availableForWithdrawalDisplay ?? 0)}
-                    accent
-                />
-                <StatCard
-                    label="Total earned"
-                    value={formatNaira(summary?.totalEarnedDisplay ?? 0)}
-                    helper={growthLabel}
-                />
-                <StatCard
-                    label="Pending withdrawal"
-                    value={formatNaira(summary?.pendingWithdrawalDisplay ?? 0)}
-                />
-                <StatCard
-                    label="Total withdrawn"
-                    value={formatNaira(summary?.totalWithdrawnDisplay ?? 0)}
-                />
-            </Grid>
+            {/* KPI strip */}
+            {loading ? (
+                <SimpleGrid columns={{ base: 2, md: 4 }} gap={3}>
+                    {[0, 1, 2, 3].map((i) => (
+                        <Skeleton key={i} height="92px" borderRadius="xl" />
+                    ))}
+                </SimpleGrid>
+            ) : (
+                <KpiStrip items={kpis} columns={{ base: 2, md: 4, xl: 4 }} />
+            )}
 
-            {/* Earnings history */}
-            <Box
-                bg="white"
-                borderRadius="xl"
-                border="1px solid"
-                borderColor="gray.200"
-                overflow="hidden"
-            >
-                <Box p={5} borderBottom="1px solid" borderColor="gray.200">
-                    <Text fontSize="sm" fontWeight="semibold" color="gray.900">
-                        Earnings History
+            {/* Breakdown + account status */}
+            <SimpleGrid columns={{ base: 1, lg: 3 }} gap={4}>
+                <Box
+                    gridColumn={{ lg: 'span 2' }}
+                    bg="white"
+                    border="1px solid"
+                    borderColor="gray.100"
+                    borderRadius="xl"
+                    p={5}
+                >
+                    <Text fontSize="sm" fontWeight="semibold" color="gray.900" mb={4}>
+                        Where your earnings come from
                     </Text>
+                    {loading ? (
+                        <VStack gap={4} align="stretch">
+                            {[0, 1, 2, 3].map((i) => (
+                                <Skeleton key={i} height="20px" borderRadius="6px" />
+                            ))}
+                        </VStack>
+                    ) : breakdownTotal === 0 ? (
+                        <Text fontSize="xs" color="gray.500" py={6} textAlign="center">
+                            Your earnings breakdown appears here once you start earning.
+                        </Text>
+                    ) : (
+                        <VStack gap={4} align="stretch">
+                            {breakdown.map((b) => (
+                                <BreakdownBar
+                                    key={b.type}
+                                    type={b.type}
+                                    amount={b.amount}
+                                    total={breakdownTotal}
+                                />
+                            ))}
+                        </VStack>
+                    )}
                 </Box>
 
+                <Box bg="white" border="1px solid" borderColor="gray.100" borderRadius="xl" p={5}>
+                    <Text fontSize="sm" fontWeight="semibold" color="gray.900" mb={4}>
+                        Account status
+                    </Text>
+                    <VStack gap={3.5} align="stretch">
+                        <HStack justify="space-between">
+                            <Text fontSize="xs" color="gray.600">
+                                Verification
+                            </Text>
+                            {loading ? (
+                                <Skeleton height="18px" width="64px" borderRadius="full" />
+                            ) : (
+                                <StatusBadge status={profile?.verificationStatus} />
+                            )}
+                        </HStack>
+                        <HStack justify="space-between">
+                            <Text fontSize="xs" color="gray.600">
+                                Payout account
+                            </Text>
+                            {methodsQuery.isLoading ? (
+                                <Skeleton height="18px" width="64px" borderRadius="full" />
+                            ) : (
+                                <StatusBadge
+                                    style={resolveStatusStyle(
+                                        methods.length > 0 ? 'active' : 'notsubmitted',
+                                        methods.length > 0 ? 'Linked' : 'None',
+                                    )}
+                                />
+                            )}
+                        </HStack>
+                        <HStack justify="space-between">
+                            <Text fontSize="xs" color="gray.600">
+                                Payouts
+                            </Text>
+                            <Text fontSize="xs" fontWeight="medium" color="gray.800">
+                                {isLabelManaged ? 'Label-managed' : 'Self-service'}
+                            </Text>
+                        </HStack>
+
+                        <Box borderTop="1px solid" borderColor="gray.100" pt={3} mt={1}>
+                            <Button
+                                w="full"
+                                size="sm"
+                                variant="outline"
+                                borderColor="gray.200"
+                                color="gray.700"
+                                fontSize="xs"
+                                borderRadius="10px"
+                                _hover={{ bg: 'gray.50' }}
+                                onClick={() => navigate('/contributor/payout-accounts')}
+                            >
+                                Manage payout accounts
+                            </Button>
+                        </Box>
+                    </VStack>
+                </Box>
+            </SimpleGrid>
+
+            {/* Recent earnings */}
+            <Box bg="white" border="1px solid" borderColor="gray.100" borderRadius="xl" overflow="hidden">
+                <HStack justify="space-between" px={5} py={4} borderBottom="1px solid" borderColor="gray.100">
+                    <Text fontSize="sm" fontWeight="semibold" color="gray.900">
+                        Recent earnings
+                    </Text>
+                    <Button
+                        size="xs"
+                        variant="ghost"
+                        color="primary.500"
+                        fontSize="xs"
+                        _hover={{ bg: 'primary.50' }}
+                        onClick={() => navigate('/contributor/earnings')}
+                    >
+                        View all <Icon as={FiArrowRight} ml={1} />
+                    </Button>
+                </HStack>
                 {historyQuery.isLoading ? (
-                    <Center py={16}>
-                        <Spinner color="primary.500" />
-                    </Center>
+                    <VStack gap={0} align="stretch" p={4}>
+                        {[0, 1, 2, 3].map((i) => (
+                            <Skeleton key={i} height="40px" borderRadius="8px" mb={2} />
+                        ))}
+                    </VStack>
                 ) : earnings.length === 0 ? (
-                    <Center py={16}>
-                        <VStack gap={1}>
-                            <Text fontSize="sm" fontWeight="medium" color="gray.700">
-                                No earnings yet
-                            </Text>
-                            <Text fontSize="xs" color="gray.500">
-                                Your contributor earnings will appear here once they accrue.
-                            </Text>
-                        </VStack>
-                    </Center>
+                    <VStack gap={1} py={12}>
+                        <Icon as={FiPlusCircle} boxSize={7} color="gray.300" />
+                        <Text fontSize="sm" fontWeight="medium" color="gray.700">
+                            No earnings yet
+                        </Text>
+                        <Text fontSize="xs" color="gray.500">
+                            Your contributor earnings will appear here once they accrue.
+                        </Text>
+                    </VStack>
                 ) : (
-                    <Box as="table" w="100%" borderCollapse="separate" borderSpacing="0">
-                        <Box as="thead" bg="primary.500">
-                            <Box as="tr">
-                                <Box as="th" color="white" fontSize="12px" fontWeight="semibold" py={4} px={4} textAlign="left">No.</Box>
-                                <Box as="th" color="white" fontSize="12px" fontWeight="semibold" py={4} px={4} textAlign="left">Type</Box>
-                                <Box as="th" color="white" fontSize="12px" fontWeight="semibold" py={4} px={4} textAlign="left">Description</Box>
-                                <Box as="th" color="white" fontSize="12px" fontWeight="semibold" py={4} px={4} textAlign="left">Date</Box>
-                                <Box as="th" color="white" fontSize="12px" fontWeight="semibold" py={4} px={4} textAlign="right">Net Amount</Box>
-                            </Box>
-                        </Box>
-                        <Box as="tbody">
-                            {earnings.map((e, index) => (
-                                <Box as="tr" key={e.id} _hover={{ bg: 'gray.50' }}>
-                                    <Box as="td" fontSize="12px" color="gray.600" fontWeight="medium" py={4} px={4} borderBottom="1px solid" borderColor="gray.100">
-                                        {String(index + 1).padStart(2, '0')}
-                                    </Box>
-                                    <Box as="td" fontSize="12px" color="gray.900" fontWeight="medium" py={4} px={4} borderBottom="1px solid" borderColor="gray.100">
-                                        {earningTypeLabel(e.type)}
-                                    </Box>
-                                    <Box as="td" fontSize="12px" color="gray.900" py={4} px={4} borderBottom="1px solid" borderColor="gray.100">
-                                        {e.description || 'N/A'}
-                                    </Box>
-                                    <Box as="td" fontSize="12px" color="gray.600" py={4} px={4} borderBottom="1px solid" borderColor="gray.100">
-                                        {new Date(e.earnedAt).toLocaleDateString()}
-                                    </Box>
-                                    <Box as="td" fontSize="12px" color="gray.900" fontWeight="semibold" py={4} px={4} borderBottom="1px solid" borderColor="gray.100" textAlign="right">
-                                        <HStack justify="flex-end" gap={2}>
-                                            <Text>{formatNaira(e.netAmountDisplay)}</Text>
-                                            {e.isWithdrawn && (
-                                                <Text fontSize="10px" color="gray.400">(withdrawn)</Text>
-                                            )}
-                                        </HStack>
-                                    </Box>
-                                </Box>
-                            ))}
-                        </Box>
-                    </Box>
+                    <VStack gap={0} align="stretch">
+                        {earnings.map((e) => {
+                            const meta = earningMeta[e.type] ?? {
+                                label: e.type,
+                                icon: FiMusic,
+                                color: '#94A3B8',
+                            };
+                            return (
+                                <HStack
+                                    key={e.id}
+                                    justify="space-between"
+                                    px={5}
+                                    py={3.5}
+                                    borderBottom="1px solid"
+                                    borderColor="gray.50"
+                                    _hover={{ bg: 'gray.50' }}
+                                >
+                                    <HStack gap={3} minW={0}>
+                                        <Box
+                                            boxSize="34px"
+                                            borderRadius="10px"
+                                            bg={`${meta.color}1A`}
+                                            color={meta.color}
+                                            display="flex"
+                                            alignItems="center"
+                                            justifyContent="center"
+                                            flexShrink={0}
+                                        >
+                                            <Icon as={meta.icon} boxSize={4} />
+                                        </Box>
+                                        <VStack align="start" gap={0} minW={0}>
+                                            <Text fontSize="xs" fontWeight="medium" color="gray.900" lineClamp={1}>
+                                                {e.description || earningTypeLabel(e.type)}
+                                            </Text>
+                                            <Text fontSize="11px" color="gray.500">
+                                                {earningTypeLabel(e.type)} ·{' '}
+                                                {new Date(e.earnedAt).toLocaleDateString()}
+                                            </Text>
+                                        </VStack>
+                                    </HStack>
+                                    <Text fontSize="xs" fontWeight="semibold" color="gray.900" flexShrink={0}>
+                                        {formatNaira(e.netAmountDisplay)}
+                                    </Text>
+                                </HStack>
+                            );
+                        })}
+                    </VStack>
                 )}
             </Box>
-        </Box>
+
+            <RaiseDisputeDialog isOpen={disputeOpen} onClose={() => setDisputeOpen(false)} />
+        </ContributorPageShell>
     );
 };
 

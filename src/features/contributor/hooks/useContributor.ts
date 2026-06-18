@@ -11,6 +11,8 @@ import type {
     AddPayoutMethodRequest,
     UpdatePayoutMethodRequest,
     PaginationOptions,
+    DisputeListOptions,
+    RaiseDisputePayload,
 } from '../services/contributorService';
 
 /* ------------------------------------------------------------------ *
@@ -23,8 +25,15 @@ export const contributorKeys = {
         [...contributorKeys.all, 'earnings', 'history', opts] as const,
     withdrawals: (opts: PaginationOptions) =>
         [...contributorKeys.all, 'earnings', 'withdrawals', opts] as const,
+    payouts: (opts: PaginationOptions) =>
+        [...contributorKeys.all, 'earnings', 'payouts', opts] as const,
     payoutMethods: () => [...contributorKeys.all, 'payout-methods'] as const,
     banks: () => [...contributorKeys.all, 'banks'] as const,
+    profile: () => [...contributorKeys.all, 'profile'] as const,
+    splits: () => [...contributorKeys.all, 'splits'] as const,
+    disputes: (opts: DisputeListOptions) =>
+        [...contributorKeys.all, 'disputes', opts] as const,
+    dispute: (id: string) => [...contributorKeys.all, 'disputes', id] as const,
 };
 
 /* ------------------------------------------------------------------ *
@@ -46,6 +55,12 @@ export const useContributorWithdrawals = (opts: PaginationOptions = {}) =>
     useQuery({
         queryKey: contributorKeys.withdrawals(opts),
         queryFn: async () => (await contributorService.getWithdrawalHistory(opts)).data,
+    });
+
+export const useContributorPayouts = (opts: PaginationOptions = {}) =>
+    useQuery({
+        queryKey: contributorKeys.payouts(opts),
+        queryFn: async () => (await contributorService.getPayouts(opts)).data,
     });
 
 export const useRequestContributorWithdrawal = () => {
@@ -115,6 +130,51 @@ export const useSetDefaultContributorPayoutMethod = () => {
             (await contributorService.setDefaultPayoutMethod(id)).data,
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: contributorKeys.payoutMethods() });
+        },
+    });
+};
+
+/* ------------------------------------------------------------------ *
+ * Profile
+ * ------------------------------------------------------------------ */
+export const useContributorProfile = () =>
+    useQuery({
+        queryKey: contributorKeys.profile(),
+        queryFn: async () => (await contributorService.getProfile()).data,
+    });
+
+/* ------------------------------------------------------------------ *
+ * Splits
+ * ------------------------------------------------------------------ */
+export const useContributorSplits = () =>
+    useQuery({
+        queryKey: contributorKeys.splits(),
+        queryFn: async () => (await contributorService.getSplits()).data,
+    });
+
+/* ------------------------------------------------------------------ *
+ * Disputes
+ * ------------------------------------------------------------------ */
+export const useContributorDisputes = (opts: DisputeListOptions = {}) =>
+    useQuery({
+        queryKey: contributorKeys.disputes(opts),
+        queryFn: async () => (await contributorService.getDisputes(opts)).data,
+    });
+
+export const useContributorDispute = (id: string | null) =>
+    useQuery({
+        queryKey: contributorKeys.dispute(id ?? ''),
+        queryFn: async () => (await contributorService.getDispute(id!)).data,
+        enabled: !!id,
+    });
+
+export const useRaiseContributorDispute = () => {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: async (payload: RaiseDisputePayload) =>
+            (await contributorService.raiseDispute(payload)).data,
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: [...contributorKeys.all, 'disputes'] });
         },
     });
 };

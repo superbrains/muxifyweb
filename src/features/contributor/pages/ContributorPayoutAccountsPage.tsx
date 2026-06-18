@@ -26,6 +26,7 @@ import { ConfirmModal } from '@shared/components';
 import { useChakraToast } from '@shared/hooks';
 import { getApiErrorMessage } from '@/shared/lib/errorUtils';
 import { isValidNigerianAccountNumber } from '@/features/payments/services/payoutService';
+import { ContributorPageShell } from '../components/ContributorPageShell';
 import { contributorService } from '../services/contributorService';
 import {
     useContributorPayoutMethods,
@@ -396,26 +397,25 @@ const ContributorPayoutAccountsPage: React.FC = () => {
     };
 
     return (
-        <Box bg="gray.50" minH="100vh" p={{ base: 4, md: 6 }}>
-            <Box bg="white" borderRadius="10px" p={{ base: 4, md: 6 }} minH="80vh">
-                <HStack justify="space-between" align="center" mb={6}>
-                    <Text fontSize="2xl" fontWeight="bold" color="gray.900">
-                        Payout Accounts
-                    </Text>
-                    <Button
-                        bg="primary.500"
-                        color="white"
-                        size="sm"
-                        fontSize="xs"
-                        fontWeight="medium"
-                        borderRadius="md"
-                        _hover={{ bg: 'primary.600' }}
-                        onClick={() => setShowAdd(true)}
-                    >
-                        Add Account
-                    </Button>
-                </HStack>
-
+        <ContributorPageShell
+            title="Payout accounts"
+            subtitle="Manage the bank accounts you receive your contributor payouts into. Accounts must match your legal name."
+            actions={
+                <Button
+                    bg="primary.500"
+                    color="white"
+                    size="sm"
+                    fontSize="xs"
+                    fontWeight="medium"
+                    borderRadius="10px"
+                    _hover={{ bg: 'primary.600' }}
+                    onClick={() => setShowAdd(true)}
+                >
+                    Add account
+                </Button>
+            }
+        >
+            <Box bg="white" border="1px solid" borderColor="gray.100" borderRadius="xl" p={{ base: 4, md: 6 }}>
                 {methodsQuery.isLoading ? (
                     <Center py={20}>
                         <Spinner size="lg" color="primary.500" />
@@ -477,7 +477,7 @@ const ContributorPayoutAccountsPage: React.FC = () => {
                 confirmText="Delete"
                 isLoading={deleteMethod.isPending}
             />
-        </Box>
+        </ContributorPageShell>
     );
 };
 

@@ -67,9 +67,12 @@ const recordLabelNavItems: NavItem[] = [
 
 const contributorNavItems: NavItem[] = [
     { icon: DashboardIcon, label: 'Dashboard', path: '/' },
-    { icon: EarningsAndRoyaltyIcon, label: 'Earnings', path: '/contributor/dashboard' },
-    { icon: PaymentsIcon, label: 'Payout Accounts', path: '/contributor/payout-accounts' },
+    { icon: EarningsAndRoyaltyIcon, label: 'Earnings', path: '/contributor/earnings' },
+    { icon: MusicIcon, label: 'Splits', path: '/contributor/splits' },
     { icon: WalletMoneyIcon, label: 'Payouts', path: '/contributor/payouts' },
+    { icon: PaymentsIcon, label: 'Payout Accounts', path: '/contributor/payout-accounts' },
+    { icon: HeadphoneIcon, label: 'Disputes', path: '/contributor/disputes' },
+    { icon: ArtistIcon, label: 'Profile', path: '/contributor/profile' },
 ];
 
 const adminNavItems: NavItem[] = [
