@@ -26,8 +26,12 @@ const EARNINGS_BASE_PATH = "/artist/earnings";
 export const earningsService = {
   /**
    * Get earnings summary including totals, breakdown by type, and period comparisons
+   * @param mediaType - Optional content-type filter ("Music" | "Video")
    */
-  getSummary: () => api.get<EarningsSummaryDto>(`${EARNINGS_BASE_PATH}/summary`),
+  getSummary: (mediaType?: string) =>
+    api.get<EarningsSummaryDto>(
+      `${EARNINGS_BASE_PATH}/summary${mediaType ? `?mediaType=${mediaType}` : ""}`
+    ),
 
   /**
    * Get earnings summary mapped to a simplified overview format
@@ -45,10 +49,12 @@ export const earningsService = {
    * Get paginated list of individual earnings transactions
    * @param options - Pagination options (page, pageSize)
    */
-  getHistory: (options: PaginationOptions = {}) => {
+  getHistory: (options: PaginationOptions = {}, mediaType?: string) => {
     const { page = 1, pageSize = 20 } = options;
     return api.get<EarningsHistoryDto>(
-      `${EARNINGS_BASE_PATH}/history?page=${page}&pageSize=${pageSize}`
+      `${EARNINGS_BASE_PATH}/history?page=${page}&pageSize=${pageSize}${
+        mediaType ? `&mediaType=${mediaType}` : ""
+      }`
     );
   },
 
@@ -85,9 +91,12 @@ export const earningsService = {
   /**
    * Get dashboard analytics with chart data for earnings, plays, and followers
    * @param period - Time period (7d, 30d, 90d, 12m)
+   * @param mediaType - Optional content-type filter ("Music" | "Video")
    */
-  getAnalytics: (period: string = "30d") =>
-    api.get<DashboardAnalyticsDto>(`/dashboard/analytics?period=${period}`),
+  getAnalytics: (period: string = "30d", mediaType?: string) =>
+    api.get<DashboardAnalyticsDto>(
+      `/dashboard/analytics?period=${period}${mediaType ? `&mediaType=${mediaType}` : ""}`
+    ),
 };
 
 // ============================================================================
