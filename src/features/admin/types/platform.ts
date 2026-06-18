@@ -400,4 +400,6 @@ export interface PlatformSetting {
     category: string;
     description: string;
     valueType: string;
+    /** When the value was last modified (ISO); null until first edited. */
+    updatedAt?: string | null;
 }

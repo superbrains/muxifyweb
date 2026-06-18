@@ -1,6 +1,7 @@
 import React from 'react';
 import { Box, HStack, Text, VStack } from '@chakra-ui/react';
 import { adminDateTime } from '../../lib/format';
+import { CopyableId } from './CopyableId';
 
 export interface AuditEntry {
     id: string;
@@ -12,6 +13,10 @@ export interface AuditEntry {
     detail?: string;
     /** Optional target label, e.g. the affected user or entity. */
     target?: string;
+    /** Optional id of the affected entity — rendered as a copyable mono value. */
+    targetId?: string | null;
+    /** Toast label for the copied id (defaults to "ID"). */
+    idLabel?: string;
     tone?: 'default' | 'success' | 'warning' | 'danger';
 }
 
@@ -75,6 +80,16 @@ export const AuditTimeline: React.FC<AuditTimelineProps> = ({
                                 <Text fontSize="11px" color="gray.600" mt={0.5}>
                                     {entry.detail}
                                 </Text>
+                            )}
+                            {entry.targetId && (
+                                <Box mt={1}>
+                                    <CopyableId
+                                        value={entry.targetId}
+                                        label={entry.idLabel ?? 'ID'}
+                                        truncate={18}
+                                        fontSize="10px"
+                                    />
+                                </Box>
                             )}
                             <Text fontSize="10px" color="gray.400" mt={0.5}>
                                 {entry.actor ? `${entry.actor} · ` : ''}
