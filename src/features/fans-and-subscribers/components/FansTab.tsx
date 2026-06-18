@@ -13,6 +13,7 @@ import {
 import { AnimatedTabs } from '@shared/components';
 import { useUserStore } from '@/app/store/useUserStore';
 import { useArtistStore } from '@/features/artists/store/useArtistStore';
+import { useUserType } from '@/features/auth/hooks/useUserType';
 import type { FanMediaType, CountryStatDto } from '@/features/leaderboard/types';
 import type { TimeFilter } from '../types';
 import { useFanAnalytics } from '../hooks/useFanAnalytics';
@@ -58,11 +59,14 @@ const SectionHeading: React.FC<{ children: React.ReactNode }> = ({ children }) =
 export const FansTab: React.FC<FansTabProps> = ({ mediaType }) => {
   const { user } = useUserStore();
   const { selectedArtistId } = useArtistStore();
+  const { isRecordLabel } = useUserType();
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('monthly');
 
-  // Record labels viewing a roster artist drive analytics by the selected artist;
-  // otherwise the logged-in artist views their own.
-  const artistId = selectedArtistId ?? user?.id;
+  // Only record labels act "as" a roster artist via the persisted dropdown
+  // selection. For everyone else the selection is stale/irrelevant, so the
+  // logged-in artist always views their own fans (matches the JWT used by the
+  // token-based activity feed).
+  const artistId = isRecordLabel && selectedArtistId ? selectedArtistId : user?.id;
   const { data, isLoading, error, hasFetched } = useFanAnalytics(artistId, mediaType, timeFilter);
 
   const playsLabel = mediaType === 'video' ? 'Total Views' : 'Total Plays';
