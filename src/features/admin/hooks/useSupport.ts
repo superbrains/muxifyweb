@@ -25,6 +25,13 @@ export const useTickets = (query: TicketQuery) =>
         staleTime: 30_000,
     });
 
+export const useTicketStats = (role?: string) =>
+    useQuery({
+        queryKey: adminKeys.ticketStats(role),
+        queryFn: () => adminService.getTicketStats(role),
+        staleTime: 30_000,
+    });
+
 export const useTicket = (id: string | null) =>
     useQuery({
         queryKey: adminKeys.ticket(id ?? ''),
@@ -38,6 +45,8 @@ const invalidateTicketViews = (
 ) => {
     qc.invalidateQueries({ queryKey: adminKeys.tickets() });
     qc.invalidateQueries({ queryKey: adminKeys.ticket(id) });
+    // Status changes shift the KPI counts, so refresh every scoped stats query.
+    qc.invalidateQueries({ queryKey: ['admin', 'tickets', 'stats'] });
     qc.invalidateQueries({ queryKey: adminKeys.overview });
 };
 

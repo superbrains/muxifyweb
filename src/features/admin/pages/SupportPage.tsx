@@ -1,8 +1,8 @@
 import React from 'react';
-import { Box, VStack } from '@chakra-ui/react';
+import { Box } from '@chakra-ui/react';
 import { useSearchParams } from 'react-router-dom';
-import { AdminPageHeader } from '../components/AdminPageHeader';
 import { AnimatedTabs } from '@shared/components';
+import { AdminPageLayout } from '../components/ui';
 import { TicketsPanel } from '../components/support/TicketsPanel';
 import { ModerationPanel } from '../components/support/ModerationPanel';
 
@@ -16,32 +16,25 @@ const SupportPage: React.FC = () => {
     const tab = searchParams.get('tab') === 'moderation' ? 'moderation' : 'tickets';
 
     return (
-        <VStack
-            gap={{ base: 3, lg: 4 }}
-            bg="gray.50"
-            minH="100vh"
-            align="stretch"
-            px={{ base: 3, md: 6 }}
-            py={{ base: 4, md: 6 }}
+        <AdminPageLayout
+            title="Support & Moderation"
+            subtitle="Resolve support tickets and act on flagged content"
+            breadcrumbs={[{ label: 'Support & Governance' }, { label: 'Support' }]}
+            toolbar={
+                <Box>
+                    <AnimatedTabs
+                        tabs={TABS}
+                        activeTab={tab}
+                        onTabChange={(id) =>
+                            setSearchParams(id === 'moderation' ? { tab: 'moderation' } : {})
+                        }
+                        size="sm"
+                    />
+                </Box>
+            }
         >
-            <AdminPageHeader
-                title="Support & Moderation"
-                subtitle="Resolve support tickets and act on flagged content"
-            />
-
-            <Box>
-                <AnimatedTabs
-                    tabs={TABS}
-                    activeTab={tab}
-                    onTabChange={(id) =>
-                        setSearchParams(id === 'moderation' ? { tab: 'moderation' } : {})
-                    }
-                    size="sm"
-                />
-            </Box>
-
             {tab === 'moderation' ? <ModerationPanel /> : <TicketsPanel />}
-        </VStack>
+        </AdminPageLayout>
     );
 };
 

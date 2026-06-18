@@ -395,6 +395,14 @@ export interface TicketQuery {
 
 export type TicketPageDto = PagedResult<TicketDto>;
 
+/** Aggregate ticket counts by status — powers the support queue KPI strip. */
+export interface TicketStatsDto {
+    open: number;
+    inProgress: number;
+    resolved: number;
+    closed: number;
+}
+
 /* ------------------------------------------------------------------ *
  * Content moderation
  * ------------------------------------------------------------------ */

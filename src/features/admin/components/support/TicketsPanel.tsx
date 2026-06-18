@@ -1,25 +1,29 @@
 import React from 'react';
-import { Box, HStack, Input, Stack, Text, VStack } from '@chakra-ui/react';
-import { FiSearch } from 'react-icons/fi';
-import { AdminError, AdminLoading } from '../AdminStateBlock';
-import { AdminTable, type AdminTableColumn } from '../AdminTable';
-import { Paginator } from '../Paginator';
-import { StatusBadge } from '../StatusBadge';
-import { StatusPills } from './StatusPills';
-import { TicketDetailDrawer } from './TicketDetailDrawer';
-import { useTickets } from '../../hooks/useSupport';
+import { Text, VStack } from '@chakra-ui/react';
+import { FiInbox } from 'react-icons/fi';
+import {
+    AdminError,
+    DataTable,
+    FilterBar,
+    IdentityCell,
+    KpiStrip,
+    StatusBadge,
+} from '../ui';
+import type { DataColumn } from '../ui';
+import { useTickets, useTicketStats } from '../../hooks/useSupport';
 import { ticketPriorityStyle, ticketStatusStyle } from '../../lib/statusColor';
 import { adminRelative } from '../../lib/format';
+import { TicketDetailDrawer } from './TicketDetailDrawer';
 import type { TicketDto, TicketQuery, TicketStatus } from '../../types';
 
 const PAGE_SIZE = 15;
 
-const STATUS_PILLS = [
-    { value: 'All', label: 'All' },
-    { value: 'Open', label: 'Open', style: ticketStatusStyle('Open') },
-    { value: 'InProgress', label: 'In progress', style: ticketStatusStyle('InProgress') },
-    { value: 'Resolved', label: 'Resolved', style: ticketStatusStyle('Resolved') },
-    { value: 'Closed', label: 'Closed', style: ticketStatusStyle('Closed') },
+const STATUS_FILTER_OPTIONS = [
+    { value: 'All', label: 'All statuses' },
+    { value: 'Open', label: 'Open' },
+    { value: 'InProgress', label: 'In progress' },
+    { value: 'Resolved', label: 'Resolved' },
+    { value: 'Closed', label: 'Closed' },
 ];
 
 interface TicketsPanelProps {
@@ -31,7 +35,7 @@ interface TicketsPanelProps {
     role?: string;
 }
 
-/** Support ticket queue — filterable table with a detail drawer. */
+/** Support ticket queue — KPI strip + filterable table with a detail drawer. */
 export const TicketsPanel: React.FC<TicketsPanelProps> = ({ role }) => {
     const [query, setQuery] = React.useState<TicketQuery>({
         status: 'Open',
@@ -39,35 +43,34 @@ export const TicketsPanel: React.FC<TicketsPanelProps> = ({ role }) => {
         page: 1,
         pageSize: PAGE_SIZE,
     });
-    const [search, setSearch] = React.useState('');
     const [selectedId, setSelectedId] = React.useState<string | null>(null);
 
-    React.useEffect(() => {
-        const trimmed = search.trim();
-        if (trimmed === (query.search ?? '')) return;
-        const id = window.setTimeout(() => {
-            setQuery((q) => ({ ...q, search: trimmed || undefined, page: 1 }));
-        }, 300);
-        return () => window.clearTimeout(id);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [search]);
-
     const { data, isLoading, error } = useTickets(query);
+    const { data: stats } = useTicketStats(role);
 
-    const columns: AdminTableColumn<TicketDto>[] = [
+    const kpis = stats
+        ? [
+              { label: 'Open', value: stats.open, tone: 'warning' as const },
+              { label: 'In progress', value: stats.inProgress, tone: 'info' as const },
+              { label: 'Resolved', value: stats.resolved, tone: 'success' as const },
+              { label: 'Closed', value: stats.closed, tone: 'neutral' as const },
+          ]
+        : [];
+
+    const columns: DataColumn<TicketDto>[] = [
         {
             key: 'subject',
             header: 'Subject',
             render: (t) => (
-                <VStack align="start" gap={0}>
-                    <Text fontSize="xs" fontWeight="semibold" color="gray.900" lineClamp={1}>
-                        {t.subject}
-                    </Text>
-                    <Text fontSize="10px" color="gray.500">
-                        {t.requesterName}
-                    </Text>
-                </VStack>
+                <Text fontSize="xs" fontWeight="semibold" color="gray.900" lineClamp={2}>
+                    {t.subject}
+                </Text>
             ),
+        },
+        {
+            key: 'requester',
+            header: 'Requester',
+            render: (t) => <IdentityCell name={t.requesterName} size="xs" />,
         },
         {
             key: 'priority',
@@ -92,77 +95,55 @@ export const TicketsPanel: React.FC<TicketsPanelProps> = ({ role }) => {
 
     return (
         <VStack align="stretch" gap={3}>
-            <Stack
-                gap={3}
-                bg="white"
-                borderRadius="xl"
-                border="1px solid"
-                borderColor="gray.100"
-                px={{ base: 3, md: 4 }}
-                py={3}
-                direction={{ base: 'column', md: 'row' }}
-                justify="space-between"
-                align={{ base: 'stretch', md: 'center' }}
-            >
-                <StatusPills
-                    options={STATUS_PILLS}
-                    active={query.status ?? 'All'}
-                    onChange={(v) =>
-                        setQuery((q) => ({
-                            ...q,
-                            status: v as TicketStatus | 'All',
-                            page: 1,
-                        }))
+            {kpis.length > 0 && <KpiStrip items={kpis} columns={{ base: 2, md: 4, xl: 4 }} />}
+
+            <FilterBar
+                search={{
+                    value: query.search ?? '',
+                    onChange: (v) =>
+                        setQuery((q) => ({ ...q, search: v || undefined, page: 1 })),
+                    placeholder: 'Search by subject or requester',
+                }}
+                filters={[
+                    {
+                        key: 'status',
+                        value: query.status ?? 'All',
+                        onChange: (v) =>
+                            setQuery((q) => ({
+                                ...q,
+                                status: v as TicketStatus | 'All',
+                                page: 1,
+                            })),
+                        options: STATUS_FILTER_OPTIONS,
+                        width: '160px',
+                    },
+                ]}
+            />
+
+            {error ? (
+                <AdminError error={error} message="Could not load support tickets." />
+            ) : (
+                <DataTable
+                    columns={columns}
+                    rows={data?.items ?? []}
+                    rowKey={(t) => t.id}
+                    onRowClick={(t) => setSelectedId(t.id)}
+                    loading={isLoading && !data}
+                    emptyIcon={FiInbox}
+                    emptyTitle="No tickets"
+                    emptyDescription="Nothing matches the current filters."
+                    pagination={
+                        data
+                            ? {
+                                  page: data.page,
+                                  pageSize: data.pageSize,
+                                  total: data.total,
+                                  onPageChange: (page) =>
+                                      setQuery((q) => ({ ...q, page })),
+                              }
+                            : undefined
                     }
                 />
-                <HStack
-                    bg="gray.50"
-                    borderRadius="10px"
-                    px={3}
-                    border="1px solid"
-                    borderColor="gray.100"
-                    minW={{ base: 'full', md: '240px' }}
-                >
-                    <Box color="gray.400" fontSize="14px">
-                        <FiSearch />
-                    </Box>
-                    <Input
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                        placeholder="Search tickets"
-                        variant="subtle"
-                        size="sm"
-                        bg="transparent"
-                        border="none"
-                        fontSize="xs"
-                        _focus={{ outline: 'none', boxShadow: 'none' }}
-                    />
-                </HStack>
-            </Stack>
-
-            {isLoading && !data ? (
-                <AdminLoading minH="30vh" />
-            ) : error ? (
-                <AdminError error={error} message="Could not load support tickets." minH="30vh" />
-            ) : (
-                <>
-                    <AdminTable
-                        columns={columns}
-                        rows={data?.items ?? []}
-                        rowKey={(t) => t.id}
-                        onRowClick={(t) => setSelectedId(t.id)}
-                        emptyTitle="No tickets"
-                        emptyDescription="Nothing matches the current filters."
-                    />
-                    {data && (
-                        <Paginator
-                            page={data.page}
-                            pageSize={data.pageSize}
-                            total={data.total}
-                            onPageChange={(page) => setQuery((q) => ({ ...q, page }))}
-                        />
-                    )}
-                </>
             )}
 
             <TicketDetailDrawer

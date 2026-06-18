@@ -16,6 +16,7 @@ export const adminKeys = {
     userAudit: <T>(id: string, query?: T) => ['admin', 'user', id, 'audit', query ?? {}] as const,
     verificationSummary: ['admin', 'verifications', 'summary'] as const,
     tickets: <T>(query?: T) => ['admin', 'tickets', query ?? {}] as const,
+    ticketStats: (role?: string) => ['admin', 'tickets', 'stats', role ?? 'all'] as const,
     ticket: (id: string) => ['admin', 'ticket', id] as const,
     moderation: <T>(query?: T) => ['admin', 'moderation', query ?? {}] as const,
     // Admin Management

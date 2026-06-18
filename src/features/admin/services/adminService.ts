@@ -13,6 +13,7 @@ import type {
     TicketMessageDto,
     TicketPageDto,
     TicketQuery,
+    TicketStatsDto,
     TicketStatus,
     UserAuditEntryDto,
     UserPageDto,
@@ -131,6 +132,12 @@ export const adminService = {
     getTickets: async (query: TicketQuery): Promise<TicketPageDto> => {
         const { data } = await api.get<TicketPageDto>(`${BASE}/support/tickets`, {
             params: query,
+        });
+        return data;
+    },
+    getTicketStats: async (role?: string): Promise<TicketStatsDto> => {
+        const { data } = await api.get<TicketStatsDto>(`${BASE}/support/tickets/stats`, {
+            params: role ? { role } : undefined,
         });
         return data;
     },
