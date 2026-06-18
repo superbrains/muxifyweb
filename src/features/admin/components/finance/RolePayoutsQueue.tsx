@@ -1,27 +1,34 @@
 import React from 'react';
-import { Button, HStack, Text } from '@chakra-ui/react';
-import { FiDollarSign } from 'react-icons/fi';
+import { Box, Button, HStack, Text, VStack } from '@chakra-ui/react';
+import { FiDollarSign, FiDownload } from 'react-icons/fi';
 import {
     AdminError,
     AdminPageLayout,
+    AuditTimeline,
     DataTable,
+    DetailDrawer,
     FilterBar,
     IdentityCell,
+    KpiStrip,
+    MetaGrid,
     StatusBadge,
 } from '../ui';
-import type { DataColumn } from '../ui';
+import type { AuditEntry, DataColumn, KpiItem, MetaField } from '../ui';
 import { getApiErrorMessage } from '@/shared/lib/errorUtils';
-import { adminDate, formatMinorAmount } from '../../lib/format';
+import { exportCsv } from '../../lib/exportCsv';
+import { adminDate, adminDateTime, formatMinorAmount } from '../../lib/format';
 import { financeStatusStyle } from '../../lib/financeStatusColor';
 import {
     useApproveWithdrawal,
     useMarkWithdrawalPaid,
     useRejectWithdrawal,
     useRetryWithdrawal,
+    useWithdrawal,
     useWithdrawals,
+    useWithdrawalSummary,
 } from '../../hooks/useFinance';
-import type { PlatformRoleMeta } from '../../config/adminRoles';
-import type { WithdrawalListItem, WithdrawalQuery } from '../../types/finance';
+import type { PlatformRole, PlatformRoleMeta } from '../../config/adminRoles';
+import type { WithdrawalDetail, WithdrawalListItem, WithdrawalQuery } from '../../types/finance';
 import { ActionDialog } from './ActionDialog';
 
 const PAGE_SIZE = 15;
@@ -37,18 +44,41 @@ const STATUS_OPTIONS = [
     { value: 'Cancelled', label: 'Cancelled' },
 ];
 
+const ROLE_OPTIONS = [
+    { value: 'All', label: 'All roles' },
+    { value: 'artist', label: 'Artists' },
+    { value: 'dj', label: 'DJs' },
+    { value: 'creator', label: 'Creators' },
+    { value: 'podcaster', label: 'Podcasters' },
+    { value: 'record_label', label: 'Record Labels' },
+    { value: 'contributor', label: 'Contributors' },
+];
+
+/** Role-specific framing copy. Falls back to a generic line for the rest. */
+const ROLE_COPY: Partial<Record<PlatformRole, { subtitle: string; empty: string }>> = {
+    record_label: {
+        subtitle:
+            'Label own-share withdrawals. Managed-artist requests appear under each creator’s role with the label-approval trail.',
+        empty: 'No record labels have withdrawals matching these filters.',
+    },
+    contributor: {
+        subtitle: 'Withdrawals from producers & songwriters earning through royalty splits.',
+        empty: 'No contributors have withdrawals matching these filters.',
+    },
+};
+
 type ActionKind = 'approve' | 'reject' | 'retry' | 'markPaid';
 
-function ActionButtons({
-    w,
-    onAct,
-}: {
-    w: WithdrawalListItem;
-    onAct: (id: string, kind: ActionKind) => void;
-}) {
+/** Status-appropriate inline/footer action buttons for a withdrawal. */
+function actionsForStatus(
+    w: WithdrawalListItem,
+    onAct: (id: string, kind: ActionKind) => void,
+    size: 'xs' | 'sm' = 'xs',
+) {
     const btn = (label: string, kind: ActionKind, danger?: boolean) => (
         <Button
-            size="xs"
+            key={`${kind}-${label}`}
+            size={size}
             variant="outline"
             borderColor={danger ? '#FECACA' : 'gray.200'}
             color={danger ? '#C53030' : 'gray.700'}
@@ -62,53 +92,111 @@ function ActionButtons({
             {label}
         </Button>
     );
-    return (
-        <HStack gap={1.5} justify="flex-end">
-            {w.status === 'PendingLabelApproval' && (
-                <Text fontSize="10px" color="#92660C" fontStyle="italic">
+    switch (w.status) {
+        case 'PendingLabelApproval':
+            return [
+                <Text key="awaiting" fontSize="10px" color="#92660C" fontStyle="italic">
                     Awaiting label
-                </Text>
-            )}
-            {w.status === 'Pending' && (
-                <>
-                    {btn('Approve', 'approve')}
-                    {btn('Reject', 'reject', true)}
-                </>
-            )}
-            {w.status === 'Processing' && (
-                <>
-                    {btn('Mark paid', 'markPaid')}
-                    {btn('Fail', 'reject', true)}
-                </>
-            )}
-            {w.status === 'Failed' && (
-                <>
-                    {btn('Retry', 'retry')}
-                    {btn('Reject', 'reject', true)}
-                </>
-            )}
-        </HStack>
-    );
+                </Text>,
+            ];
+        case 'Pending':
+            return [btn('Approve', 'approve'), btn('Reject', 'reject', true)];
+        case 'Processing':
+            return [btn('Mark paid', 'markPaid'), btn('Fail', 'reject', true)];
+        case 'Failed':
+            return [btn('Retry', 'retry'), btn('Reject', 'reject', true)];
+        default:
+            return [];
+    }
+}
+
+/** Builds the two-tier approval lifecycle for the detail drawer timeline. */
+function buildTimeline(
+    w: WithdrawalListItem,
+    d: Partial<WithdrawalDetail>,
+): AuditEntry[] {
+    const entries: AuditEntry[] = [
+        {
+            id: 'requested',
+            action: 'Requested',
+            actor: w.requesterRole ?? undefined,
+            timestamp: w.requestedAt,
+        },
+    ];
+    if (w.labelDecisionAt) {
+        entries.push({
+            id: 'label',
+            action: w.labelRejectionReason ? 'Rejected by label' : 'Approved by label',
+            actor: w.labelName ?? undefined,
+            timestamp: w.labelDecisionAt,
+            detail: w.labelRejectionReason ?? undefined,
+            tone: w.labelRejectionReason ? 'danger' : 'success',
+        });
+    }
+    if (d.processingStartedAt) {
+        entries.push({
+            id: 'processing',
+            action: 'Approved — processing',
+            timestamp: d.processingStartedAt,
+            detail: d.paymentReference ? `Reference: ${d.paymentReference}` : undefined,
+            tone: 'success',
+        });
+    }
+    if (w.completedAt) {
+        entries.push({
+            id: 'completed',
+            action: 'Completed',
+            timestamp: w.completedAt,
+            detail: d.gatewayMessage ?? undefined,
+            tone: 'success',
+        });
+    }
+    if (d.failedAt) {
+        entries.push({
+            id: 'failed',
+            action: 'Failed',
+            timestamp: d.failedAt,
+            detail: d.gatewayMessage ?? undefined,
+            tone: 'danger',
+        });
+    }
+    if (w.rejectionReason) {
+        entries.push({
+            id: 'rejected',
+            action: w.rejectedByRole ? `Rejected by ${w.rejectedByRole}` : 'Rejected',
+            timestamp: w.completedAt,
+            detail: w.rejectionReason,
+            tone: 'danger',
+        });
+    }
+    return entries;
 }
 
 /**
- * Per-role payout (withdrawal) queue. Renders the standard admin page chrome
- * plus a withdrawals DataTable filtered server-side by `role`, locked to the
- * passed role. Shares the withdrawal action flow (approve / reject / retry /
- * mark-paid) with the consolidated `WithdrawalsTab`.
+ * The platform's single withdrawal console. Renders standard admin page chrome,
+ * a role-scoped summary strip, a filterable withdrawals table, a full detail
+ * drawer (gross/fee/net breakdown, bank + gateway info, two-tier label-approval
+ * trail) and the shared approve / reject / retry / mark-paid action flow.
+ *
+ * Pass `meta` to lock the page to a single creator role (the per-role payout
+ * queues). Omit it for the consolidated all-roles view, which adds a role
+ * filter and surfaces every role's KPIs.
  */
-export function RolePayoutsQueue({ meta }: { meta: PlatformRoleMeta }) {
+export function RolePayoutsQueue({ meta }: { meta?: PlatformRoleMeta }) {
     const [query, setQuery] = React.useState<WithdrawalQuery>({
         page: 1,
         pageSize: PAGE_SIZE,
         sort: 'newest',
-        role: meta.role,
+        role: meta?.role,
     });
     const [action, setAction] = React.useState<{ id: string; kind: ActionKind } | null>(null);
+    const [selected, setSelected] = React.useState<WithdrawalListItem | null>(null);
 
-    // Role is locked for this page — never let it drift out of the query.
-    const effectiveQuery: WithdrawalQuery = { ...query, role: meta.role };
+    // When the page is role-locked, the role can never drift out of the query.
+    const effectiveQuery: WithdrawalQuery = meta ? { ...query, role: meta.role } : query;
     const { data, isLoading, error } = useWithdrawals(effectiveQuery);
+    const { data: summary } = useWithdrawalSummary(meta ? { role: meta.role } : {});
+    const { data: detail } = useWithdrawal(selected?.id ?? null);
 
     const approve = useApproveWithdrawal();
     const reject = useRejectWithdrawal();
@@ -119,15 +207,43 @@ export function RolePayoutsQueue({ meta }: { meta: PlatformRoleMeta }) {
     const patch = (next: Partial<WithdrawalQuery>) =>
         setQuery((q) => ({ ...q, ...next, page: 1 }));
     const close = () => setAction(null);
+    const onAct = (id: string, kind: ActionKind) => setAction({ id, kind });
+
+    const copy = meta ? ROLE_COPY[meta.role] : undefined;
+
+    const kpis: KpiItem[] = [
+        { label: 'Awaiting label', value: summary?.pendingLabelApproval ?? 0, tone: 'warning' },
+        { label: 'Pending (admin)', value: summary?.pending ?? 0, tone: 'info' },
+        { label: 'Processing', value: summary?.processing ?? 0, tone: 'info' },
+        { label: 'Completed', value: summary?.completed ?? 0, tone: 'success' },
+        { label: 'Failed', value: summary?.failed ?? 0, tone: 'danger' },
+        {
+            label: 'Pending payout value',
+            value: formatMinorAmount(summary?.pendingNetAmountMinor ?? 0, summary?.currency ?? 'NGN'),
+        },
+    ];
 
     const columns: DataColumn<WithdrawalListItem>[] = [
         {
             key: 'creator',
-            header: meta.singular,
+            header: meta ? meta.singular : 'Recipient',
             render: (w) => (
                 <IdentityCell name={w.artistName} secondary={w.artistEmail ?? undefined} size="xs" />
             ),
         },
+        ...(meta
+            ? []
+            : [
+                  {
+                      key: 'role',
+                      header: 'Role',
+                      render: (w: WithdrawalListItem) => (
+                          <Text fontSize="xs" color="gray.600">
+                              {w.requesterRole ?? '—'}
+                          </Text>
+                      ),
+                  } as DataColumn<WithdrawalListItem>,
+              ]),
         {
             key: 'amount',
             header: 'Net amount',
@@ -167,28 +283,97 @@ export function RolePayoutsQueue({ meta }: { meta: PlatformRoleMeta }) {
             header: '',
             align: 'right',
             render: (w) => (
-                <ActionButtons w={w} onAct={(id, kind) => setAction({ id, kind })} />
+                <HStack gap={1.5} justify="flex-end">
+                    {actionsForStatus(w, onAct)}
+                </HStack>
             ),
         },
     ];
 
+    const onExport = () =>
+        exportCsv<WithdrawalListItem>(
+            meta ? `${meta.slug}-payout-requests` : 'payout-requests',
+            [
+                { header: 'Recipient', value: (w) => w.artistName },
+                { header: 'Email', value: (w) => w.artistEmail ?? '' },
+                { header: 'Role', value: (w) => w.requesterRole ?? '' },
+                { header: 'Gross', value: (w) => w.amountMinor },
+                { header: 'Fee', value: (w) => w.processingFeeMinor },
+                { header: 'Net', value: (w) => w.netAmountMinor },
+                { header: 'Currency', value: (w) => w.currency },
+                { header: 'Status', value: (w) => w.status },
+                { header: 'Bank', value: (w) => w.bankName ?? '' },
+                { header: 'Account', value: (w) => w.accountNumber ?? '' },
+                { header: 'Requested', value: (w) => w.requestedAt },
+            ],
+            data?.items ?? [],
+        );
+
+    const metaFields: MetaField[] = selected
+        ? [
+              { label: 'Requester role', value: selected.requesterRole },
+              { label: 'Label', value: detail?.withdrawal.labelName ?? selected.labelName },
+              { label: 'Gross amount', value: formatMinorAmount(selected.amountMinor, selected.currency) },
+              { label: 'Processing fee', value: formatMinorAmount(selected.processingFeeMinor, selected.currency) },
+              { label: 'Net amount', value: formatMinorAmount(selected.netAmountMinor, selected.currency) },
+              { label: 'Bank', value: selected.bankName },
+              { label: 'Bank code', value: detail?.bankCode },
+              { label: 'Account name', value: selected.accountName },
+              { label: 'Account number', value: selected.accountNumber },
+              { label: 'Payment reference', value: detail?.paymentReference },
+              { label: 'Gateway txn ID', value: detail?.gatewayTransactionId },
+              { label: 'Gateway message', value: detail?.gatewayMessage },
+              { label: 'Admin notes', value: detail?.adminNotes },
+              { label: 'Requested', value: adminDateTime(selected.requestedAt) },
+          ]
+        : [];
+
     return (
         <AdminPageLayout
-            title={`${meta.plural} Payout Requests`}
-            subtitle={`Review and process withdrawal requests from ${meta.plural.toLowerCase()}`}
-            breadcrumbs={[
-                { label: 'Payouts' },
-                { label: 'Payout Requests' },
-                { label: meta.plural },
-            ]}
+            title={meta ? `${meta.plural} Payout Requests` : 'All Payout Requests'}
+            subtitle={
+                meta
+                    ? copy?.subtitle ?? `Review and process withdrawal requests from ${meta.plural.toLowerCase()}.`
+                    : 'Every withdrawal request across all creator roles.'
+            }
+            breadcrumbs={
+                meta
+                    ? [{ label: 'Payouts' }, { label: 'Payout Requests' }, { label: meta.plural }]
+                    : [{ label: 'Payouts' }, { label: 'All Requests' }]
+            }
+            actions={
+                <Button
+                    size="sm"
+                    variant="outline"
+                    borderColor="gray.200"
+                    color="gray.700"
+                    borderRadius="lg"
+                    fontSize="xs"
+                    onClick={onExport}
+                >
+                    <FiDownload /> Export CSV
+                </Button>
+            }
         >
+            <KpiStrip items={kpis} />
+
             <FilterBar
                 search={{
                     value: query.search ?? '',
                     onChange: (v) => patch({ search: v || undefined }),
-                    placeholder: `Search ${meta.singular.toLowerCase()} or account`,
+                    placeholder: meta ? `Search ${meta.singular.toLowerCase()} or account` : 'Search recipient or account',
                 }}
                 filters={[
+                    ...(meta
+                        ? []
+                        : [
+                              {
+                                  key: 'role',
+                                  value: query.role ?? 'All',
+                                  onChange: (v: string) => patch({ role: v === 'All' ? undefined : v }),
+                                  options: ROLE_OPTIONS,
+                              },
+                          ]),
                     {
                         key: 'status',
                         value: query.status ?? 'All',
@@ -205,10 +390,13 @@ export function RolePayoutsQueue({ meta }: { meta: PlatformRoleMeta }) {
                     columns={columns}
                     rows={data?.items ?? []}
                     rowKey={(w) => w.id}
+                    onRowClick={setSelected}
                     loading={isLoading && !data}
                     emptyIcon={FiDollarSign}
                     emptyTitle="No payout requests"
-                    emptyDescription={`No ${meta.plural.toLowerCase()} have pending withdrawals.`}
+                    emptyDescription={
+                        copy?.empty ?? 'No withdrawal requests match the current filters.'
+                    }
                     pagination={
                         data
                             ? {
@@ -221,6 +409,46 @@ export function RolePayoutsQueue({ meta }: { meta: PlatformRoleMeta }) {
                     }
                 />
             )}
+
+            <DetailDrawer
+                open={selected !== null}
+                onClose={() => setSelected(null)}
+                title={selected?.artistName ?? 'Withdrawal'}
+                subtitle={
+                    selected
+                        ? `${selected.requesterRole ?? 'Creator'} · ${formatMinorAmount(selected.netAmountMinor, selected.currency)}`
+                        : undefined
+                }
+                footer={
+                    selected && actionsForStatus(selected, onAct, 'sm').length > 0 ? (
+                        <HStack gap={2} justify="flex-end" w="100%">
+                            {actionsForStatus(selected, onAct, 'sm')}
+                        </HStack>
+                    ) : undefined
+                }
+            >
+                {selected && (
+                    <VStack align="stretch" gap={5}>
+                        <HStack>
+                            <StatusBadge style={financeStatusStyle(selected.status)} size="md" />
+                        </HStack>
+                        <MetaGrid fields={metaFields} />
+                        <Box>
+                            <Text
+                                fontSize="10px"
+                                fontWeight="600"
+                                color="gray.400"
+                                textTransform="uppercase"
+                                letterSpacing="0.5px"
+                                mb={3}
+                            >
+                                Approval trail
+                            </Text>
+                            <AuditTimeline entries={buildTimeline(selected, detail ?? {})} />
+                        </Box>
+                    </VStack>
+                )}
+            </DetailDrawer>
 
             <ActionDialog
                 isOpen={action?.kind === 'approve'}

@@ -119,7 +119,7 @@ export const useWithdrawals = (query: WithdrawalQuery) =>
         staleTime: 30_000,
     });
 
-export const useWithdrawalSummary = (range: { from?: string; to?: string }) =>
+export const useWithdrawalSummary = (range: { from?: string; to?: string; role?: string }) =>
     useQuery({
         queryKey: adminKeys.finance.withdrawalSummary(range),
         queryFn: () => financeService.getWithdrawalSummary(range),

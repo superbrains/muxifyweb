@@ -125,7 +125,7 @@ export const financeService = {
         return data;
     },
 
-    getWithdrawalSummary: async (range: { from?: string; to?: string }): Promise<WithdrawalSummary> => {
+    getWithdrawalSummary: async (range: { from?: string; to?: string; role?: string }): Promise<WithdrawalSummary> => {
         const { data } = await api.get<WithdrawalSummary>(`${BASE}/withdrawals/summary`, { params: clean(range) });
         return data;
     },
