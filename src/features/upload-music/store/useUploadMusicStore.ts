@@ -34,6 +34,7 @@ interface MixSliceState {
   unlockCost: string[];
   allowSponsorship: string[];
   releaseYear: string;
+  lyrics: string;
   uploads: UploadProgress[];
   splits: MixSplitRow[];
   rights: MixRights;
@@ -86,6 +87,7 @@ interface UploadMusicState {
   mixSetUnlockCost: (value: string[]) => void;
   mixSetAllowSponsorship: (value: string[]) => void;
   mixSetReleaseYear: (value: string) => void;
+  mixSetLyrics: (value: string) => void;
   mixSetSplits: (splits: MixSplitRow[]) => void;
   mixSetRights: (rights: MixRights) => void;
   mixSetIsrc: (value: string) => void;
@@ -159,6 +161,7 @@ export const useUploadMusicStore = create<UploadMusicState>((set) => ({
     unlockCost: ["100.00"],
     allowSponsorship: ["yes"],
     releaseYear: "",
+    lyrics: "",
     uploads: [],
     splits: [],
     rights: { ...EMPTY_MIX_RIGHTS },
@@ -239,6 +242,8 @@ export const useUploadMusicStore = create<UploadMusicState>((set) => ({
     set((state) => ({ mix: { ...state.mix, allowSponsorship: value } })),
   mixSetReleaseYear: (value) =>
     set((state) => ({ mix: { ...state.mix, releaseYear: value } })),
+  mixSetLyrics: (value) =>
+    set((state) => ({ mix: { ...state.mix, lyrics: value } })),
   mixSetSplits: (splits) =>
     set((state) => ({ mix: { ...state.mix, splits } })),
   mixSetRights: (rights) =>
@@ -294,6 +299,7 @@ export const useUploadMusicStore = create<UploadMusicState>((set) => ({
         unlockCost: ["100.00"],
         allowSponsorship: ["yes"],
         releaseYear: "",
+        lyrics: "",
         uploads: [],
         splits: [],
         rights: { ...EMPTY_MIX_RIGHTS },

@@ -28,6 +28,8 @@ interface MediaGridCardProps {
     onPlay?: () => void;
     onOpen?: () => void;
     onDelete?: () => void;
+    /** When provided, adds an "Edit lyrics" menu action (singles/mixes only). */
+    onEditLyrics?: () => void;
 }
 
 const kindLabel: Record<MediaKind, string> = {
@@ -53,6 +55,7 @@ export const MediaGridCard: React.FC<MediaGridCardProps> = ({
     onPlay,
     onOpen,
     onDelete,
+    onEditLyrics,
 }) => {
     const showDraftBadge = kind === 'album' && isPublished === false;
     // Albums aren't directly held — only their tracks are — so the under-review badge is only meaningful on single/video.
@@ -82,6 +85,7 @@ export const MediaGridCard: React.FC<MediaGridCardProps> = ({
 
     const menuOptions = [
         { label: 'Open', value: 'open', onClick: onOpen },
+        ...(onEditLyrics ? [{ label: 'Edit lyrics', value: 'edit-lyrics', onClick: onEditLyrics }] : []),
         { label: 'Share', value: 'share', onClick: handleShare },
         { label: 'Copy link', value: 'copy-link', onClick: handleCopyLink },
         { label: 'Delete', value: 'delete', color: 'red.500', onClick: handleDelete },

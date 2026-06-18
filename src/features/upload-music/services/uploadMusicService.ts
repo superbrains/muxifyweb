@@ -5,6 +5,7 @@
 
 import { axiosInstance } from '@app/lib/axiosInstance';
 import type { AxiosProgressEvent } from 'axios';
+import { validateLyrics } from '../lib/lyricsFormat';
 import type {
   UpdateTrackRequest,
   TrackDto,
@@ -31,6 +32,9 @@ export interface UploadMusicData {
   isrcIsProvisional?: boolean;
   upc?: string;
   iswc?: string;
+  // Lyrics — plain text or synchronized LRC; backend accepts both.
+  lyrics?: string;
+  lyricsLanguage?: string;
   // Royalty splits as compact rows: { recipientUserId, recipientRole, percentBps }
   splits?: Array<{
     recipientUserId: string;
@@ -73,6 +77,8 @@ export const uploadMusicService = {
     if (data.isrcIsProvisional) formData.append('isrcIsProvisional', 'true');
     if (data.upc) formData.append('upc', data.upc);
     if (data.iswc) formData.append('iswc', data.iswc);
+    if (data.lyrics?.trim()) formData.append('lyrics', data.lyrics);
+    if (data.lyricsLanguage) formData.append('lyricsLanguage', data.lyricsLanguage);
     if (data.splits && data.splits.length > 0) {
       formData.append('splits', JSON.stringify(data.splits));
     }
@@ -136,6 +142,26 @@ export const uploadMusicService = {
    */
   deleteTrack: async (id: string): Promise<void> => {
     await axiosInstance.delete(`/music/${id}`);
+  },
+
+  /**
+   * Set or replace artist lyrics for a track. Accepts plain text or synced LRC.
+   * PUT /api/v1/music/{id}/lyrics
+   */
+  updateTrackLyrics: async (
+    id: string,
+    lrc: string,
+    language?: string
+  ): Promise<void> => {
+    await axiosInstance.put(`/music/${id}/lyrics`, { lrc, language });
+  },
+
+  /**
+   * Remove artist lyrics from a track (falls back to the LrcLib lookup).
+   * DELETE /api/v1/music/{id}/lyrics
+   */
+  deleteTrackLyrics: async (id: string): Promise<void> => {
+    await axiosInstance.delete(`/music/${id}/lyrics`);
   },
 
   /**
@@ -262,6 +288,12 @@ export function validateUploadData(data: UploadMusicData): string[] {
     if (!isValidCoverArtSize(data.coverArt)) {
       errors.push(`Cover art size exceeds maximum limit of ${formatFileSize(MAX_COVER_ART_SIZE)}`);
     }
+  }
+
+  // Optional lyrics validation (size only; plain text and synced LRC both allowed)
+  const lyricsError = validateLyrics(data.lyrics);
+  if (lyricsError) {
+    errors.push(lyricsError);
   }
 
   return errors;

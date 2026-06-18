@@ -8,6 +8,7 @@ import {
     Artist,
 } from '@upload/components';
 import { UploadFileIcon, UploadImageIcon } from '@/shared/icons/CustomIcons';
+import { LyricsField } from './LyricsField';
 
 interface UploadFile {
     id: string;
@@ -28,6 +29,7 @@ interface MixTabProps {
     unlockCost: string[];
     allowSponsorship: string[];
     releaseYear: string;
+    lyrics: string;
     onAudioFileSelect: (file: File) => void;
     onAudioFileReady: (file: UploadFile) => void;
     onCoverArtSelect: (file: File) => void;
@@ -43,6 +45,7 @@ interface MixTabProps {
     onUnlockCostChange: (value: string[]) => void;
     onSponsorshipChange: (value: string[]) => void;
     onReleaseYearChange: (value: string) => void;
+    onLyricsChange: (value: string) => void;
     genreOptions: { label: string; value: string }[];
     releaseTypeOptions: { label: string; value: string }[];
     unlockCostOptions: { label: string; value: string }[];
@@ -59,6 +62,7 @@ export const MixTab: React.FC<MixTabProps> = ({
     unlockCost,
     allowSponsorship,
     releaseYear,
+    lyrics,
     onAudioFileSelect,
     onAudioFileReady,
     onCoverArtSelect,
@@ -74,6 +78,7 @@ export const MixTab: React.FC<MixTabProps> = ({
     onUnlockCostChange,
     onSponsorshipChange,
     onReleaseYearChange,
+    onLyricsChange,
     genreOptions,
     releaseTypeOptions,
     unlockCostOptions,
@@ -81,6 +86,7 @@ export const MixTab: React.FC<MixTabProps> = ({
 }) => {
 
     return (
+        <VStack align="stretch" gap={5}>
         <Flex gap={5} direction={{ base: 'column', lg: 'row' }}>
             {/* Left Section */}
             <Box flex="1" minW={0}>
@@ -190,6 +196,10 @@ export const MixTab: React.FC<MixTabProps> = ({
                 </VStack>
             </Box>
         </Flex>
+
+            {/* Lyrics — full width below both columns since lyrics need room */}
+            <LyricsField value={lyrics} onChange={onLyricsChange} />
+        </VStack>
     );
 };
 

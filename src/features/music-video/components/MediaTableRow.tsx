@@ -28,6 +28,8 @@ interface MediaTableRowProps {
     onPlay?: () => void;
     onOpen?: () => void;
     onDelete?: () => void;
+    /** When provided, adds an "Edit lyrics" menu action (singles/mixes only). */
+    onEditLyrics?: () => void;
 }
 
 const num = (n: number) => n.toLocaleString();
@@ -51,6 +53,7 @@ export const MediaTableRow: React.FC<MediaTableRowProps> = ({
     onPlay,
     onOpen,
     onDelete,
+    onEditLyrics,
 }) => {
     const navigate = useNavigate();
     // Albums aren't directly held — only their tracks are — so only single/video carry the badge.
@@ -76,6 +79,7 @@ export const MediaTableRow: React.FC<MediaTableRowProps> = ({
     const menuOptions = [
         { label: 'Open', value: 'open', onClick: onOpen },
         { label: 'Edit', value: 'edit', onClick: onEdit },
+        ...(onEditLyrics ? [{ label: 'Edit lyrics', value: 'edit-lyrics', onClick: onEditLyrics }] : []),
         { label: 'Share', value: 'share', onClick: handleShare },
         { label: 'Copy link', value: 'copy-link', onClick: handleCopyLink },
         { label: 'Delete', value: 'delete', color: 'red.500', onClick: handleDelete },

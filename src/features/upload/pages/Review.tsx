@@ -119,6 +119,7 @@ export const Review: React.FC = () => {
                         isrcIsProvisional: mix.rights.isrcIsProvisional || undefined,
                         upc: mix.rights.upc || undefined,
                         iswc: mix.rights.iswc || undefined,
+                        lyrics: mix.lyrics?.trim() || undefined,
                         splits:
                             mix.splits.length > 0
                                 ? mix.splits.map((s) => ({

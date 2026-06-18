@@ -19,6 +19,7 @@ import { MediaGridCard } from './MediaGridCard';
 import { MediaTable } from './MediaTable';
 import { MediaTableRow } from './MediaTableRow';
 import { ViewToggle } from './ViewToggle';
+import { EditLyricsModal } from '@/features/upload-music/components/EditLyricsModal';
 import { useMusicStore } from '../store/useMusicStore';
 import { useViewModeStore } from '../store/useViewModeStore';
 import { usePlayerStore } from '@/features/player/store/usePlayerStore';
@@ -94,6 +95,14 @@ export const MusicTab: React.FC = () => {
     };
 
     const isSingleTab = (tab: SubTabId) => tab === 'single' || tab === 'mix' || tab === 'episode';
+
+    // Lyrics editing is single-track only and needs a real backend track id (GUID);
+    // legacy local-only items (Date.now() ids) are skipped so the editor never 404s.
+    const isUuid = (s: string) =>
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
+    const [lyricsTrack, setLyricsTrack] = useState<{ id: string; title: string } | null>(null);
+    const canEditLyrics = (item: SingleItem | AlbumItem) =>
+        isSingleTab(activeTab) && isUuid(item.id);
 
     const baseItems: (SingleItem | AlbumItem)[] = isSingleTab(activeTab) ? singles : albums;
     const filteredItems = search
@@ -311,6 +320,11 @@ export const MusicTab: React.FC = () => {
                                 onOpen={() => onItemOpen(item)}
                                 onPlay={() => onItemPlay(item)}
                                 onDelete={() => onItemDelete(item)}
+                                onEditLyrics={
+                                    canEditLyrics(item)
+                                        ? () => setLyricsTrack({ id: item.id, title: item.title })
+                                        : undefined
+                                }
                             />
                         );
                     })}
@@ -340,11 +354,23 @@ export const MusicTab: React.FC = () => {
                                 onOpen={() => onItemOpen(item)}
                                 onPlay={() => onItemPlay(item)}
                                 onDelete={() => onItemDelete(item)}
+                                onEditLyrics={
+                                    canEditLyrics(item)
+                                        ? () => setLyricsTrack({ id: item.id, title: item.title })
+                                        : undefined
+                                }
                             />
                         );
                     })}
                 </MediaTable>
             )}
+
+            <EditLyricsModal
+                isOpen={!!lyricsTrack}
+                onClose={() => setLyricsTrack(null)}
+                trackId={lyricsTrack?.id ?? ''}
+                trackTitle={lyricsTrack?.title}
+            />
         </>
     );
 };

@@ -13,6 +13,8 @@ import { FiCheck } from 'react-icons/fi';
 import { useUploadMusicStore } from '@uploadMusic/store/useUploadMusicStore';
 import { ReviewTrackItem, ReleaseScheduler } from './';
 import { formatPercentBps } from '@/features/record-label/lib/format';
+import { detectLyricsFormat } from '@uploadMusic/lib/lyricsFormat';
+import { LyricsFormatBadge } from '@uploadMusic/components/LyricsField';
 
 export const MixReview: React.FC = () => {
     const { mix } = useUploadMusicStore();
@@ -26,9 +28,12 @@ export const MixReview: React.FC = () => {
         unlockCost,
         allowSponsorship,
         releaseYear,
+        lyrics,
         splits,
         rights,
     } = mix;
+
+    const lyricsFormat = detectLyricsFormat(lyrics);
 
     // Get artist name - Mix tab always uses selected artists (as it was before)
     const getArtistName = () => {
@@ -165,6 +170,30 @@ export const MixReview: React.FC = () => {
                                 color="gray.700"
                             >
                                 {releaseYear || '2025'}
+                            </Box>
+                        </Box>
+
+                        <Box>
+                            <Flex justify="space-between" align="center" mb={2} gap={2}>
+                                <Text fontSize="12px" fontWeight="semibold" color="gray.900">
+                                    Lyrics
+                                </Text>
+                                <LyricsFormatBadge format={lyricsFormat} />
+                            </Flex>
+                            <Box
+                                bg="gray.50"
+                                border="1px solid"
+                                borderColor="gray.200"
+                                borderRadius="md"
+                                p={3}
+                                maxH="220px"
+                                overflowY="auto"
+                                fontSize="11px"
+                                lineHeight="1.6"
+                                whiteSpace="pre-wrap"
+                                color={lyrics?.trim() ? 'gray.700' : 'gray.400'}
+                            >
+                                {lyrics?.trim() || 'No lyrics added'}
                             </Box>
                         </Box>
 

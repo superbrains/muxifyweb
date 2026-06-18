@@ -81,6 +81,13 @@ export interface TrackDto {
    * and the artist's prior dispute note if submitted. Null when no match exists.
    */
   duplicateMatch?: DuplicateMatchSummary | null;
+
+  /** Artist lyrics — plain text or synced LRC. Null when none were added. */
+  lrcContent?: string | null;
+  /** Origin of the lyrics: 'Artist' or 'LrcLib'. */
+  lrcSource?: string | null;
+  /** True when artist lyrics are present (convenience flag from the backend). */
+  hasLyrics?: boolean;
 }
 
 /**

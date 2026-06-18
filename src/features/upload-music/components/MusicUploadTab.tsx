@@ -130,6 +130,7 @@ export const MusicUploadTab: React.FC<MusicUploadTabProps> = ({ albumTab, setAlb
         mixSetUnlockCost,
         mixSetAllowSponsorship,
         mixSetReleaseYear,
+        mixSetLyrics,
     } = useUploadMusicStore();
 
     // Review store (consumed by review pages) - we will sync active slice here on Continue
@@ -158,6 +159,7 @@ export const MusicUploadTab: React.FC<MusicUploadTabProps> = ({ albumTab, setAlb
     const unlockCost = mix.unlockCost;
     const allowSponsorship = mix.allowSponsorship;
     const releaseYear = mix.releaseYear;
+    const lyrics = mix.lyrics;
 
     const handleAudioFileSelect = () => {
         // FileUploadArea will handle the upload progress internally
@@ -264,6 +266,7 @@ export const MusicUploadTab: React.FC<MusicUploadTabProps> = ({ albumTab, setAlb
                     unlockCost={unlockCost}
                     allowSponsorship={allowSponsorship}
                     releaseYear={releaseYear}
+                    lyrics={lyrics}
                     onAudioFileSelect={handleAudioFileSelect}
                     onAudioFileReady={handleAudioFileReady}
                     onCoverArtSelect={handleCoverArtSelect}
@@ -279,6 +282,7 @@ export const MusicUploadTab: React.FC<MusicUploadTabProps> = ({ albumTab, setAlb
                     onUnlockCostChange={mixSetUnlockCost}
                     onSponsorshipChange={mixSetAllowSponsorship}
                     onReleaseYearChange={mixSetReleaseYear}
+                    onLyricsChange={mixSetLyrics}
                     genreOptions={genreOptions}
                     releaseTypeOptions={releaseTypeOptions}
                     unlockCostOptions={unlockCostOptions}
