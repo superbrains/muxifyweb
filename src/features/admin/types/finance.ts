@@ -242,6 +242,41 @@ export interface PayoutDetail {
     labelName?: string | null;
 }
 
+export interface WithdrawalSummary {
+    total: number;
+    pendingLabelApproval: number;
+    pending: number;
+    processing: number;
+    completed: number;
+    rejected: number;
+    failed: number;
+    cancelled: number;
+    pendingNetAmountMinor: number;
+    completedNetAmountMinor: number;
+    currency: string;
+}
+
+export interface PayoutSummary {
+    total: number;
+    pending: number;
+    processing: number;
+    paid: number;
+    failed: number;
+    cancelled: number;
+    paidNetAmountMinor: number;
+    totalFeeMinor: number;
+    currency: string;
+}
+
+export interface PayoutAccountSummary {
+    total: number;
+    pending: number;
+    active: number;
+    inactive: number;
+    failed: number;
+    defaultCount: number;
+}
+
 export interface LedgerAccountBalance {
     account: string;
     debitsMinor: number;

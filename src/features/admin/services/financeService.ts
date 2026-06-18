@@ -18,11 +18,13 @@ import type {
     PagedResult,
     PayoutAccountDto,
     PayoutAccountQuery,
+    PayoutAccountSummary,
     PayoutAuditEntryDto,
     PayoutAuditQuery,
     PayoutDetail,
     PayoutListItem,
     PayoutQuery,
+    PayoutSummary,
     ReconciliationSummary,
     TrackSplitBreakdown,
     TransactionQuery,
@@ -30,6 +32,7 @@ import type {
     WithdrawalDetail,
     WithdrawalListItem,
     WithdrawalQuery,
+    WithdrawalSummary,
 } from '../types/finance';
 
 const BASE = '/admin/finance';
@@ -122,6 +125,11 @@ export const financeService = {
         return data;
     },
 
+    getWithdrawalSummary: async (range: { from?: string; to?: string }): Promise<WithdrawalSummary> => {
+        const { data } = await api.get<WithdrawalSummary>(`${BASE}/withdrawals/summary`, { params: clean(range) });
+        return data;
+    },
+
     getWithdrawal: async (id: string): Promise<WithdrawalDetail> => {
         const { data } = await api.get<WithdrawalDetail>(`${BASE}/withdrawals/${id}`);
         return data;
@@ -141,6 +149,11 @@ export const financeService = {
         return data;
     },
 
+    getPayoutSummary: async (range: { from?: string; to?: string }): Promise<PayoutSummary> => {
+        const { data } = await api.get<PayoutSummary>(`${BASE}/payouts/summary`, { params: clean(range) });
+        return data;
+    },
+
     getPayout: async (id: string): Promise<PayoutDetail> => {
         const { data } = await api.get<PayoutDetail>(`${BASE}/payouts/${id}`);
         return data;
@@ -155,6 +168,20 @@ export const financeService = {
         });
         return data;
     },
+
+    getPayoutAccountSummary: async (): Promise<PayoutAccountSummary> => {
+        const { data } = await api.get<PayoutAccountSummary>(`${BASE}/payout-accounts/summary`);
+        return data;
+    },
+
+    setDefaultPayoutAccount: (id: string) => api.post(`${BASE}/payout-accounts/${id}/set-default`),
+    forceVerifyPayoutAccount: (id: string, body: { note?: string }) =>
+        api.post(`${BASE}/payout-accounts/${id}/force-verify`, body),
+    deactivatePayoutAccount: (id: string, body: { reason: string }) =>
+        api.post(`${BASE}/payout-accounts/${id}/deactivate`, body),
+    reactivatePayoutAccount: (id: string) => api.post(`${BASE}/payout-accounts/${id}/reactivate`),
+    deletePayoutAccount: (id: string, body: { reason: string }) =>
+        api.delete(`${BASE}/payout-accounts/${id}`, { data: body }),
 
     getPayoutAudit: async (query: PayoutAuditQuery): Promise<PagedResult<PayoutAuditEntryDto>> => {
         const { data } = await api.get<PagedResult<PayoutAuditEntryDto>>(`${BASE}/payout-audit`, {

@@ -119,6 +119,20 @@ export const useWithdrawals = (query: WithdrawalQuery) =>
         staleTime: 30_000,
     });
 
+export const useWithdrawalSummary = (range: { from?: string; to?: string }) =>
+    useQuery({
+        queryKey: adminKeys.finance.withdrawalSummary(range),
+        queryFn: () => financeService.getWithdrawalSummary(range),
+        staleTime: 30_000,
+    });
+
+export const useWithdrawal = (id: string | null) =>
+    useQuery({
+        queryKey: adminKeys.finance.withdrawal(id ?? ''),
+        queryFn: () => financeService.getWithdrawal(id as string),
+        enabled: id !== null,
+    });
+
 export const usePayouts = (query: PayoutQuery) =>
     useQuery({
         queryKey: adminKeys.finance.payouts(query),
@@ -127,11 +141,32 @@ export const usePayouts = (query: PayoutQuery) =>
         staleTime: 30_000,
     });
 
+export const usePayoutSummary = (range: { from?: string; to?: string }) =>
+    useQuery({
+        queryKey: adminKeys.finance.payoutSummary(range),
+        queryFn: () => financeService.getPayoutSummary(range),
+        staleTime: 30_000,
+    });
+
+export const usePayout = (id: string | null) =>
+    useQuery({
+        queryKey: adminKeys.finance.payout(id ?? ''),
+        queryFn: () => financeService.getPayout(id as string),
+        enabled: id !== null,
+    });
+
 export const usePayoutAccounts = (query: PayoutAccountQuery) =>
     useQuery({
         queryKey: adminKeys.finance.payoutAccounts(query),
         queryFn: () => financeService.getPayoutAccounts(query),
         placeholderData: keepPreviousData,
+        staleTime: 30_000,
+    });
+
+export const usePayoutAccountSummary = () =>
+    useQuery({
+        queryKey: adminKeys.finance.payoutAccountSummary(),
+        queryFn: () => financeService.getPayoutAccountSummary(),
         staleTime: 30_000,
     });
 
@@ -237,6 +272,43 @@ export const useCancelPayout = () =>
         (v: { id: string; reason: string }) => financeService.cancelPayout(v.id, { reason: v.reason }),
         'Payout cancelled',
         'The payout was cancelled.',
+    );
+
+// ----- Payout-account management -----
+
+export const useSetDefaultPayoutAccount = () =>
+    useFinanceAction(
+        (v: { id: string }) => financeService.setDefaultPayoutAccount(v.id),
+        'Default updated',
+        'This account is now the default payout destination.',
+    );
+
+export const useForceVerifyPayoutAccount = () =>
+    useFinanceAction(
+        (v: { id: string; note?: string }) => financeService.forceVerifyPayoutAccount(v.id, { note: v.note }),
+        'Account verified',
+        'The payout account was marked active.',
+    );
+
+export const useDeactivatePayoutAccount = () =>
+    useFinanceAction(
+        (v: { id: string; reason: string }) => financeService.deactivatePayoutAccount(v.id, { reason: v.reason }),
+        'Account deactivated',
+        'The payout account was deactivated.',
+    );
+
+export const useReactivatePayoutAccount = () =>
+    useFinanceAction(
+        (v: { id: string }) => financeService.reactivatePayoutAccount(v.id),
+        'Account reactivated',
+        'The payout account is active again.',
+    );
+
+export const useDeletePayoutAccount = () =>
+    useFinanceAction(
+        (v: { id: string; reason: string }) => financeService.deletePayoutAccount(v.id, { reason: v.reason }),
+        'Account deleted',
+        'The payout account was removed.',
     );
 
 export const useCreditWallet = () =>
