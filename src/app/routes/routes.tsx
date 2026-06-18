@@ -182,7 +182,6 @@ const AdminTodayQueuePage = lazy(() => import('@/features/admin/pages/platform/T
 const AdminSystemSettingsPage = lazy(() => import('@/features/admin/pages/platform/SystemSettingsPage'));
 const AdminNotificationsConsolePage = lazy(() => import('@/features/admin/pages/notifications/NotificationsConsolePage'));
 // Support & Governance (Phase 3 Group 8)
-const AdminGovernanceReportsPage = lazy(() => import('@/features/admin/pages/governance/ReportsPage'));
 const AdminGovernanceAuditTrailPage = lazy(() => import('@/features/admin/pages/governance/AuditTrailPage'));
 
 export const appRoutes: RouteObject[] = [
@@ -373,7 +372,6 @@ export const appRoutes: RouteObject[] = [
                     { path: '/admin/platform/settings', element: <AdminSystemSettingsPage /> },
                     { path: '/admin/notifications', element: <AdminNotificationsConsolePage /> },
                     // Support & Governance (Phase 3 Group 8)
-                    { path: '/admin/governance/reports', element: <AdminGovernanceReportsPage /> },
                     { path: '/admin/governance/audit-trail', element: <AdminGovernanceAuditTrailPage /> },
                 ],
             },

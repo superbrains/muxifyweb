@@ -248,7 +248,6 @@ export const useAdminNavGroups = (): NavGroup[] => {
                 { label: 'Staff Assignment', to: '/admin/management/staff-assignment', icon: FiUserPlus, visible: true },
                 { label: 'Admin Team', to: '/admin/management/team', icon: FiUsers, visible: true },
                 { label: 'Settings', to: '/admin/settings', icon: FiFileText, visible: true },
-                { label: 'Reports', to: '/admin/governance/reports', icon: FiFlag, visible: canAccess({ permission: 'ModerationView' }) },
                 { label: 'Audit Trail', to: '/admin/governance/audit-trail', icon: FiClipboard, visible: canAccess({ permission: 'AuditView' }) },
             ],
         },
