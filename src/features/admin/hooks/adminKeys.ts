@@ -161,16 +161,6 @@ export const adminKeys = {
     governance: {
         root: ['admin', 'governance'] as const,
         auditTrail: (query: unknown) => ['admin', 'governance', 'audit-trail', query] as const,
-        compliance: ['admin', 'governance', 'compliance'] as const,
-    },
-    labelOps: {
-        root: ['admin', 'labels'] as const,
-        list: (query: unknown) => ['admin', 'labels', 'list', query] as const,
-        detail: (userId: string) => ['admin', 'labels', 'detail', userId] as const,
-    },
-    onboarding: {
-        root: ['admin', 'onboarding'] as const,
-        stuck: (query: unknown) => ['admin', 'onboarding', 'stuck', query] as const,
     },
     // Platform (analytics / notifications / settings)
     platform: {

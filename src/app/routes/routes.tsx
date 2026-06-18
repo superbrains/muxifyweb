@@ -183,11 +183,7 @@ const AdminSystemSettingsPage = lazy(() => import('@/features/admin/pages/platfo
 const AdminNotificationsConsolePage = lazy(() => import('@/features/admin/pages/notifications/NotificationsConsolePage'));
 // Support & Governance (Phase 3 Group 8)
 const AdminGovernanceReportsPage = lazy(() => import('@/features/admin/pages/governance/ReportsPage'));
-const AdminGovernanceActivityLogPage = lazy(() => import('@/features/admin/pages/governance/ActivityLogPage'));
 const AdminGovernanceAuditTrailPage = lazy(() => import('@/features/admin/pages/governance/AuditTrailPage'));
-const AdminGovernanceCompliancePage = lazy(() => import('@/features/admin/pages/governance/CompliancePage'));
-const AdminGovernanceRecordLabelOpsPage = lazy(() => import('@/features/admin/pages/governance/RecordLabelOpsPage'));
-const AdminGovernanceOnboardingPage = lazy(() => import('@/features/admin/pages/governance/OnboardingPage'));
 
 export const appRoutes: RouteObject[] = [
     { path: '/login', element: <Login /> },
@@ -378,11 +374,7 @@ export const appRoutes: RouteObject[] = [
                     { path: '/admin/notifications', element: <AdminNotificationsConsolePage /> },
                     // Support & Governance (Phase 3 Group 8)
                     { path: '/admin/governance/reports', element: <AdminGovernanceReportsPage /> },
-                    { path: '/admin/governance/activity', element: <AdminGovernanceActivityLogPage /> },
                     { path: '/admin/governance/audit-trail', element: <AdminGovernanceAuditTrailPage /> },
-                    { path: '/admin/governance/compliance', element: <AdminGovernanceCompliancePage /> },
-                    { path: '/admin/governance/labels', element: <AdminGovernanceRecordLabelOpsPage /> },
-                    { path: '/admin/governance/onboarding', element: <AdminGovernanceOnboardingPage /> },
                 ],
             },
         ],

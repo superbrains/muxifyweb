@@ -39,7 +39,6 @@ import {
     FiTrendingUp,
     FiUnlock,
     FiUploadCloud,
-    FiUserCheck,
     FiUserPlus,
     FiUsers,
     FiVideo,
@@ -63,7 +62,7 @@ const usersViewPerm = (role: PlatformRole) =>
     role === 'contributor' ? 'ContributorsView' : 'UsersView';
 
 /**
- * The document's 8-group admin navigation, scope- and permission-aware. Each
+ * The document's 7-group admin navigation, scope- and permission-aware. Each
  * item's `visible` flag is computed from {@link useRoleScope} —
  * `isSuperAdmin || (roleScope allows the role && the permission is held)` — so
  * a staff member scoped to "Artists only" never sees Labels/Ads entries. The
@@ -249,19 +248,8 @@ export const useAdminNavGroups = (): NavGroup[] => {
                 { label: 'Staff Assignment', to: '/admin/management/staff-assignment', icon: FiUserPlus, visible: true },
                 { label: 'Admin Team', to: '/admin/management/team', icon: FiUsers, visible: true },
                 { label: 'Settings', to: '/admin/settings', icon: FiFileText, visible: true },
-            ],
-        },
-        {
-            id: 'governance',
-            label: 'Support & Governance',
-            icon: FiShield,
-            items: [
                 { label: 'Reports', to: '/admin/governance/reports', icon: FiFlag, visible: canAccess({ permission: 'ModerationView' }) },
-                { label: 'Activity Log', to: '/admin/governance/activity', icon: FiActivity, visible: canAccess({ permission: 'ManagementView' }) },
                 { label: 'Audit Trail', to: '/admin/governance/audit-trail', icon: FiClipboard, visible: canAccess({ permission: 'AuditView' }) },
-                { label: 'Compliance', to: '/admin/governance/compliance', icon: FiAlertTriangle, visible: canAccess({ permission: 'ComplianceView' }) },
-                { label: 'Record Label Operations', to: '/admin/governance/labels', icon: FiBriefcase, visible: canAccess({ permission: 'LabelOpsView' }) },
-                { label: 'Onboarding', to: '/admin/governance/onboarding', icon: FiUserCheck, visible: canAccess({ permission: 'OnboardingView' }) },
             ],
         },
     ];
