@@ -53,6 +53,7 @@ const buildArtistNavItems = (musicVideosLabel: string): NavItem[] => [
     { icon: SalesIcon, label: 'Sales Report', path: '/sales-report' },
     { icon: FansAndSubscribersIcon, label: 'Fans & Subscribers', path: '/fans-subscribers' },
     { icon: PaymentsIcon, label: 'Payments', path: '/payments' },
+    { icon: HeadphoneIcon, label: 'Disputes', path: '/disputes' },
 ];
 
 const recordLabelNavItems: NavItem[] = [
@@ -62,6 +63,7 @@ const recordLabelNavItems: NavItem[] = [
     { icon: EarningsAndRoyaltyIcon, label: 'Splits', path: '/label/splits' },
     { icon: PaymentsIcon, label: 'Payouts', path: '/label/payouts' },
     { icon: WalletMoneyIcon, label: 'Requests', path: '/label/withdrawal-requests' },
+    { icon: HeadphoneIcon, label: 'Disputes', path: '/label/disputes' },
     { icon: Setting2Icon, label: 'Settings', path: '/label/settings' },
 ];
 
@@ -121,6 +123,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed }) => {
         { icon: AdLibraryIcon, label: 'Ad Library', path: '/ads/library' },
         { icon: StatusUpIcon, label: 'Ad Spending', path: '/ads/spending' },
         { icon: WalletMoneyIcon, label: 'Ad Wallet', path: '/ads/wallet' },
+        { icon: HeadphoneIcon, label: 'Disputes', path: '/ads/disputes' },
     ];
 
     // Get the appropriate nav items based on user type

@@ -71,6 +71,10 @@ const ContributorPayoutAccountsPage = lazy(() => import('@/features/contributor/
 const ContributorPayoutsPage = lazy(() => import('@/features/contributor/pages/ContributorPayoutsPage'));
 const ContributorDisputesPage = lazy(() => import('@/features/contributor/pages/ContributorDisputesPage'));
 const ContributorProfilePage = lazy(() => import('@/features/contributor/pages/ContributorProfilePage'));
+// Self-service disputes (artist / label / ad manager)
+const ArtistDisputesPage = lazy(() => import('@/features/disputes/pages/ArtistDisputesPage'));
+const LabelDisputesPage = lazy(() => import('@/features/disputes/pages/LabelDisputesPage'));
+const AdManagerDisputesPage = lazy(() => import('@/features/disputes/pages/AdManagerDisputesPage'));
 // Super Admin
 const AdminOverviewPage = lazy(() => import('@/features/admin/pages/AdminOverviewPage'));
 const VerificationCenterPage = lazy(() => import('@/features/admin/pages/VerificationCenterPage'));
@@ -232,6 +236,10 @@ export const appRoutes: RouteObject[] = [
             { path: '/upload/album/new', element: <NewAlbumPage /> },
             { path: '/upload/album/:id', element: <AlbumEditor /> },
             { path: '/earning-royalty', element: <EarningsAndRoyalty /> },
+            // Self-service disputes (static /disputes ranks above /disputes/:contentType/:contentId)
+            { path: '/disputes', element: <ArtistDisputesPage /> },
+            { path: '/label/disputes', element: <LabelDisputesPage /> },
+            { path: '/ads/disputes', element: <AdManagerDisputesPage /> },
             { path: '/leaderboard', element: <Leaderboard /> },
             { path: '/fans-subscribers', element: <FansAndSubscribers /> },
             { path: '/fans/:fanId', element: <FanProfilePage /> },
