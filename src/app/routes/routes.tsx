@@ -143,7 +143,6 @@ const AdminPlaylistsPage = lazy(() => import('@/features/admin/pages/content/Pla
 const AdminUploadWorkflowPage = lazy(() => import('@/features/admin/pages/content/UploadWorkflowPage'));
 const AdminLyricsManagementPage = lazy(() => import('@/features/admin/pages/content/LyricsManagementPage'));
 const AdminDuplicateDetectionPage = lazy(() => import('@/features/admin/pages/content/DuplicateDetectionPage'));
-const AdminCopyrightReviewPage = lazy(() => import('@/features/admin/pages/content/CopyrightReviewPage'));
 // Content detail routes (Phase 3 redesign)
 const AdminContentItemDetailPage = lazy(() => import('@/features/admin/pages/content/ContentItemDetailPage'));
 const AdminDuplicateMatchDetailPage = lazy(() => import('@/features/admin/pages/content/DuplicateMatchDetailPage'));
@@ -300,7 +299,6 @@ export const appRoutes: RouteObject[] = [
                     { path: '/admin/content/uploads', element: <AdminUploadWorkflowPage /> },
                     { path: '/admin/content/lyrics', element: <AdminLyricsManagementPage /> },
                     { path: '/admin/content/duplicates', element: <AdminDuplicateDetectionPage /> },
-                    { path: '/admin/content/copyright', element: <AdminCopyrightReviewPage /> },
                     // Content & duplicate detail pages (static segments rank above :kind/:id).
                     { path: '/admin/content/duplicates/:id', element: <AdminDuplicateMatchDetailPage /> },
                     { path: '/admin/content/:kind/:id', element: <AdminContentItemDetailPage /> },

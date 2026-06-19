@@ -148,7 +148,6 @@ export const useAdminNavGroups = (): NavGroup[] => {
                 { label: 'Upload Workflow', to: '/admin/content/uploads', icon: FiUploadCloud, visible: canAccess({ permission: 'ContentView' }) },
                 { label: 'Lyrics', to: '/admin/content/lyrics', icon: FiFileText, visible: canAccess({ permission: 'ContentView' }) },
                 { label: 'Duplicate Detection', to: '/admin/content/duplicates', icon: FiCopy, visible: canAccess({ permission: 'CopyrightReview' }) },
-                { label: 'Copyright Review', to: '/admin/content/copyright', icon: FiShield, visible: canAccess({ permission: 'CopyrightReview' }) },
                 ...CONTENT_ROLES.map((r) => ({
                     label: `${PLATFORM_ROLES[r].plural} Moderation`,
                     to: slugFor('/admin/content/moderation', r),
