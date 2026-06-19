@@ -404,9 +404,12 @@ export interface DisputeListItemDto {
     type: string;
     status: string;
     raisedByUserId: string;
+    raisedByName?: string | null;
+    raisedByEmail?: string | null;
     amountMinor?: number | null;
     currency?: string | null;
     assignedToUserId?: string | null;
+    assignedToName?: string | null;
     createdAt: string;
 }
 
@@ -436,11 +439,15 @@ export interface DisputeDetailDto {
     type: string;
     status: string;
     raisedByUserId: string;
+    raisedByName?: string | null;
+    raisedByEmail?: string | null;
     againstUserId?: string | null;
+    againstName?: string | null;
     description?: string | null;
     amountMinor?: number | null;
     currency?: string | null;
     assignedToUserId?: string | null;
+    assignedToName?: string | null;
     resolvedByUserId?: string | null;
     resolvedAt?: string | null;
     resolutionNotes?: string | null;

@@ -16,6 +16,7 @@ import { useModerationItems } from '../../hooks/useSupport';
 import { useModerationStats } from '../../hooks/useContent';
 import { adminRelative } from '../../lib/format';
 import { ModerationActionDialog } from './ModerationActionDialog';
+import { DisputeResolveDialog } from './DisputeResolveDialog';
 import type { ModerationContentType, ModerationItemDto, ModerationQuery, ModerationStatus } from '../../types';
 
 const PAGE_SIZE = 15;
@@ -104,7 +105,15 @@ export const ModerationPanel: React.FC<ModerationPanelProps> = ({ ownerRole }) =
                         >
                             {m.contentTitle}
                         </Text>
-                        {m.disputedAt && (
+                        {m.source === 'dispute' && (
+                            <Tag.Root size="sm" bg="blue.50" color="blue.700" borderRadius="full" px={1.5}>
+                                <FiFlag size={9} />
+                                <Tag.Label fontSize="9px" fontWeight="700" letterSpacing="0.04em" ml={0.5}>
+                                    COPYRIGHT DISPUTE
+                                </Tag.Label>
+                            </Tag.Root>
+                        )}
+                        {m.disputedAt && m.source !== 'dispute' && (
                             <Tag.Root size="sm" bg="orange.50" color="orange.700" borderRadius="full" px={1.5}>
                                 <FiFlag size={9} />
                                 <Tag.Label fontSize="9px" fontWeight="700" letterSpacing="0.04em" ml={0.5}>
@@ -269,7 +278,15 @@ export const ModerationPanel: React.FC<ModerationPanelProps> = ({ ownerRole }) =
                 </>
             )}
 
-            <ModerationActionDialog item={actionItem} onClose={() => setActionItem(null)} />
+            {/* Reports use the takedown workflow; routed copyright disputes use the
+                resolve/reject dispute workflow (single source of truth = DisputeCase). */}
+            <ModerationActionDialog
+                item={actionItem?.source === 'dispute' ? null : actionItem}
+                onClose={() => setActionItem(null)}
+            />
+            {actionItem?.source === 'dispute' && (
+                <DisputeResolveDialog item={actionItem} onClose={() => setActionItem(null)} />
+            )}
         </VStack>
     );
 };

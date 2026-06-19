@@ -376,10 +376,19 @@ const DisputeDrawer: React.FC<{
                             value={formatMinorAmount(data.amountMinor, data.currency ?? 'NGN')}
                         />
                     )}
-                    <DetailRow label="Raised by" value={data.raisedByUserId} />
-                    {data.againstUserId && <DetailRow label="Against" value={data.againstUserId} />}
+                    <DetailRow
+                        label="Raised by"
+                        value={
+                            data.raisedByName
+                                ? `${data.raisedByName}${data.raisedByEmail ? ` · ${data.raisedByEmail}` : ''}`
+                                : data.raisedByUserId
+                        }
+                    />
+                    {data.againstUserId && (
+                        <DetailRow label="Against" value={data.againstName ?? data.againstUserId} />
+                    )}
                     {data.assignedToUserId && (
-                        <DetailRow label="Assigned to" value={data.assignedToUserId} />
+                        <DetailRow label="Assigned to" value={data.assignedToName ?? data.assignedToUserId} />
                     )}
                     {data.subjectId && <DetailRow label="Subject ID" value={data.subjectId} />}
                     {data.description && <DetailRow label="Description" value={data.description} />}

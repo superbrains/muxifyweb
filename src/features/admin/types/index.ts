@@ -409,6 +409,10 @@ export interface TicketStatsDto {
 
 export interface ModerationItemDto {
     id: string;
+    /** "report" (a ContentReport) or "dispute" (a self-service copyright DisputeCase). */
+    source?: 'report' | 'dispute';
+    /** Dispute reference (DC-XXXX) when source === "dispute". */
+    reference?: string | null;
     contentType: ModerationContentType;
     contentId: string;
     contentTitle: string;
