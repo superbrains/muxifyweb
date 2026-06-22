@@ -153,6 +153,8 @@ export interface UpdateProfileRequest {
   companyName?: string;
   industry?: string;
   businessPhone?: string;
+  cacRegistrationNumber?: string;
+  yearOfRegistration?: string;
 }
 
 // Onboarding DTOs

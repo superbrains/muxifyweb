@@ -15,6 +15,9 @@ import 'react-international-phone/style.css';
 import { useChakraToast } from '@shared/hooks';
 import { PasswordInput } from "@/components/ui/password-input";
 import { useUserManagementStore } from '@/features/auth/store/useUserManagementStore';
+import { authService } from '@/features/auth/services/authService';
+import { useUserStore } from '@/app/store/useUserStore';
+import { getApiErrorMessage } from '@/shared/lib/errorUtils';
 
 interface AdManagerRegistrationData {
     email: string;
@@ -43,6 +46,7 @@ export const AdManagerRegistrationForm: React.FC = () => {
     const toast = useChakraToast();
     const navigate = useNavigate();
     const { initializeUser } = useUserManagementStore();
+    const { login } = useUserStore();
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
@@ -93,19 +97,23 @@ export const AdManagerRegistrationForm: React.FC = () => {
 
         setLoading(true);
         try {
-            const userId = initializeUser('ad-manager', formData.email, formData.phone, 'business');
+            const result = await authService.register({
+                email: formData.email,
+                password: formData.password,
+                phone: formData.phone,
+                role: 'ad_manager',
+            });
 
-            // Here you would typically register the ad manager
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            login(result.user);
+
+            const userId = initializeUser('ad-manager', formData.email, formData.phone, 'business');
 
             toast.success('Registration successful!', 'Please verify your email to continue.');
             navigate('/onboarding/ad-manager/verify-email', {
                 state: { email: formData.email, userId }
             });
         } catch (error: unknown) {
-            const errorMessage = error && typeof error === 'object' && 'response' in error
-                ? (error as { response?: { data?: { message?: string } } }).response?.data?.message || 'Something went wrong'
-                : 'Something went wrong';
+            const errorMessage = getApiErrorMessage(error, 'Registration failed. Please try again.');
             toast.error('Registration failed', errorMessage);
         } finally {
             setLoading(false);

@@ -13,6 +13,8 @@ import 'react-datepicker/dist/react-datepicker.css';
 import { useChakraToast } from '@shared/hooks';
 import { CountryStateSelect } from '@shared/components/CountryStateSelect';
 import { useUserManagementStore } from '@/features/auth/store/useUserManagementStore';
+import { userService } from '@shared/services/userService';
+import { getApiErrorMessage } from '@/shared/lib/errorUtils';
 
 
 interface AdManagerInformationData {
@@ -99,7 +101,19 @@ export const AdManagerInformationForm: React.FC = () => {
 
         setLoading(true);
         try {
-            // Save information to store
+            // Persist to backend (creates/updates the AdManagerProfile + user full name)
+            await userService.updateProfile({
+                name: formData.fullName,
+                cacRegistrationNumber: formData.cacRegistrationNumber,
+                yearOfRegistration: formData.yearOfRegistration,
+                address: {
+                    street: formData.residentAddress,
+                    country: formData.country,
+                    state: formData.state,
+                },
+            });
+
+            // Mirror into local store for the onboarding flow
             if (userId) {
                 setCurrentUser(userId);
                 saveAdManagerInformation(userId, {
@@ -112,17 +126,12 @@ export const AdManagerInformationForm: React.FC = () => {
                 });
             }
 
-            // Here you would typically save the ad manager information
-            await new Promise(resolve => setTimeout(resolve, 1000));
-
             toast.success('Information saved!', 'Your details have been updated.');
             navigate('/onboarding/ad-manager/director-information', {
                 state: { userId }
             });
         } catch (error: unknown) {
-            const errorMessage = error && typeof error === 'object' && 'response' in error
-                ? (error as { response?: { data?: { message?: string } } }).response?.data?.message || 'Please try again.'
-                : 'Please try again.';
+            const errorMessage = getApiErrorMessage(error, 'Please try again.');
             toast.error('Failed to save information', errorMessage);
         } finally {
             setLoading(false);

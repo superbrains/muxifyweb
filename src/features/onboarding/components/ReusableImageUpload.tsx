@@ -134,6 +134,8 @@ export const ReusableImageUpload: React.FC<ReusableImageUploadProps> = ({
                 avatarUrl = result.avatarUrl;
                 updateUser({ avatar: avatarUrl });
                 saveCompanyLogo(userId, selectedImage);
+                // Mark onboarding complete on the backend (sets User.OnboardingCompleted)
+                await profileService.completeProfileOnboarding();
                 completeOnboarding(userId);
                 saved = true;
             }
