@@ -26,6 +26,8 @@ const AdManagerEmailVerification = lazy(() => import('@onboarding/pages/AdManage
 const AdManagerInformation = lazy(() => import('@onboarding/pages/AdManagerInformation'));
 const AdManagerDirectorInformation = lazy(() => import('@onboarding/pages/AdManagerDirectorInformation'));
 const AdManagerCompanyLogo = lazy(() => import('@onboarding/pages/AdManagerCompanyLogo'));
+const ContributorRegistration = lazy(() => import('@onboarding/pages/ContributorRegistration'));
+const ContributorEmailVerification = lazy(() => import('@onboarding/pages/ContributorEmailVerification'));
 const Upload = lazy(() => import('@upload/pages/Upload'));
 const Review = lazy(() => import('@upload/pages/Review'));
 const UploadSplitsPage = lazy(() => import('@upload/pages/UploadSplitsPage'));
@@ -213,6 +215,8 @@ export const appRoutes: RouteObject[] = [
     { path: '/onboarding/ad-manager/complete-information', element: <AdManagerInformation /> },
     { path: '/onboarding/ad-manager/director-information', element: <AdManagerDirectorInformation /> },
     { path: '/onboarding/ad-manager/company-logo', element: <AdManagerCompanyLogo /> },
+    { path: '/onboarding/contributor/register', element: <ContributorRegistration /> },
+    { path: '/onboarding/contributor/verify-email', element: <ContributorEmailVerification /> },
     { path: '/label/invite/accept', element: <InviteAcceptPage /> },
     { path: '/admin/accept-invite', element: <AdminInviteAcceptPage /> },
     { path: '/contributor/claim', element: <ContributorClaimPage /> },

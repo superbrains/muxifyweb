@@ -108,8 +108,12 @@ export const AdManagerInformationForm: React.FC = () => {
                 yearOfRegistration: formData.yearOfRegistration,
                 address: {
                     street: formData.residentAddress,
-                    country: formData.country,
+                    // The form has no separate city field; mirror the Company
+                    // onboarding flow and use the state as the city so the
+                    // backend Address (Street/City/State/Country all required) validates.
+                    city: formData.state,
                     state: formData.state,
+                    country: formData.country,
                 },
             });
 

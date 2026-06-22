@@ -40,6 +40,13 @@ export const JoinMuxify: React.FC = () => {
             description: 'Launch targeted campaigns and reach engaged music audiences across Muxify.',
             icon: ChartSquareIcon,
             route: '/onboarding/ad-manager/register'
+        },
+        {
+            id: 'contributor',
+            title: 'Producers, Songwriters & Contributors',
+            description: 'Get credited on releases and earn your share of royalties and gifts.',
+            icon: ArtistIcon,
+            route: '/onboarding/contributor/register'
         }
     ];
 
