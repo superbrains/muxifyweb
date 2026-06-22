@@ -124,6 +124,7 @@ export const SplitsEditor: React.FC<SplitsEditorProps> = ({
                 accountType: rec.accountType,
                 isVerified: rec.isVerified,
                 percentBps: 0,
+                pending: rec.pending,
             },
         ]);
         setPickerOpen(false);
@@ -363,6 +364,22 @@ const RecipientRow: React.FC<RecipientRowProps> = ({
                             <FiCheck size={14} strokeWidth={3} />
                         </Box>
                     )}
+                    {row.pending && (
+                        <Box
+                            as="span"
+                            bg="orange.50"
+                            color="orange.600"
+                            px={2}
+                            py={0.5}
+                            borderRadius="full"
+                            fontWeight="semibold"
+                            fontSize="10px"
+                            whiteSpace="nowrap"
+                            title="Invitation emailed — awaiting account claim"
+                        >
+                            Pending invite
+                        </Box>
+                    )}
                 </HStack>
                 {subtitle && (
                     <Text fontSize="11px" color="gray.500">
@@ -462,6 +479,9 @@ const RecipientRow: React.FC<RecipientRowProps> = ({
 };
 
 const buildSubtitle = (row: ReleaseSplitDto, isSelf: boolean): string => {
+    if (row.pending) {
+        return `Invited contributor · ${row.recipientRole}`;
+    }
     if (row.accountType === 'Artist') {
         return row.isVerified ? 'Verified artist' : 'Roster artist';
     }

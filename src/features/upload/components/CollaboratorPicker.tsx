@@ -13,12 +13,14 @@ import {
     Text,
     VStack,
 } from '@chakra-ui/react';
-import { FiCheck, FiSearch, FiUser, FiUsers } from 'react-icons/fi';
+import { FiArrowLeft, FiCheck, FiMail, FiSearch, FiUser, FiUsers } from 'react-icons/fi';
 import {
     userSearchService,
     type CollaboratorAccountType,
     type CollaboratorSearchResult,
 } from '../services/userSearchService';
+import { contributorInviteService } from '../services/contributorInviteService';
+import { CONTRIBUTOR_ROLES, type SplitRecipientRole } from '@/features/record-label/types';
 import type { PickedRecipient } from '@/features/record-label/components/RecipientPicker';
 
 interface CollaboratorPickerProps {
@@ -30,6 +32,9 @@ interface CollaboratorPickerProps {
 }
 
 const DEBOUNCE_MS = 250;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+type PickerMode = 'search' | 'invite';
 
 const ACCOUNT_TYPE_STYLES: Record<
     CollaboratorAccountType,
@@ -48,6 +53,7 @@ export const CollaboratorPicker: React.FC<CollaboratorPickerProps> = ({
     onSelect,
     excludedIds,
 }) => {
+    const [mode, setMode] = useState<PickerMode>('search');
     const [query, setQuery] = useState('');
     const [results, setResults] = useState<CollaboratorSearchResult[]>([]);
     const [loading, setLoading] = useState(false);
@@ -58,6 +64,7 @@ export const CollaboratorPicker: React.FC<CollaboratorPickerProps> = ({
     // Reset state when the dialog re-opens so each session starts fresh.
     useEffect(() => {
         if (open) {
+            setMode('search');
             setQuery('');
             setResults([]);
             setError(null);
@@ -68,7 +75,7 @@ export const CollaboratorPicker: React.FC<CollaboratorPickerProps> = ({
     }, [open]);
 
     useEffect(() => {
-        if (!open) return;
+        if (!open || mode !== 'search') return;
 
         if (debounceRef.current) {
             window.clearTimeout(debounceRef.current);
@@ -100,7 +107,7 @@ export const CollaboratorPicker: React.FC<CollaboratorPickerProps> = ({
                 window.clearTimeout(debounceRef.current);
             }
         };
-    }, [query, open]);
+    }, [query, open, mode]);
 
     const trimmedQuery = query.trim();
     const hasQuery = trimmedQuery.length > 0;
@@ -112,12 +119,18 @@ export const CollaboratorPicker: React.FC<CollaboratorPickerProps> = ({
             name: r.displayName,
             avatarUrl: r.avatarUrl ?? undefined,
             isVerified: r.isVerified,
-            // PickedRecipient.accountType is 'Artist' | 'Label'; coerce other
-            // creator types to 'Artist' for downstream compatibility while
+            // PickedRecipient.accountType is 'Artist' | 'Label' | 'Other'; coerce
+            // other creator types to 'Artist' for downstream compatibility while
             // the visible role chip is set per-account-type via defaultRole.
             accountType: r.accountType === 'Label' ? 'Label' : 'Artist',
             defaultRole: r.defaultRole,
         });
+    };
+
+    // Seed the invite email with the typed query when it already looks like one.
+    const openInvite = () => {
+        setMode('invite');
+        setError(null);
     };
 
     return (
@@ -146,126 +159,314 @@ export const CollaboratorPicker: React.FC<CollaboratorPickerProps> = ({
                         >
                             <VStack align="start" gap={1}>
                                 <Dialog.Title fontSize="md" fontWeight="semibold" color="gray.900">
-                                    Add split recipient
+                                    {mode === 'search' ? 'Add split recipient' : 'Invite a contributor'}
                                 </Dialog.Title>
                                 <Text fontSize="11px" color="gray.500">
-                                    Search any Muxify artist, DJ, label, or podcaster.
+                                    {mode === 'search'
+                                        ? 'Search any Muxify artist, DJ, label, or podcaster.'
+                                        : 'Send a claim link to someone who isn’t on Muxify yet.'}
                                 </Text>
                             </VStack>
                         </Dialog.Header>
 
-                        <Box px={5} pt={4} pb={2}>
-                            <HStack
-                                gap={2}
-                                bg="gray.50"
-                                borderRadius="12px"
-                                px={3}
-                                py={2.5}
-                                border="1px solid"
-                                borderColor="gray.100"
-                                _focusWithin={{
-                                    borderColor: 'primary.400',
-                                    bg: 'white',
-                                    boxShadow: '0 0 0 3px rgba(249, 68, 68, 0.08)',
-                                }}
-                                transition="all 0.12s ease"
-                            >
-                                <Box color="gray.400">
-                                    <FiSearch size={16} />
-                                </Box>
-                                <Input
-                                    ref={inputRef}
-                                    value={query}
-                                    onChange={(e) => setQuery(e.target.value)}
-                                    placeholder="Search by name…"
-                                    variant="subtle"
-                                    bg="transparent"
-                                    border="none"
-                                    size="sm"
-                                    fontSize="sm"
-                                    px={0}
-                                    color="gray.900"
-                                    _placeholder={{ color: 'gray.400' }}
-                                    _focus={{ boxShadow: 'none', outline: 'none' }}
-                                />
-                                {loading && <Spinner size="xs" color="primary.500" />}
-                            </HStack>
-                        </Box>
-
-                        <Box
-                            px={2}
-                            pb={2}
-                            minH="220px"
-                            maxH="50vh"
-                            overflowY="auto"
-                        >
-                            {!hasQuery ? (
-                                <EmptyHint
-                                    icon={<FiUsers size={20} />}
-                                    title="Start typing to search"
-                                    body="We'll look up Muxify accounts as you type. Pick anyone to add them to this split."
-                                />
-                            ) : isEmpty ? (
-                                <EmptyHint
-                                    icon={<FiUser size={20} />}
-                                    title="No matches"
-                                    body={`No Muxify account matches "${trimmedQuery}". Double-check the spelling.`}
-                                />
-                            ) : error ? (
-                                <EmptyHint
-                                    icon={<FiUser size={20} />}
-                                    title="Something went wrong"
-                                    body={error}
-                                />
-                            ) : (
-                                <Stack gap={1} pt={1} px={1}>
-                                    {results.map((r) => (
-                                        <ResultRow
-                                            key={r.userId}
-                                            result={r}
-                                            disabled={excludedIds.has(r.userId)}
-                                            onClick={() => handlePick(r)}
+                        {mode === 'search' ? (
+                            <>
+                                <Box px={5} pt={4} pb={2}>
+                                    <HStack
+                                        gap={2}
+                                        bg="gray.50"
+                                        borderRadius="12px"
+                                        px={3}
+                                        py={2.5}
+                                        border="1px solid"
+                                        borderColor="gray.100"
+                                        _focusWithin={{
+                                            borderColor: 'primary.400',
+                                            bg: 'white',
+                                            boxShadow: '0 0 0 3px rgba(249, 68, 68, 0.08)',
+                                        }}
+                                        transition="all 0.12s ease"
+                                    >
+                                        <Box color="gray.400">
+                                            <FiSearch size={16} />
+                                        </Box>
+                                        <Input
+                                            ref={inputRef}
+                                            value={query}
+                                            onChange={(e) => setQuery(e.target.value)}
+                                            placeholder="Search by name…"
+                                            variant="subtle"
+                                            bg="transparent"
+                                            border="none"
+                                            size="sm"
+                                            fontSize="sm"
+                                            px={0}
+                                            color="gray.900"
+                                            _placeholder={{ color: 'gray.400' }}
+                                            _focus={{ boxShadow: 'none', outline: 'none' }}
                                         />
-                                    ))}
-                                </Stack>
-                            )}
-                        </Box>
+                                        {loading && <Spinner size="xs" color="primary.500" />}
+                                    </HStack>
+                                </Box>
 
-                        <Dialog.Footer
-                            px={5}
-                            py={3}
-                            borderTop="1px solid"
-                            borderColor="gray.100"
-                            bg="gray.25"
-                        >
-                            <HStack justify="space-between" w="full">
-                                <Text fontSize="11px" color="gray.500">
-                                    {hasQuery && !loading && !error && results.length > 0 && (
-                                        <>
-                                            {results.length} result{results.length === 1 ? '' : 's'}
-                                        </>
+                                <Box px={2} pb={2} minH="220px" maxH="50vh" overflowY="auto">
+                                    {!hasQuery ? (
+                                        <EmptyHint
+                                            icon={<FiUsers size={20} />}
+                                            title="Start typing to search"
+                                            body="We'll look up Muxify accounts as you type. Pick anyone to add them to this split."
+                                        />
+                                    ) : isEmpty ? (
+                                        <EmptyHint
+                                            icon={<FiUser size={20} />}
+                                            title="No matches"
+                                            body={`No Muxify account matches "${trimmedQuery}". You can invite them by email instead.`}
+                                            action={
+                                                <Button
+                                                    onClick={openInvite}
+                                                    size="sm"
+                                                    fontSize="xs"
+                                                    bg="primary.500"
+                                                    color="white"
+                                                    borderRadius="10px"
+                                                    _hover={{ bg: 'primary.600' }}
+                                                >
+                                                    <FiMail /> Invite by email
+                                                </Button>
+                                            }
+                                        />
+                                    ) : error ? (
+                                        <EmptyHint
+                                            icon={<FiUser size={20} />}
+                                            title="Something went wrong"
+                                            body={error}
+                                        />
+                                    ) : (
+                                        <Stack gap={1} pt={1} px={1}>
+                                            {results.map((r) => (
+                                                <ResultRow
+                                                    key={r.userId}
+                                                    result={r}
+                                                    disabled={excludedIds.has(r.userId)}
+                                                    onClick={() => handlePick(r)}
+                                                />
+                                            ))}
+                                        </Stack>
                                     )}
-                                </Text>
-                                <Button
-                                    onClick={onClose}
-                                    variant="outline"
-                                    size="sm"
-                                    fontSize="xs"
-                                    borderRadius="10px"
-                                    borderColor="gray.200"
-                                    color="gray.700"
-                                    _hover={{ bg: 'gray.50', borderColor: 'gray.300' }}
+                                </Box>
+
+                                <Dialog.Footer
+                                    px={5}
+                                    py={3}
+                                    borderTop="1px solid"
+                                    borderColor="gray.100"
+                                    bg="gray.25"
                                 >
-                                    Cancel
-                                </Button>
-                            </HStack>
-                        </Dialog.Footer>
+                                    <HStack justify="space-between" w="full">
+                                        <Button
+                                            onClick={openInvite}
+                                            variant="ghost"
+                                            size="sm"
+                                            fontSize="xs"
+                                            color="primary.600"
+                                            _hover={{ bg: 'primary.50' }}
+                                        >
+                                            <FiMail /> Invite someone not on Muxify
+                                        </Button>
+                                        <Button
+                                            onClick={onClose}
+                                            variant="outline"
+                                            size="sm"
+                                            fontSize="xs"
+                                            borderRadius="10px"
+                                            borderColor="gray.200"
+                                            color="gray.700"
+                                            _hover={{ bg: 'gray.50', borderColor: 'gray.300' }}
+                                        >
+                                            Cancel
+                                        </Button>
+                                    </HStack>
+                                </Dialog.Footer>
+                            </>
+                        ) : (
+                            <InviteForm
+                                initialEmail={EMAIL_RE.test(trimmedQuery) ? trimmedQuery : ''}
+                                onBack={() => {
+                                    setMode('search');
+                                    setError(null);
+                                }}
+                                onInvited={(recipient) => onSelect(recipient)}
+                            />
+                        )}
                     </Dialog.Content>
                 </Dialog.Positioner>
             </Portal>
         </Dialog.Root>
     );
 };
+
+interface InviteFormProps {
+    initialEmail: string;
+    onBack: () => void;
+    onInvited: (recipient: PickedRecipient) => void;
+}
+
+const InviteForm: React.FC<InviteFormProps> = ({ initialEmail, onBack, onInvited }) => {
+    const [email, setEmail] = useState(initialEmail);
+    const [name, setName] = useState('');
+    const [role, setRole] = useState<SplitRecipientRole>(CONTRIBUTOR_ROLES[0]);
+    const [submitting, setSubmitting] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    const trimmedEmail = email.trim();
+    const trimmedName = name.trim();
+    const emailValid = EMAIL_RE.test(trimmedEmail);
+    const canSubmit = emailValid && trimmedName.length > 0 && !submitting;
+
+    const handleSubmit = async () => {
+        if (!canSubmit) return;
+        setSubmitting(true);
+        setError(null);
+        try {
+            const res = await contributorInviteService.invite({
+                email: trimmedEmail,
+                displayName: trimmedName,
+                role,
+            });
+            onInvited({
+                id: res.contributorUserId,
+                name: res.displayName,
+                isVerified: false,
+                accountType: 'Other',
+                defaultRole: res.role,
+                pending: true,
+            });
+        } catch (e: unknown) {
+            const detail =
+                (e as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
+            setError(detail ?? 'Could not send the invite. Please try again.');
+            setSubmitting(false);
+        }
+    };
+
+    return (
+        <>
+            <Box px={5} pt={4} pb={2} minH="220px">
+                <Stack gap={3}>
+                    <Field label="Email address">
+                        <Input
+                            type="email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            placeholder="producer@example.com"
+                            size="sm"
+                            fontSize="sm"
+                            borderRadius="10px"
+                            autoFocus
+                        />
+                    </Field>
+
+                    <Field label="Credit name">
+                        <Input
+                            value={name}
+                            onChange={(e) => setName(e.target.value)}
+                            placeholder="How they’re credited (e.g. Sarz)"
+                            size="sm"
+                            fontSize="sm"
+                            borderRadius="10px"
+                        />
+                    </Field>
+
+                    <Field label="Role">
+                        <chakra.select
+                            value={role}
+                            onChange={(e) =>
+                                setRole(e.target.value as SplitRecipientRole)
+                            }
+                            w="full"
+                            h="36px"
+                            px={3}
+                            fontSize="sm"
+                            color="gray.900"
+                            bg="white"
+                            border="1px solid"
+                            borderColor="gray.200"
+                            borderRadius="10px"
+                            _focus={{
+                                borderColor: 'primary.400',
+                                outline: 'none',
+                                boxShadow: '0 0 0 3px rgba(249, 68, 68, 0.08)',
+                            }}
+                        >
+                            {CONTRIBUTOR_ROLES.map((r) => (
+                                <option key={r} value={r}>
+                                    {r}
+                                </option>
+                            ))}
+                        </chakra.select>
+                    </Field>
+
+                    {error && (
+                        <Text fontSize="11px" color="red.500">
+                            {error}
+                        </Text>
+                    )}
+
+                    <Text fontSize="11px" color="gray.500">
+                        We’ll email a claim link so they can set a password and request
+                        payouts. Their share is carved from your split below.
+                    </Text>
+                </Stack>
+            </Box>
+
+            <Dialog.Footer
+                px={5}
+                py={3}
+                borderTop="1px solid"
+                borderColor="gray.100"
+                bg="gray.25"
+            >
+                <HStack justify="space-between" w="full">
+                    <Button
+                        onClick={onBack}
+                        variant="ghost"
+                        size="sm"
+                        fontSize="xs"
+                        color="gray.600"
+                        disabled={submitting}
+                        _hover={{ bg: 'gray.100' }}
+                    >
+                        <FiArrowLeft /> Back to search
+                    </Button>
+                    <Button
+                        onClick={handleSubmit}
+                        size="sm"
+                        fontSize="xs"
+                        bg="primary.500"
+                        color="white"
+                        borderRadius="10px"
+                        disabled={!canSubmit}
+                        _hover={{ bg: 'primary.600' }}
+                    >
+                        {submitting ? <Spinner size="xs" /> : <FiMail />} Send invite & add
+                    </Button>
+                </HStack>
+            </Dialog.Footer>
+        </>
+    );
+};
+
+const Field: React.FC<{ label: string; children: React.ReactNode }> = ({
+    label,
+    children,
+}) => (
+    <VStack align="stretch" gap={1}>
+        <Text fontSize="11px" fontWeight="semibold" color="gray.600">
+            {label}
+        </Text>
+        {children}
+    </VStack>
+);
 
 interface ResultRowProps {
     result: CollaboratorSearchResult;
@@ -350,9 +551,10 @@ interface EmptyHintProps {
     icon: React.ReactNode;
     title: string;
     body: string;
+    action?: React.ReactNode;
 }
 
-const EmptyHint: React.FC<EmptyHintProps> = ({ icon, title, body }) => (
+const EmptyHint: React.FC<EmptyHintProps> = ({ icon, title, body, action }) => (
     <VStack
         gap={1.5}
         py={10}
@@ -379,5 +581,6 @@ const EmptyHint: React.FC<EmptyHintProps> = ({ icon, title, body }) => (
         <Text fontSize="11px" maxW="280px">
             {body}
         </Text>
+        {action && <Box pt={2}>{action}</Box>}
     </VStack>
 );

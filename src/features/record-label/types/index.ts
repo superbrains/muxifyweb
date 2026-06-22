@@ -171,7 +171,12 @@ export type SplitRecipientRole =
     | 'Label'
     | 'Featured'
     | 'Producer'
-    | 'Songwriter';
+    | 'Songwriter'
+    | 'Scriptwriter'
+    | 'Composer'
+    | 'Musician'
+    | 'Engineer'
+    | 'Vocalist';
 
 export const SPLIT_ROLES: readonly SplitRecipientRole[] = [
     'Artist',
@@ -179,6 +184,22 @@ export const SPLIT_ROLES: readonly SplitRecipientRole[] = [
     'Featured',
     'Producer',
     'Songwriter',
+    'Scriptwriter',
+    'Composer',
+    'Musician',
+    'Engineer',
+    'Vocalist',
+];
+
+/** The "contributor craft" roles an external person can be invited into. */
+export const CONTRIBUTOR_ROLES: readonly SplitRecipientRole[] = [
+    'Producer',
+    'Songwriter',
+    'Scriptwriter',
+    'Composer',
+    'Musician',
+    'Engineer',
+    'Vocalist',
 ];
 
 export type SplitAccountType = 'Artist' | 'Label' | 'Other';
@@ -191,6 +212,8 @@ export interface ReleaseSplitDto {
     accountType: SplitAccountType;
     isVerified: boolean;
     percentBps: number;
+    /** True for an external contributor invited by email (not yet onboarded). */
+    pending?: boolean;
 }
 
 export interface ReleaseSplitsDto {

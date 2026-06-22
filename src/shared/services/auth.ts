@@ -10,7 +10,7 @@ export interface RegisterData {
   email: string;
   password: string;
   name: string;
-  role: "artist" | "dj" | "creator" | "record_label";
+  role: "artist" | "dj" | "creator" | "record_label" | "contributor";
 }
 
 export interface AuthResponse {

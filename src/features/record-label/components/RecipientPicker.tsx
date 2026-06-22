@@ -23,8 +23,10 @@ export interface PickedRecipient {
     name: string;
     avatarUrl?: string;
     isVerified: boolean;
-    accountType: 'Artist' | 'Label';
+    accountType: 'Artist' | 'Label' | 'Other';
     defaultRole: SplitRecipientRole;
+    /** True when this recipient is an external contributor invited by email. */
+    pending?: boolean;
 }
 
 interface RecipientPickerProps {

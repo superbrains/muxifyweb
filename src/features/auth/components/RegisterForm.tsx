@@ -99,6 +99,30 @@ export const RegisterForm: React.FC = () => {
             </div>
 
             <div>
+                <label
+                    htmlFor="role"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                >
+                    I'm joining as
+                </label>
+                <select
+                    id="role"
+                    name="role"
+                    value={formData.role}
+                    onChange={handleChange}
+                    className="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                >
+                    <option value="artist">Artist</option>
+                    <option value="dj">DJ</option>
+                    <option value="creator">Creator</option>
+                    <option value="record_label">Record label</option>
+                    <option value="contributor">
+                        Contributor (producer, songwriter, musician…)
+                    </option>
+                </select>
+            </div>
+
+            <div>
                 <Input
                     label="Email address"
                     name="email"
