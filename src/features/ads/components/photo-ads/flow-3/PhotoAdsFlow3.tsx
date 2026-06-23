@@ -9,6 +9,7 @@ import { UploadSuccessPage } from '@upload/components';
 import { fileToBase64 } from '@shared/lib/fileUtils';
 import { adsService } from '../../../services/adsService';
 import { useAdRates } from '../../wizard/useAdRates';
+import { formatNaira } from '@/shared/lib';
 import type { CreateCampaignRequest } from '../../../types';
 
 export const PhotoAdsFlow3: React.FC<{
@@ -61,9 +62,7 @@ export const PhotoAdsFlow3: React.FC<{
         return `${day}/${month}/${year}`;
     };
 
-    const formatCurrency = (amount: number): string => {
-        return `NGN${amount.toLocaleString()}`;
-    };
+    const formatCurrency = (amount: number): string => formatNaira(amount, { compact: false });
 
     const handlePublish = async () => {
         if (!photoAdInfo || !photoBudgetReach) {

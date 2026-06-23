@@ -19,6 +19,7 @@ import type {
   AdSpendingSeriesDto,
   AdReportDto,
   CampaignAnalyticsDto,
+  SponsorableMediaSearchResponse,
 } from '../types';
 
 const ADS_BASE = '/ads';
@@ -183,6 +184,41 @@ export const adsService = {
   // ============================================
   // Rates
   // ============================================
+
+  // ============================================
+  // Targeting
+  // ============================================
+
+  /**
+   * GET /api/v1/ads/targeting/media
+   * Searches sponsorable media (tracks when type=music, videos when type=video)
+   * that allow sponsorship, for the ad targeting picker.
+   */
+  async searchSponsorableMedia(params: {
+    type: 'music' | 'video';
+    q?: string;
+    genre?: string;
+    page?: number;
+    pageSize?: number;
+  }): Promise<SponsorableMediaSearchResponse> {
+    try {
+      const response = await axiosInstance.get<SponsorableMediaSearchResponse>(
+        `${ADS_BASE}/targeting/media`,
+        {
+          params: {
+            type: params.type,
+            q: params.q || undefined,
+            genre: params.genre || undefined,
+            page: params.page ?? 1,
+            pageSize: params.pageSize ?? 10,
+          },
+        }
+      );
+      return response.data;
+    } catch (error) {
+      throw new Error(getApiErrorMessage(error, 'Failed to search sponsorable media'));
+    }
+  },
 
   /** GET /api/v1/ads/rates — CPC/CPI per format for the wizard estimate */
   async getRates(): Promise<AdRatesDto> {

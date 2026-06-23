@@ -208,7 +208,7 @@ export const PhotoAdsTab: React.FC = () => {
                             </Box>
                             <Box>
                                 <Text fontSize="sm" fontWeight="semibold" mb={2}>Budget</Text>
-                                <Text fontSize="md">NGN{budget}</Text>
+                                <Text fontSize="md">₦{budget}</Text>
                             </Box>
                             <Box>
                                 <Text fontSize="sm" fontWeight="semibold" mb={2}>Reach</Text>

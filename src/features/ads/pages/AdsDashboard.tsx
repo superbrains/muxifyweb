@@ -15,7 +15,7 @@ import { ComposableMap, Geographies, Geography } from 'react-simple-maps';
 import { CalendarIcon, UploadIcon, EyeIcon, FlashIcon, PodCastAdsIcon, EyeOpenIcon, ClickIcon } from '@/shared/icons/CustomIcons';
 import BackgroundBlueImg from '@/assets/images/Background-blue.png';
 import { useWindowWidth } from '@/shared/hooks/useWindowsWidth';
-import { formatCurrency } from '@/shared/lib';
+import { formatNaira } from '@/shared/lib';
 import { exportCsv, type CsvColumn } from '@/features/admin/lib/exportCsv';
 import { adsService } from '../services/adsService';
 import type { AdActivityPointDto, AdDashboardSummaryDto } from '../types';
@@ -266,7 +266,7 @@ export const AdsDashboard: React.FC = () => {
                         </Text>
                         {!loading && (
                             <Text fontSize="sm" fontWeight="bold" color="primary.500">
-                                {formatCurrency((data?.totalSpendMinor ?? 0) / 100)}
+                                {formatNaira((data?.totalSpendMinor ?? 0) / 100, { compact: false })}
                             </Text>
                         )}
                     </Flex>

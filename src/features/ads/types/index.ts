@@ -296,6 +296,33 @@ export interface AdRatesDto {
 }
 
 // ============================================
+// Ad Targeting DTOs
+// ============================================
+
+/**
+ * A single sponsorable media item (track/video) returned by the targeting search.
+ * Only media with AllowSponsorship=true is surfaced.
+ */
+export interface SponsorableMediaItem {
+  id: string;
+  title: string;
+  artistName: string;
+  coverArtUrl?: string;
+  genreName?: string;
+  type: 'music' | 'video';
+}
+
+/**
+ * Paged result for the sponsorable-media targeting search.
+ */
+export interface SponsorableMediaSearchResponse {
+  items: SponsorableMediaItem[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+}
+
+// ============================================
 // Dashboard / Spending / Report DTOs
 // ============================================
 

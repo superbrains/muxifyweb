@@ -12,7 +12,7 @@ import {
 import { AnimatedTabs } from '@shared/components';
 import Chart from 'react-apexcharts';
 import { adsService } from '../services/adsService';
-import { formatCurrency } from '@/shared/lib';
+import { formatNaira } from '@/shared/lib';
 import { ClickFilledIcon, EyeFilledIcon, GalleryIcon, MusicFilledIcon, VideoPlayIcon } from '@/shared/icons/CustomIcons';
 import type { AdSpendingSeriesDto } from '../types';
 
@@ -125,7 +125,7 @@ export const AdsSpending: React.FC = () => {
                                     <Skeleton height="24px" width="100px" />
                                 ) : (
                                     <Text fontSize="lg" color="primary.500" fontWeight="bold">
-                                        {formatCurrency(avgSpend)}
+                                        {formatNaira(avgSpend, { compact: false })}
                                     </Text>
                                 )}
                                 <Text fontSize="xs" color="gray.900">
@@ -137,7 +137,7 @@ export const AdsSpending: React.FC = () => {
                                     <Skeleton height="24px" width="120px" />
                                 ) : (
                                     <Text fontSize="lg" color="primary.500" fontWeight="bold">
-                                        {formatCurrency(totalSpend)}
+                                        {formatNaira(totalSpend, { compact: false })}
                                     </Text>
                                 )}
                                 <Text fontSize="xs" color="gray.900">
@@ -200,7 +200,7 @@ export const AdsSpending: React.FC = () => {
                                 Spending Actions
                             </Text>
                             <Text fontSize="xs" fontWeight="semibold" color="primary.500">
-                                {formatCurrency(totalActions)}
+                                {formatNaira(totalActions, { compact: false })}
                             </Text>
                         </Flex>
                         <HStack gap={3} justify="space-between" align="stretch">
@@ -232,7 +232,7 @@ const AllocationItem: React.FC<{ icon: React.ElementType; label: string; amount:
             {label}
         </Text>
         <Text fontSize="sm" fontWeight="bold" color="primary.500">
-            {formatCurrency(amount)}
+            {formatNaira(amount, { compact: false })}
         </Text>
     </VStack>
 );
@@ -249,7 +249,7 @@ const ActionItem: React.FC<{ icon: React.ElementType; label: string; count: numb
             {count.toLocaleString()}
         </Text>
         <Text fontSize="xs" fontWeight="medium" color="primary.500">
-            {formatCurrency(cost)}
+            {formatNaira(cost, { compact: false })}
         </Text>
     </VStack>
 );

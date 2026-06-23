@@ -23,7 +23,10 @@ export interface AdBaseInfo {
   target: {
     type: "music" | "video" | "photo";
     genre?: string;
-    artists?: string[]; // Array of artist IDs
+    artists?: string[]; // Array of artist names (legacy, still used by Photo flow)
+    // Selected sponsorable media (Music/Video flows). Stores real DB ids so the
+    // campaign can target specific content via targetContentId.
+    media?: { id: string; title: string; artistName: string }[];
   };
   schedule: {
     date: Date | null;

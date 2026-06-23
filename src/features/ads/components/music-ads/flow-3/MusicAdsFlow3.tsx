@@ -9,6 +9,7 @@ import { UploadSuccessPage } from '@upload/components';
 import { fileToBase64 } from '@shared/lib/fileUtils';
 import { adsService } from '../../../services/adsService';
 import { useAdRates } from '../../wizard/useAdRates';
+import { formatNaira } from '@/shared/lib';
 import type { CreateCampaignRequest } from '../../../types';
 
 export const MusicAdsFlow3: React.FC<{
@@ -61,9 +62,7 @@ export const MusicAdsFlow3: React.FC<{
         return `${day}/${month}/${year}`;
     };
 
-    const formatCurrency = (amount: number): string => {
-        return `NGN${amount.toLocaleString()}`;
-    };
+    const formatCurrency = (amount: number): string => formatNaira(amount, { compact: false });
 
     const handlePublish = async () => {
         if (!musicAdInfo || !musicBudgetReach) {
@@ -112,7 +111,7 @@ export const MusicAdsFlow3: React.FC<{
                 target: {
                     type: musicAdInfo.target.type === 'photo' ? 'music' : musicAdInfo.target.type,
                     genre: musicAdInfo.target.genre,
-                    artists: musicAdInfo.target.artists || [],
+                    artists: (musicAdInfo.target.media || []).map((m) => m.title),
                 },
                 schedule: {
                     date: scheduleDate,
@@ -134,6 +133,9 @@ export const MusicAdsFlow3: React.FC<{
                 startDate: scheduleDate,
                 endDate: musicAdInfo.schedule.endTime || undefined,
                 creativeUrl: mediaData,
+                // Primary targeted content (first selected sponsorable item).
+                targetContentId: musicAdInfo.target.media?.[0]?.id,
+                targetContentType: musicAdInfo.target.type === 'video' ? 'Video' : 'Track',
                 targetingSettings: JSON.stringify({
                     location: {
                         country: musicAdInfo.location.country,
@@ -142,7 +144,7 @@ export const MusicAdsFlow3: React.FC<{
                     target: {
                         type: musicAdInfo.target.type,
                         genre: musicAdInfo.target.genre,
-                        artists: musicAdInfo.target.artists,
+                        media: musicAdInfo.target.media || [],
                     },
                 }),
             };
@@ -309,11 +311,11 @@ export const MusicAdsFlow3: React.FC<{
                                         bg="gray.50"
                                     />
                                 </Box>
-                                {musicAdInfo?.target.artists && musicAdInfo.target.artists.length > 0 && (
+                                {musicAdInfo?.target.media && musicAdInfo.target.media.length > 0 && (
                                     <HStack flexWrap="wrap" gap={2}>
-                                        {musicAdInfo.target.artists.map((artist, index) => (
+                                        {musicAdInfo.target.media.map((item) => (
                                             <Box
-                                                key={index}
+                                                key={item.id}
                                                 display="flex"
                                                 alignItems="center"
                                                 gap={2}
@@ -326,10 +328,10 @@ export const MusicAdsFlow3: React.FC<{
                                             >
                                                 <Avatar.Root size="xs">
                                                     <Avatar.Fallback fontSize="10px" bg="primary.100" color="primary.500">
-                                                        {artist.charAt(0)}
+                                                        {item.title.charAt(0)}
                                                     </Avatar.Fallback>
                                                 </Avatar.Root>
-                                                <Text fontSize="xs">{artist}</Text>
+                                                <Text fontSize="xs">{item.title}</Text>
                                             </Box>
                                         ))}
                                     </HStack>

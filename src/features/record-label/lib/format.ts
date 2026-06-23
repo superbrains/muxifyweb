@@ -5,9 +5,9 @@
 export function formatMinorAmount(amountMinor: number, currency: string): string {
     const amount = (amountMinor ?? 0) / 100;
     try {
-        return new Intl.NumberFormat('en-US', {
+        return new Intl.NumberFormat('en-NG', {
             style: 'currency',
-            currency: currency || 'USD',
+            currency: currency || 'NGN',
             maximumFractionDigits: 2,
         }).format(amount);
     } catch {

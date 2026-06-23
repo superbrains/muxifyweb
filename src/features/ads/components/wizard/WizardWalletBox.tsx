@@ -3,7 +3,7 @@ import { Box, HStack, VStack, Text, Button, Icon } from '@chakra-ui/react';
 import { FiPlus } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
 import { useAdsStore } from '../../store/useAdsStore';
-import { formatCurrency } from '@/shared/lib';
+import { formatNaira } from '@/shared/lib';
 
 /**
  * The wizard's "Ad Wallet" box — shows the advertiser's REAL balance and routes
@@ -29,7 +29,7 @@ export const WizardWalletBox: React.FC = () => {
                             Wallet Balance
                         </Text>
                         <Text fontSize="sm" fontWeight="bold" color="gray.900">
-                            {formatCurrency(wallet?.balanceDisplay ?? 0)}
+                            {formatNaira(wallet?.balanceDisplay ?? 0, { compact: false })}
                         </Text>
                     </VStack>
                     <Button

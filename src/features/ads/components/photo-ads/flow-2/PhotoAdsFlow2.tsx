@@ -5,7 +5,7 @@ import { useAdsUploadStore } from '../../../store/useAdsUploadStore';
 import { PhotoAdsPhonePreview } from '../../PhotoAdsPhonePreview';
 import { Select, URLInput } from '@shared/components';
 import { useToast } from '@/shared/hooks/useToast';
-import { formatCurrency } from '@/shared/lib';
+import { formatNaira } from '@/shared/lib';
 import { useAdRates } from '../../wizard/useAdRates';
 import { WizardWalletBox } from '../../wizard/WizardWalletBox';
 
@@ -134,7 +134,7 @@ export const PhotoAdsFlow2: React.FC<{
                                 borderRadius="10px"
                             />
                             <Text fontSize="xs" color="rgba(249,68,68,1)" mt={1}>
-                                {card ? `1 click = ${formatCurrency(card.cpcDisplay)}` : 'Loading rate…'}
+                                {card ? `1 click = ${formatNaira(card.cpcDisplay, { compact: false })}` : 'Loading rate…'}
                             </Text>
                         </Box>
 
@@ -147,7 +147,7 @@ export const PhotoAdsFlow2: React.FC<{
                                 Amount
                             </Text>
                             <Input
-                                placeholder="NGN0.00"
+                                placeholder="₦0.00"
                                 value={budget}
                                 onChange={(e) => setBudget(e.target.value)}
                                 size="xs"
@@ -173,7 +173,7 @@ export const PhotoAdsFlow2: React.FC<{
                                 borderRadius="10px"
                             />
                             <Text fontSize="xs" color="rgba(249,68,68,1)" mt={1}>
-                                {card ? `1 reach = ${formatCurrency(card.cpiDisplay)}` : 'Loading rate…'}
+                                {card ? `1 reach = ${formatNaira(card.cpiDisplay, { compact: false })}` : 'Loading rate…'}
                             </Text>
                         </Box>
 

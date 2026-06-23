@@ -1,8 +1,11 @@
 export const formatCurrency = (
   amount: number,
-  currency: string = "USD"
+  currency: string = "NGN"
 ): string => {
-  return new Intl.NumberFormat("en-US", {
+  // Naira is the platform's settlement currency, so money defaults to ₦ and the
+  // en-NG locale (which renders NGN as the ₦ glyph). Pass a currency explicitly
+  // for the rare non-Naira case.
+  return new Intl.NumberFormat("en-NG", {
     style: "currency",
     currency,
   }).format(amount);

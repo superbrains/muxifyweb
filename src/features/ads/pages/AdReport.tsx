@@ -14,7 +14,7 @@ import {
 import { FiDownload } from 'react-icons/fi';
 import { adsService } from '../services/adsService';
 import { exportCsv, type CsvColumn } from '@/features/admin/lib/exportCsv';
-import { formatCurrency } from '@/shared/lib';
+import { formatNaira } from '@/shared/lib';
 import type { AdReportDto, AdReportRowDto } from '../types';
 
 const STATUS_COLORS: Record<string, string> = {
@@ -90,7 +90,7 @@ export const AdReport: React.FC = () => {
                 <Grid templateColumns={{ base: '1fr', md: 'repeat(3, 1fr)' }} gap={4}>
                     <Kpi label="Total Impressions" value={loading ? null : (data?.totalImpressions ?? 0).toLocaleString()} />
                     <Kpi label="Total Clicks" value={loading ? null : (data?.totalClicks ?? 0).toLocaleString()} />
-                    <Kpi label="Total Spend" value={loading ? null : formatCurrency((data?.totalSpendMinor ?? 0) / 100)} accent />
+                    <Kpi label="Total Spend" value={loading ? null : formatNaira((data?.totalSpendMinor ?? 0) / 100, { compact: false })} accent />
                 </Grid>
 
                 {/* Table */}
@@ -138,9 +138,9 @@ export const AdReport: React.FC = () => {
                                         <Table.Cell fontSize="sm" textAlign="end">{r.clicks.toLocaleString()}</Table.Cell>
                                         <Table.Cell fontSize="sm" textAlign="end">{r.clickThroughRate.toFixed(2)}%</Table.Cell>
                                         <Table.Cell fontSize="sm" textAlign="end" fontWeight="semibold" color="primary.500">
-                                            {formatCurrency(r.spendMinor / 100)}
+                                            {formatNaira(r.spendMinor / 100, { compact: false })}
                                         </Table.Cell>
-                                        <Table.Cell fontSize="sm" textAlign="end">{formatCurrency(r.costPerClick)}</Table.Cell>
+                                        <Table.Cell fontSize="sm" textAlign="end">{formatNaira(r.costPerClick, { compact: false })}</Table.Cell>
                                     </Table.Row>
                                 ))}
                             </Table.Body>

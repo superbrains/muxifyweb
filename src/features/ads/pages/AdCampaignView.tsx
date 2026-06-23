@@ -392,11 +392,11 @@ export const AdCampaignView = () => {
                                         </VStack>
                                         <VStack align="start" gap={2}>
                                             <Text fontSize="10px" color="#999" fontWeight="medium">Spend</Text>
-                                            <Text fontSize="12px" fontWeight="bold" color="black">N{spend.toLocaleString()}</Text>
+                                            <Text fontSize="12px" fontWeight="bold" color="black">₦{spend.toLocaleString()}</Text>
                                         </VStack>
                                         <VStack align="start" gap={2}>
                                             <Text fontSize="10px" color="#999" fontWeight="medium">Budget</Text>
-                                            <Text fontSize="12px" fontWeight="bold" color="black">N{budget.toLocaleString()}</Text>
+                                            <Text fontSize="12px" fontWeight="bold" color="black">₦{budget.toLocaleString()}</Text>
                                         </VStack>
                                         <VStack align="start" gap={2}>
                                             <Text fontSize="10px" color="#999" fontWeight="medium">Publish Date</Text>
@@ -425,7 +425,7 @@ export const AdCampaignView = () => {
                                     <HStack align="center" gap="20px">
                                         <Box display="flex" flexDirection="column" gap={1}>
                                             <Text fontSize="11px" color="#999" fontWeight="medium" whiteSpace="nowrap">Total amount spent</Text>
-                                            <Text fontSize="11px" fontWeight="bold" color="black">NGN{spend.toLocaleString()}</Text>
+                                            <Text fontSize="11px" fontWeight="bold" color="black">₦{spend.toLocaleString()}</Text>
                                         </Box>
 
                                         <Box display="flex" alignItems="center" gap="60px" border="1px solid" borderColor="gray.200" borderRadius="9px" p={2}>
@@ -474,7 +474,7 @@ export const AdCampaignView = () => {
                                         <Flex gap={4} align="center" mb={3}>
                                             <VStack align="start" gap={0}>
                                                 <Text fontSize="11px" color="#999" fontWeight="medium">Wallet Balance</Text>
-                                                <Text fontSize="11px" fontWeight="bold" color="black">NGN{walletBalance.toLocaleString()}</Text>
+                                                <Text fontSize="11px" fontWeight="bold" color="black">₦{walletBalance.toLocaleString()}</Text>
                                             </VStack>
                                             <Button
                                                 bg="#f94444"
@@ -581,11 +581,11 @@ export const AdCampaignView = () => {
                                                 </Box>
                                                 <Box display="flex" justifyContent="space-between" alignItems="center" px={2} border="1px solid #ffcebf" borderRadius="5px" p={3} textAlign="center">
                                                     <Text fontSize="11px" color="#666" fontWeight="medium" mb={1}>Cost Per Click</Text>
-                                                    <Text fontSize="12px" fontWeight="bold" color="#f94444">N{costPerClick}</Text>
+                                                    <Text fontSize="12px" fontWeight="bold" color="#f94444">₦{costPerClick}</Text>
                                                 </Box>
                                                 <Box display="flex" justifyContent="space-between" alignItems="center" px={2} border="1px solid #ffcebf" borderRadius="5px" p={3} textAlign="center">
                                                     <Text fontSize="11px" color="#666" fontWeight="medium" mb={1}>Cost Per View</Text>
-                                                    <Text fontSize="12px" fontWeight="bold" color="#f94444">N{costPerView}</Text>
+                                                    <Text fontSize="12px" fontWeight="bold" color="#f94444">₦{costPerView}</Text>
                                                 </Box>
                                             </Grid>
                                         </Box>
@@ -599,16 +599,16 @@ export const AdCampaignView = () => {
                                             <VStack align="stretch" gap={3}>
                                                 <Flex direction="row" justify="space-between">
                                                     <Text fontSize="11px" color="#666">Ad Budget</Text>
-                                                    <Text fontSize="11px" fontWeight="bold" color="#f94444">N{budget.toLocaleString()}.00</Text>
+                                                    <Text fontSize="11px" fontWeight="bold" color="#f94444">₦{budget.toLocaleString()}.00</Text>
                                                 </Flex>
                                                 <Flex direction="row" justify="space-between">
                                                     <Text fontSize="11px" color="#666">Estimated VAT(7.5%)</Text>
-                                                    <Text fontSize="11px" fontWeight="bold" color="#f94444">N{vat.toFixed(2)}</Text>
+                                                    <Text fontSize="11px" fontWeight="bold" color="#f94444">₦{vat.toFixed(2)}</Text>
                                                 </Flex>
                                                 <Box h="1px" bg="gray.300" />
                                                 <Flex direction="row" justify="space-between">
                                                     <Text fontSize="12px" fontWeight="bold" color="black">Total</Text>
-                                                    <Text fontSize="12px" fontWeight="bold" color="#f94444">N{totalWithVat.toFixed(2)}</Text>
+                                                    <Text fontSize="12px" fontWeight="bold" color="#f94444">₦{totalWithVat.toFixed(2)}</Text>
                                                 </Flex>
                                             </VStack>
                                         </Box>

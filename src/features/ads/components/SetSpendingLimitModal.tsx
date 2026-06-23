@@ -77,10 +77,10 @@ export const SetSpendingLimitModal: React.FC<SetSpendingLimitModalProps> = ({
                         <VStack gap={3} align="stretch">
                             <HStack justify="space-between" w="full">
                                 <Text fontSize="sm" fontWeight="bold" color="black">
-                                    N{limit.toLocaleString()}
+                                    ₦{limit.toLocaleString()}
                                 </Text>
                                 <Text fontSize="sm" fontWeight="bold" color="black">
-                                    N{maxBudget.toLocaleString()}
+                                    ₦{maxBudget.toLocaleString()}
                                 </Text>
                             </HStack>
 

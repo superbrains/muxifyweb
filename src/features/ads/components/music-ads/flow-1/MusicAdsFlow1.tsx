@@ -1,6 +1,6 @@
-import React, { useState, useRef, useMemo, useCallback, useEffect } from 'react';
-import { Box, VStack, HStack, Text, Button, Input, Flex, Icon, Avatar } from '@chakra-ui/react';
-import { FiArrowRight, FiArrowLeft, FiX, FiSearch } from 'react-icons/fi';
+import React, { useState, useEffect } from 'react';
+import { Box, VStack, HStack, Text, Button, Input, Flex, Icon } from '@chakra-ui/react';
+import { FiArrowRight, FiArrowLeft, FiX } from 'react-icons/fi';
 import { FileUploadArea } from '@upload/components';
 import { UploadFileIcon, UploadImageIcon } from '@/shared/icons/CustomIcons';
 import { CountryStateSelect, Select } from '@shared/components';
@@ -9,6 +9,7 @@ import { useAdsUploadStore } from '../../../store/useAdsUploadStore';
 import { useChakraToast } from '@/shared/hooks/useChakraToast';
 import { MusicPlayerAndCutPreviewPane } from '../MusicPlayerAndCutPreviewPane';
 import { MusicViewPhonePreview } from '../MusicViewPhonePreview';
+import { SponsorableMediaSearch, type SelectedMedia } from '../../SponsorableMediaSearch';
 
 interface UploadFile {
     id: string;
@@ -29,17 +30,12 @@ export const MusicAdsFlow1: React.FC<{
     const [state, setState] = useState('');
     const [targetType, setTargetType] = useState('music');
     const [genre, setGenre] = useState('');
-    const [selectedArtists, setSelectedArtists] = useState<string[]>([]);
-    const [artistInput, setArtistInput] = useState('');
-    const [showSuggestions, setShowSuggestions] = useState(false);
+    const [selectedMedia, setSelectedMedia] = useState<SelectedMedia[]>([]);
     const [scheduleDate, setScheduleDate] = useState('');
     const [startTime, setStartTime] = useState('');
     const [endTime, setEndTime] = useState('');
     const [ampm, setAmpm] = useState<'AM' | 'PM'>('AM');
     const [duration, setDuration] = useState(5); // Default duration in seconds
-
-    const artistInputRef = useRef<HTMLInputElement>(null);
-    const suggestionsRef = useRef<HTMLDivElement>(null);
 
     // Use selectors to only subscribe to specific state slices
     const musicFile = useAdsUploadStore((state) => state.musicFile);
@@ -49,9 +45,6 @@ export const MusicAdsFlow1: React.FC<{
     const photoFile = useAdsUploadStore((state) => state.photoFile);
     const photoSetFile = useAdsUploadStore((state) => state.photoSetFile);
     const toast = useChakraToast();
-    // Artist targeting suggestions: backend artist-directory endpoint pending.
-    // Until then, autocomplete shows no suggestions (matches prior behavior).
-    const artists: { id: string; name: string }[] = [];
 
     // Populate form fields from store when editing (musicAdInfo exists)
     // Only populate if musicAdInfo exists (edit mode), not for new campaigns
@@ -62,7 +55,7 @@ export const MusicAdsFlow1: React.FC<{
             setState(musicAdInfo.location.state || '');
             setTargetType(musicAdInfo.target.type || 'music');
             setGenre(musicAdInfo.target.genre || '');
-            setSelectedArtists(musicAdInfo.target.artists || []);
+            setSelectedMedia(musicAdInfo.target.media || []);
             if (musicAdInfo.schedule.date) {
                 const date = new Date(musicAdInfo.schedule.date);
                 setScheduleDate(date.toISOString().split('T')[0]);
@@ -77,62 +70,13 @@ export const MusicAdsFlow1: React.FC<{
             setState('');
             setTargetType('music');
             setGenre('');
-            setSelectedArtists([]);
+            setSelectedMedia([]);
             setScheduleDate('');
             setStartTime('');
             setEndTime('');
             setAmpm('AM');
         }
     }, [musicAdInfo]);
-
-    // Memoize filtered suggestions to avoid recalculating on every render
-    const filteredSuggestions = useMemo(() => {
-        return artists
-        .filter((artist) => {
-            const searchTerm = artistInput.toLowerCase();
-            return (
-                artist.name.toLowerCase().includes(searchTerm)
-            ) && !selectedArtists.includes(artist.name);
-        })
-        .slice(0, 5);
-    }, [artists, artistInput, selectedArtists]);
-
-    // Handle artist input changes
-    const handleArtistInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-        setArtistInput(e.target.value);
-    }, []);
-
-    // Update showSuggestions based on filtered suggestions
-    useEffect(() => {
-        setShowSuggestions(artistInput.length > 0 && filteredSuggestions.length > 0);
-    }, [artistInput.length, filteredSuggestions.length]);
-
-    const handleArtistInputFocus = useCallback(() => {
-        if (artistInput.length > 0 && filteredSuggestions.length > 0) {
-            setShowSuggestions(true);
-        }
-    }, [artistInput.length, filteredSuggestions.length]);
-
-    const handleArtistInputBlur = () => {
-        // Delay to allow suggestion click to fire
-        setTimeout(() => {
-            if (!suggestionsRef.current?.contains(document.activeElement)) {
-                setShowSuggestions(false);
-            }
-        }, 200);
-    };
-
-    const handleSuggestionSelect = useCallback((artistName: string) => {
-        if (!selectedArtists.includes(artistName)) {
-            setSelectedArtists((prev) => [...prev, artistName]);
-        }
-        setArtistInput('');
-        setShowSuggestions(false);
-    }, [selectedArtists]);
-
-    const handleRemoveArtist = useCallback((artist: string) => {
-        setSelectedArtists((prev) => prev.filter((a) => a !== artist));
-    }, []);
 
     const handleFileSelect = () => {
         // File selection handled by FileUploadArea
@@ -190,7 +134,7 @@ export const MusicAdsFlow1: React.FC<{
         musicSetAdInfo({
             title,
             location: { country, state },
-            target: { type: targetType as 'music' | 'video', genre, artists: selectedArtists },
+            target: { type: targetType as 'music' | 'video', genre, media: selectedMedia },
             schedule: {
                 date: scheduleDate ? new Date(scheduleDate) : null,
                 startTime,
@@ -359,124 +303,12 @@ export const MusicAdsFlow1: React.FC<{
                                         size="sm"
                                     />
                                 </Box>
-                                <Box>
-                                    <Text fontSize="xs" fontWeight="semibold" color="gray.900" mb={1}>
-                                        Creator/Music Videos
-                                    </Text>
-                                    <Box position="relative" w="full">
-                                        <Box position="relative">
-                                            <Input
-                                                ref={artistInputRef}
-                                                placeholder="Search"
-                                                value={artistInput}
-                                                onChange={handleArtistInputChange}
-                                                onFocus={handleArtistInputFocus}
-                                                onBlur={handleArtistInputBlur}
-                                                size="xs"
-                                                h="40px"
-                                                borderRadius="10px"
-                                                pl="40px"
-                                            />
-                                            <Icon
-                                                as={FiSearch}
-                                                position="absolute"
-                                                left="12px"
-                                                top="50%"
-                                                transform="translateY(-50%)"
-                                                color="gray.400"
-                                                boxSize={4}
-                                                pointerEvents="none"
-                                            />
-                                        </Box>
-
-                                        {/* Suggestions Dropdown */}
-                                        {showSuggestions && filteredSuggestions.length > 0 && (
-                                            <Box
-                                                ref={suggestionsRef}
-                                                position="absolute"
-                                                top="100%"
-                                                left={0}
-                                                right={0}
-                                                bg="white"
-                                                w="full"
-                                                border="1px solid"
-                                                borderColor="gray.200"
-                                                borderRadius="md"
-                                                boxShadow="lg"
-                                                zIndex={10}
-                                                mt={1}
-                                                maxH="200px"
-                                                overflowY="auto"
-                                            >
-                                                <VStack align="stretch" gap={0}>
-                                                    {filteredSuggestions.map((artist) => {
-                                                        const artistName = artist.name;
-                                                        return (
-                                                            <Box
-                                                                key={artist.id}
-                                                                p={3}
-                                                                cursor="pointer"
-                                                                w="full"
-                                                                _hover={{ bg: 'gray.50' }}
-                                                                onMouseDown={(e) => e.preventDefault()}
-                                                                onClick={() => handleSuggestionSelect(artistName)}
-                                                            >
-                                                                <HStack gap={3}>
-                                                                    <Avatar.Root size="sm" flexShrink={0}>
-                                                                        <Avatar.Fallback fontSize="12px" bg="primary.100" color="primary.500">
-                                                                            {artistName.charAt(0)}
-                                                                        </Avatar.Fallback>
-                                                                    </Avatar.Root>
-                                                                    <VStack align="start" gap={0} minW={0} flex="1">
-                                                                        <Text fontSize="12px" fontWeight="semibold" color="gray.900" lineClamp={1}>
-                                                                            {artistName}
-                                                                        </Text>
-                                                                        <Text fontSize="11px" color="gray.500" lineClamp={1}>
-                                                                            Artist
-                                                                        </Text>
-                                                                    </VStack>
-                                                                </HStack>
-                                                            </Box>
-                                                        );
-                                                    })}
-                                                </VStack>
-                                            </Box>
-                                        )}
-                                    </Box>
-
-                                    {/* Selected Artists Chips */}
-                                    {selectedArtists.length > 0 && (
-                                        <HStack flexWrap="wrap" gap={2} mt={3}>
-                                            {selectedArtists.map((artist) => (
-                                                <Box
-                                                    key={artist}
-                                                    bg="gray.100"
-                                                    px={3}
-                                                    py={2}
-                                                    borderRadius="full"
-                                                    display="flex"
-                                                    alignItems="center"
-                                                    gap={2}
-                                                >
-                                                    <Avatar.Root size="xs" flexShrink={0}>
-                                                        <Avatar.Fallback fontSize="10px" bg="primary.100" color="primary.500">
-                                                            {artist.charAt(0)}
-                                                        </Avatar.Fallback>
-                                                    </Avatar.Root>
-                                                    <Text fontSize="xs" color="gray.900">{artist}</Text>
-                                                    <Icon
-                                                        as={FiX}
-                                                        cursor="pointer"
-                                                        onClick={() => handleRemoveArtist(artist)}
-                                                        color="rgba(249,68,68,1)"
-                                                        boxSize={3.5}
-                                                        _hover={{ color: 'rgba(249,68,68,0.8)' }}
-                                                    />
-                                                </Box>
-                                            ))}
-                                        </HStack>
-                                    )}
-                                </Box>
+                                <SponsorableMediaSearch
+                                    targetType={targetType as 'music' | 'video'}
+                                    genre={genre}
+                                    selected={selectedMedia}
+                                    onChange={setSelectedMedia}
+                                />
                             </VStack>
                         </Box>
 
