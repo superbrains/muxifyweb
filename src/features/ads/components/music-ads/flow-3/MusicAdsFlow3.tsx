@@ -11,6 +11,7 @@ import { adsService } from '../../../services/adsService';
 import { useAdRates } from '../../wizard/useAdRates';
 import { formatNaira } from '@/shared/lib';
 import { useToast } from '@/shared/hooks/useToast';
+import { combineDateAndTime } from '../../../utils/schedule';
 import type { CreateCampaignRequest } from '../../../types';
 
 type PublishOutcome = 'review' | 'live' | 'draft';
@@ -104,8 +105,8 @@ export const MusicAdsFlow3: React.FC<{
                 name: musicAdInfo.title,
                 type: 'audio',
                 budget: musicBudgetReach.amount * 100, // Convert to smallest unit (kobo)
-                startDate: scheduleDate,
-                endDate: musicAdInfo.schedule.endTime || undefined,
+                startDate: combineDateAndTime(scheduleDate, musicAdInfo.schedule.startTime) ?? scheduleDate,
+                endDate: combineDateAndTime(scheduleDate, musicAdInfo.schedule.endTime),
                 creativeUrl: mediaData,
                 // Primary targeted content (first selected sponsorable item).
                 targetContentId: musicAdInfo.target.media?.[0]?.id,
