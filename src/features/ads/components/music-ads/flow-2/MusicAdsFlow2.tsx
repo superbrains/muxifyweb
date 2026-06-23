@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Box, VStack, HStack, Text, Button, Input, Flex, Icon } from '@chakra-ui/react';
-import { FiArrowRight, FiArrowLeft, FiPlus } from 'react-icons/fi';
+import { Box, VStack, Text, Button, Input, Flex, Icon } from '@chakra-ui/react';
+import { FiArrowRight, FiArrowLeft } from 'react-icons/fi';
 import { useAdsUploadStore } from '../../../store/useAdsUploadStore';
 import { MusicViewPhonePreview } from '../MusicViewPhonePreview';
 import { Select, URLInput } from '@shared/components';
-import { TopUpModal } from '../../TopUpModal';
 import { useToast } from '@/shared/hooks/useToast';
+import { formatCurrency } from '@/shared/lib';
+import { useAdRates } from '../../wizard/useAdRates';
+import { WizardWalletBox } from '../../wizard/WizardWalletBox';
 
 export const MusicAdsFlow2: React.FC<{
     onNext: () => void;
@@ -15,7 +17,7 @@ export const MusicAdsFlow2: React.FC<{
     const [link, setLink] = useState('');
     const [budget, setBudget] = useState('0.00');
     const [reach, setReach] = useState('0');
-    const [isTopUpOpen, setIsTopUpOpen] = useState(false);
+    const { card } = useAdRates('audio');
 
     // Use selectors to only subscribe to specific actions, not the entire store
     const musicCallToAction = useAdsUploadStore((state) => state.musicCallToAction);
@@ -51,11 +53,6 @@ export const MusicAdsFlow2: React.FC<{
             setReach('0');
         }
     }, [musicCallToAction, musicBudgetReach]);
-
-    const handleTopUpComplete = () => {
-        // Handle top up completion - could show success message
-        console.log('Top up completed');
-    };
 
     const handleNext = () => {
         if (!link || !budget || !reach) {
@@ -138,7 +135,7 @@ export const MusicAdsFlow2: React.FC<{
                                 borderRadius="10px"
                             />
                             <Text fontSize="xs" color="rgba(249,68,68,1)" mt={1}>
-                                1 click = 2 Naira
+                                {card ? `1 click = ${formatCurrency(card.cpcDisplay)}` : 'Loading rate…'}
                             </Text>
                         </Box>
 
@@ -177,46 +174,12 @@ export const MusicAdsFlow2: React.FC<{
                                 borderRadius="10px"
                             />
                             <Text fontSize="xs" color="rgba(249,68,68,1)" mt={1}>
-                                1 reach = 2 Naira
+                                {card ? `1 reach = ${formatCurrency(card.cpiDisplay)}` : 'Loading rate…'}
                             </Text>
                         </Box>
 
                         {/* Ad Wallet */}
-                        <Box>
-                            <Text fontSize="sm" fontWeight="bold" color="gray.900" mb={2}>
-                                Ad Wallet
-                            </Text>
-                            <Box
-                                bg="gray.100"
-                                borderRadius="10px"
-                                p={4}
-                                border="1px solid"
-                                borderColor="gray.200"
-                            >
-                                <HStack justify="space-between" align="center">
-                                    <VStack align="start" gap={0}>
-                                        <Text fontSize="xs" color="gray.600">
-                                            Wallet Balance
-                                        </Text>
-                                        <Text fontSize="sm" fontWeight="bold" color="gray.900">
-                                            NGN50,000
-                                        </Text>
-                                    </VStack>
-                                    <Button
-                                        bg="rgba(249,68,68,1)"
-                                        color="white"
-                                        size="xs"
-                                        borderRadius="10px"
-                                        px={3}
-                                        onClick={() => setIsTopUpOpen(true)}
-                                        _hover={{ bg: 'rgba(249,68,68,0.9)' }}
-                                    >
-                                        <Icon as={FiPlus} mr={1} />
-                                        Top Up
-                                    </Button>
-                                </HStack>
-                            </Box>
-                        </Box>
+                        <WizardWalletBox />
                     </VStack>
                 </Box>
 
@@ -263,13 +226,6 @@ export const MusicAdsFlow2: React.FC<{
                     </Flex>
                 </Button>
             </Flex>
-
-            {/* Top Up Modal */}
-            <TopUpModal
-                isOpen={isTopUpOpen}
-                onClose={() => setIsTopUpOpen(false)}
-                onComplete={handleTopUpComplete}
-            />
         </VStack>
     );
 };

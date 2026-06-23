@@ -7,6 +7,8 @@ import { useAdsStore } from '../../../store/useAdsStore';
 import { VideoAdsPhonePreview } from '../../VideoAdsPhonePreview';
 import { UploadSuccessPage } from '@upload/components';
 import { fileToBase64 } from '@shared/lib/fileUtils';
+import { adsService } from '../../../services/adsService';
+import { useAdRates } from '../../wizard/useAdRates';
 import type { CreateCampaignRequest } from '../../../types';
 
 export const VideoAdsFlow3: React.FC<{
@@ -48,6 +50,7 @@ export const VideoAdsFlow3: React.FC<{
         resetVideoAds,
     } = useAdsUploadStore();
     const { addCampaign, updateCampaign, createCampaignApi, updateCampaignApi } = useAdsStore();
+    const { card } = useAdRates('video');
     const isEditMode = !!editCampaignId;
 
     const formatDate = (date: Date | null): string => {
@@ -155,7 +158,14 @@ export const VideoAdsFlow3: React.FC<{
             } else {
                 // Try API first for create
                 const campaignId = await createCampaignApi(apiRequest);
-                if (!campaignId) {
+                if (campaignId) {
+                    // Submit the freshly-created draft for admin approval.
+                    try {
+                        await adsService.submitCampaign(campaignId);
+                    } catch {
+                        // Stays a draft; the advertiser can submit again later.
+                    }
+                } else {
                     // Fallback to local add
                     addCampaign(campaign);
                 }
@@ -403,7 +413,7 @@ export const VideoAdsFlow3: React.FC<{
                                 bg="gray.50"
                             />
                             <Text fontSize="xs" color="rgba(249,68,68,1)" mt={1}>
-                                1 click = 2 Naira
+                                {card ? `1 click = ${formatCurrency(card.cpcDisplay)}` : ''}
                             </Text>
                         </Box>
 
@@ -442,7 +452,7 @@ export const VideoAdsFlow3: React.FC<{
                                 bg="gray.50"
                             />
                             <Text fontSize="xs" color="rgba(249,68,68,1)" mt={1}>
-                                {videoBudgetReach?.impressions ? `${videoBudgetReach.impressions.toLocaleString()} reach = ${(videoBudgetReach.impressions * 2).toLocaleString()} NGN` : ''}
+                                {videoBudgetReach?.impressions && card ? `${videoBudgetReach.impressions.toLocaleString()} reach = ${formatCurrency(videoBudgetReach.impressions * card.cpiDisplay)}` : ''}
                             </Text>
                         </Box>
                     </VStack>

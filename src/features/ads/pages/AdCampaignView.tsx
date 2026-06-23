@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
     Box,
     VStack,
@@ -14,7 +14,6 @@ import {
 } from '@chakra-ui/react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FiPause, FiEdit2, FiStopCircle, FiPlus, FiCalendar, FiMusic } from 'react-icons/fi';
-import Chart from 'react-apexcharts';
 import { useAdsStore } from '../store/useAdsStore';
 import { PhotoAdsPhonePreview } from '../components/PhotoAdsPhonePreview';
 import { VideoAdsPhonePreview } from '../components/VideoAdsPhonePreview';
@@ -22,12 +21,13 @@ import { MusicViewPhonePreview } from '../components/music-ads/MusicViewPhonePre
 import { loadCampaignToStore } from '../utils/loadCampaignToStore';
 import { AnimatedTabs } from '@shared/components';
 import { HorizontalStats } from '../components/HorizontalStats';
-import { TopUpModal } from '../components/TopUpModal';
 import { PauseAdModal } from '../components/PauseAdModal';
 import { StopAdModal } from '../components/StopAdModal';
 import { ResumeAdModal } from '../components/ResumeAdModal';
 import { SetSpendingLimitModal } from '../components/SetSpendingLimitModal';
-import type { AdCampaignDto } from '../types';
+import { adsService } from '../services/adsService';
+import { useToast } from '@/shared/hooks/useToast';
+import { normalizeCampaignStatus, type AdCampaignDto, type CampaignAnalyticsDto } from '../types';
 
 export const AdCampaignView = () => {
     const { id } = useParams<{ id: string }>();
@@ -48,8 +48,9 @@ export const AdCampaignView = () => {
     const [isStopModalOpen, setIsStopModalOpen] = useState(false);
     const [isResumeModalOpen, setIsResumeModalOpen] = useState(false);
     const [isSpendingLimitModalOpen, setIsSpendingLimitModalOpen] = useState(false);
-    const [isTopUpModalOpen, setIsTopUpModalOpen] = useState(false);
     const [campaignDto, setCampaignDto] = useState<AdCampaignDto | null>(null);
+    const [analytics, setAnalytics] = useState<CampaignAnalyticsDto | null>(null);
+    const { toast } = useToast();
 
     // Get campaign data from store (local first, then try API)
     const localCampaign = id ? getCampaignById(id) : null;
@@ -64,22 +65,30 @@ export const AdCampaignView = () => {
         fetchWallet();
     }, [id, localCampaign, fetchCampaignById, fetchWallet]);
 
+    // Fetch real per-campaign analytics (people / location / performance / duration).
+    const loadAnalytics = useCallback(() => {
+        if (id) adsService.getCampaignAnalytics(id).then(setAnalytics).catch(() => setAnalytics(null));
+    }, [id]);
+    useEffect(() => {
+        loadAnalytics();
+    }, [loadAnalytics]);
+
     // Use local campaign or convert DTO to local format
     const campaign = localCampaign || (campaignDto ? {
         id: campaignDto.id,
         title: campaignDto.name,
-        type: campaignDto.type.toLowerCase() as 'photo' | 'video' | 'audio',
+        type: (campaignDto.format || 'photo') as 'photo' | 'video' | 'audio',
         location: { country: 'Nigeria', state: '' },
-        target: { type: campaignDto.type.toLowerCase() as 'music' | 'video' | 'audio' },
+        target: { type: (campaignDto.format === 'audio' ? 'music' : campaignDto.format || 'photo') as 'music' | 'video' | 'audio' | 'photo' },
         schedule: {
             date: campaignDto.startDate,
             startTime: '',
             endTime: campaignDto.endDate || '',
         },
         budget: campaignDto.budgetDisplay,
-        status: campaignDto.status,
-        isPaused: campaignDto.status === 'paused',
-        isStopped: campaignDto.status === 'stopped' || campaignDto.status === 'completed',
+        status: normalizeCampaignStatus(campaignDto.status),
+        isPaused: normalizeCampaignStatus(campaignDto.status) === 'paused',
+        isStopped: ['stopped', 'completed'].includes(normalizeCampaignStatus(campaignDto.status)),
         createdAt: campaignDto.createdAt,
         updatedAt: campaignDto.createdAt,
         mediaData: campaignDto.creativeUrl,
@@ -120,19 +129,19 @@ export const AdCampaignView = () => {
         );
     }
 
-    // Calculate dates
-    const scheduleDate = campaign.schedule.date ? new Date(campaign.schedule.date) : new Date(campaign.createdAt);
-    const endDate = new Date(scheduleDate);
-    // Calculate end date from schedule endTime or default to 4 days
-    if (campaign.schedule.endTime) {
-        const timeMatch = campaign.schedule.endTime.match(/(\d+):(\d+)\s*(AM|PM)/i);
-        if (timeMatch) {
-            endDate.setDate(endDate.getDate() + 1); // Add a day if endTime is specified
-        }
-    } else {
-        endDate.setDate(endDate.getDate() + 4); // Default 4 days duration
-    }
-    const daysUntilEnd = Math.ceil((endDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+    // Real campaign dates: start/end come from the campaign + analytics, never a hardcoded duration.
+    const startDate = analytics?.startDate
+        ? new Date(analytics.startDate)
+        : campaign.schedule.date
+            ? new Date(campaign.schedule.date)
+            : new Date(campaign.createdAt);
+    const realEndIso = analytics?.endDate ?? campaignDto?.endDate ?? (campaign.schedule.endTime || null);
+    const endDate = realEndIso ? new Date(realEndIso) : null;
+    const durationDays = analytics?.durationDays
+        ?? (endDate ? Math.max(1, Math.ceil((endDate.getTime() - startDate.getTime()) / 86400000)) : null);
+    const daysUntilEnd = endDate
+        ? Math.max(0, Math.ceil((endDate.getTime() - Date.now()) / 86400000))
+        : null;
 
     // Format date helper
     const formatDate = (dateString: string) => {
@@ -183,74 +192,28 @@ export const AdCampaignView = () => {
         return `data:${mimeType};base64,${campaign.mediaData}`;
     };
 
-    // Use real campaign stats from API
-    const views = campaign.impressions || 0;
-    const clicks = campaign.clicks || 0;
-    const impressions = views + clicks;
-    const spend = campaign.amountSpent || 0;
-    const budget = campaign.budget || 50000;
-    const walletBalance = wallet?.balanceDisplay || budget;
-    const costPerClick = clicks > 0 ? (spend / clicks).toFixed(2) : '0.00';
-    const costPerView = views > 0 ? (spend / views).toFixed(2) : '0.00';
+    // Real campaign stats (prefer analytics; fall back to the campaign DTO).
+    const views = analytics?.impressions ?? campaign.impressions ?? 0;
+    const clicks = analytics?.clicks ?? campaign.clicks ?? 0;
+    const impressions = views;
+    const spend = analytics?.amountSpentDisplay ?? campaign.amountSpent ?? 0;
+    const budget = analytics?.budgetDisplay ?? campaign.budget ?? 0;
+    const walletBalance = wallet?.balanceDisplay ?? 0;
+    const costPerClick = (analytics?.costPerClick ?? (clicks > 0 ? spend / clicks : 0)).toFixed(2);
+    const costPerView = (analytics?.costPerImpression ?? (views > 0 ? spend / views : 0)).toFixed(2);
     const vat = budget * 0.075;
     const totalWithVat = budget + vat;
     const spendPercentage = budget > 0 ? Math.min(100, (spend / budget) * 100) : 0;
 
-    const peopleChartOptions = {
-        chart: {
-            type: 'bar' as const,
-            height: 239,
-            toolbar: { show: false },
-            fontFamily: 'Manrope, sans-serif',
-            stacked: false,
-        },
-        colors: ['#f94444', '#ffa800'],
-        dataLabels: { enabled: false },
-        plotOptions: {
-            bar: {
-                horizontal: false,
-                columnWidth: '21px',
-                endingShape: 'rounded',
-                borderRadius: 1,
-            },
-        },
-        xaxis: {
-            categories: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
-            labels: {
-                style: {
-                    fontSize: '10px',
-                    fontFamily: 'Manrope, sans-serif',
-                    color: '#7b91b0'
-                },
-            },
-        },
-        yaxis: {
-            min: 0,
-            max: 90,
-            tickAmount: 5,
-            labels: {
-                style: {
-                    fontSize: '10px',
-                    fontFamily: 'Manrope, sans-serif',
-                    color: '#7b91b0'
-                },
-                formatter: (value: number) => `${value}%`,
-            },
-        },
-        grid: {
-            show: true,
-            strokeDashArray: 3,
-        },
-        legend: { show: false },
-    };
-
-    // TODO: Replace with real audience demographics from campaign analytics API
-    // Backend endpoint needed: GET /api/v1/ads/campaigns/{id}/audience-demographics
-    const peopleChartSeries = [
-        { name: 'Men', data: [75, 55, 25, 65, 25, 80, 68] },
-        { name: 'Women', data: [40, 15, 38, 85, 23, 18, 32] }
-    ];
-
+    // Real People (gender × age band) and Location breakdowns.
+    const peopleStats = (analytics?.people ?? [])
+        .filter((p) => p.impressions > 0)
+        .slice(0, 6)
+        .map((p) => ({ label: `${p.gender} · ${p.ageBand}`, value: p.impressions }));
+    const locationStats = (analytics?.location ?? [])
+        .filter((l) => l.impressions > 0)
+        .slice(0, 6)
+        .map((l) => ({ label: l.state && l.state !== 'Unknown' ? `${l.state}, ${l.country}` : l.country, value: l.impressions }));
 
     return (
         <>
@@ -388,7 +351,9 @@ export const AdCampaignView = () => {
                                 <Box display="flex" flexDirection="column" gap={4} flex="1">
                                     <Box w="full" display="flex" justifyContent="space-between" alignItems="center">
                                         <Text fontSize="12px" color="#f94444" fontWeight="semibold">
-                                            Ad ends in {daysUntilEnd} days ({formatDate(endDate.toISOString())})
+                                            {endDate
+                                                ? `Ad ends in ${daysUntilEnd} day${daysUntilEnd === 1 ? '' : 's'} (${formatDate(endDate.toISOString())})`
+                                                : 'Ongoing campaign'}
                                         </Text>
                                         {(campaign.isStopped || campaign.isPaused || campaign.status === 'active') && (
                                             <Badge
@@ -439,7 +404,7 @@ export const AdCampaignView = () => {
                                         </VStack>
                                         <VStack align="start" gap={2}>
                                             <Text fontSize="10px" color="#999" fontWeight="medium">End Date</Text>
-                                            <Text fontSize="12px" fontWeight="bold" color="black">{formatDate(endDate.toISOString())}</Text>
+                                            <Text fontSize="12px" fontWeight="bold" color="black">{endDate ? formatDate(endDate.toISOString()) : '—'}</Text>
                                         </VStack>
                                         <VStack align="start" gap={2}>
                                             <Text fontSize="10px" color="#999" fontWeight="medium">Clicks</Text>
@@ -519,7 +484,7 @@ export const AdCampaignView = () => {
                                                 h="28px"
                                                 px={2}
                                                 borderRadius="4px"
-                                                onClick={() => setIsTopUpModalOpen(true)}
+                                                onClick={() => navigate('/ads/payments')}
                                                 _hover={{ bg: '#e53939' }}
                                             >
                                                 <FiPlus size={11} /> Top Up
@@ -545,7 +510,7 @@ export const AdCampaignView = () => {
                                                 </Flex>
                                             </Flex>
                                             <Text fontSize="11px" color="#666" mb={4}>
-                                                This ad reached {clicks.toLocaleString()} audience from your configuration
+                                                This ad reached {views.toLocaleString()} {views === 1 ? 'person' : 'people'} from your configuration
                                             </Text>
 
                                             <Box mb={4}>
@@ -566,33 +531,22 @@ export const AdCampaignView = () => {
 
                                             <Box w="full" overflow="hidden">
                                                 {activeChartTab === 'people' && (
-                                                    <>
-                                                        <HStack gap={4} mb={4}>
-                                                            <Text fontSize="10px" color="#f94444" fontWeight="medium">15% Men</Text>
-                                                            <Text fontSize="10px" color="#ffa800" fontWeight="medium">15% Women</Text>
-                                                        </HStack>
-                                                        <Chart
-                                                            options={peopleChartOptions}
-                                                            series={peopleChartSeries}
-                                                            type="bar"
-                                                            width="100%"
-                                                            height={239}
-                                                        />
-                                                    </>
-
+                                                    peopleStats.length > 0 ? (
+                                                        <HorizontalStats data={peopleStats} barColor="#f94444" />
+                                                    ) : (
+                                                        <Text fontSize="xs" color="#666" py={6} textAlign="center">
+                                                            No audience data yet — demographics appear once your ad starts serving.
+                                                        </Text>
+                                                    )
                                                 )}
                                                 {activeChartTab === 'location' && (
-                                                    // TODO: Replace with real location data from campaign analytics API
-                                                    // Backend endpoint needed: GET /api/v1/ads/campaigns/{id}/location-analytics
-                                                    <HorizontalStats
-                                                        data={[
-                                                            { label: 'Lagos State', value: 10243532 },
-                                                            { label: 'Abuja (Federal Capital Territory)', value: 8000000 },
-                                                            { label: 'Ogun State', value: 6000000 },
-                                                            { label: 'Rivers State', value: 5500000 },
-                                                        ]}
-                                                        barColor="#f94444"
-                                                    />
+                                                    locationStats.length > 0 ? (
+                                                        <HorizontalStats data={locationStats} barColor="#f94444" />
+                                                    ) : (
+                                                        <Text fontSize="xs" color="#666" py={6} textAlign="center">
+                                                            No location data yet — your reach map fills in as impressions come in.
+                                                        </Text>
+                                                    )
                                                 )}
                                             </Box>
                                         </Box>
@@ -601,7 +555,8 @@ export const AdCampaignView = () => {
                                         <Box>
                                             <Text fontSize="15px" fontWeight="bold" color="black" mb={4}>Performance</Text>
                                             <Text fontSize="12px" color="#666" mb={4}>
-                                                <Text as="span" fontWeight="bold" color="#f94444">N{spend.toLocaleString()}</Text> spents over 4 days
+                                                <Text as="span" fontWeight="bold" color="#f94444">₦{spend.toLocaleString()}</Text>
+                                                {durationDays ? ` spent over ${durationDays} day${durationDays === 1 ? '' : 's'}` : ' spent so far'}
                                             </Text>
                                             <HorizontalStats
                                                 data={[
@@ -707,20 +662,19 @@ export const AdCampaignView = () => {
             <SetSpendingLimitModal
                 isOpen={isSpendingLimitModalOpen}
                 onClose={() => setIsSpendingLimitModalOpen(false)}
-                onConfirm={(limit) => {
-                    // TODO: Implement spending limit update in store
-                    console.log('Set spending limit:', limit);
+                onConfirm={async (limit) => {
+                    if (!id) return;
+                    try {
+                        // Persist the daily spending limit (minor units) on the campaign.
+                        await adsService.updateCampaign(id, { dailyLimit: Math.round(limit * 100) });
+                        toast.success('Spending limit set', `Daily limit updated to ₦${limit.toLocaleString()}`);
+                        loadAnalytics();
+                    } catch (e) {
+                        toast.error('Could not set limit', e instanceof Error ? e.message : 'Please try again.');
+                    }
                 }}
                 currentSpend={spend}
                 maxBudget={budget}
-            />
-            <TopUpModal
-                isOpen={isTopUpModalOpen}
-                onClose={() => setIsTopUpModalOpen(false)}
-                onComplete={() => {
-                    // TODO: Implement top up completion logic
-                    console.log('Top up completed');
-                }}
             />
         </>
     );

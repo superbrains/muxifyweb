@@ -120,9 +120,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed }) => {
     // Ad Manager specific nav items
     const adManagerNavItems: NavItem[] = [
         { icon: DashboardIcon, label: 'Dashboard', path: '/' },
-        { icon: AdLibraryIcon, label: 'Ad Library', path: '/ads/library' },
-        { icon: StatusUpIcon, label: 'Ad Spending', path: '/ads/spending' },
-        { icon: WalletMoneyIcon, label: 'Ad Wallet', path: '/ads/wallet' },
+        { icon: AdLibraryIcon, label: 'Ads Library', path: '/ads/library' },
+        { icon: StatusUpIcon, label: 'Spending', path: '/ads/spending' },
+        { icon: SalesIcon, label: 'Ad Report', path: '/ads/report' },
+        { icon: PaymentsIcon, label: 'Payments', path: '/ads/payments' },
         { icon: HeadphoneIcon, label: 'Disputes', path: '/ads/disputes' },
     ];
 

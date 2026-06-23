@@ -53,6 +53,7 @@ const AdLibrary = lazy(() => import('@ads/pages/AdLibrary'));
 const AdCampaignView = lazy(() => import('@ads/pages/AdCampaignView'));
 const AdsSpending = lazy(() => import('@ads/pages/AdsSpending'));
 const AdsWallet = lazy(() => import('@ads/pages/AdsWallet'));
+const AdReport = lazy(() => import('@ads/pages/AdReport'));
 // Record-label (RDC)
 const RosterPage = lazy(() => import('@/features/record-label/pages/RosterPage'));
 const ReleasesPage = lazy(() => import('@/features/record-label/pages/ReleasesPage'));
@@ -271,6 +272,8 @@ export const appRoutes: RouteObject[] = [
             { path: '/ads/library', element: <AdLibrary /> },
             { path: '/ads/view/:id', element: <AdCampaignView /> },
             { path: '/ads/spending', element: <AdsSpending /> },
+            { path: '/ads/report', element: <AdReport /> },
+            { path: '/ads/payments', element: <AdsWallet /> },
             { path: '/ads/wallet', element: <AdsWallet /> },
             { path: '/ads', element: <AdsEmptyState /> },
             // Super Admin routes (role-gated by AdminRoute)

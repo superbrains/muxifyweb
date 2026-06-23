@@ -19,7 +19,7 @@ export const AdsEmptyState: React.FC = () => {
     return (
         <Box minH="90vh" bg="white" borderRadius="20px" display="flex" justifyContent="center" alignItems="center" p={4}>
             <Box
-                bg="#0095ff"
+                bg="primary.500"
                 borderRadius="10px"
                 position="relative"
                 overflow="hidden"
@@ -64,7 +64,7 @@ export const AdsEmptyState: React.FC = () => {
                         />
                         {/* Flash icon positioned on the background */}
                         <Box position="relative" zIndex={1}>
-                            <FlashIcon boxSize={5} color="#0095ff" />
+                            <FlashIcon boxSize={5} color="primary.500" />
                         </Box>
                     </Box>
 
@@ -92,7 +92,7 @@ export const AdsEmptyState: React.FC = () => {
                     <Button
                         onClick={handleCreateCampaign}
                         bg="white"
-                        color="#0095ff"
+                        color="primary.500"
                         size="md"
                         fontSize="sm"
                         fontWeight="semibold"

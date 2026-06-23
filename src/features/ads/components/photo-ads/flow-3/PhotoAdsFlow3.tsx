@@ -7,6 +7,8 @@ import { useAdsStore } from '../../../store/useAdsStore';
 import { PhotoAdsPhonePreview } from '../../PhotoAdsPhonePreview';
 import { UploadSuccessPage } from '@upload/components';
 import { fileToBase64 } from '@shared/lib/fileUtils';
+import { adsService } from '../../../services/adsService';
+import { useAdRates } from '../../wizard/useAdRates';
 import type { CreateCampaignRequest } from '../../../types';
 
 export const PhotoAdsFlow3: React.FC<{
@@ -48,6 +50,7 @@ export const PhotoAdsFlow3: React.FC<{
         resetPhotoAds,
     } = useAdsUploadStore();
     const { addCampaign, updateCampaign, createCampaignApi, updateCampaignApi } = useAdsStore();
+    const { card } = useAdRates('photo');
     const isEditMode = !!editCampaignId;
 
     const formatDate = (date: Date | null): string => {
@@ -159,7 +162,15 @@ export const PhotoAdsFlow3: React.FC<{
             } else {
                 // Try API first for create
                 const campaignId = await createCampaignApi(apiRequest);
-                if (!campaignId) {
+                if (campaignId) {
+                    // Submit the freshly-created draft for admin approval so it
+                    // reaches the review queue (and goes live on approval).
+                    try {
+                        await adsService.submitCampaign(campaignId);
+                    } catch {
+                        // Stays a draft; the advertiser can submit again later.
+                    }
+                } else {
                     // Fallback to local add
                     addCampaign(campaign);
                 }
@@ -407,7 +418,7 @@ export const PhotoAdsFlow3: React.FC<{
                                 bg="gray.50"
                             />
                             <Text fontSize="xs" color="rgba(249,68,68,1)" mt={1}>
-                                1 click = 50 NGN
+                                {card ? `1 click = ${formatCurrency(card.cpcDisplay)}` : ''}
                             </Text>
                         </Box>
 
@@ -446,7 +457,7 @@ export const PhotoAdsFlow3: React.FC<{
                                 bg="gray.50"
                             />
                             <Text fontSize="xs" color="rgba(249,68,68,1)" mt={1}>
-                                {photoBudgetReach?.impressions ? `${photoBudgetReach.impressions.toLocaleString()} reach = ${(photoBudgetReach.impressions * 0.5).toLocaleString()} NGN` : ''}
+                                {photoBudgetReach?.impressions && card ? `${photoBudgetReach.impressions.toLocaleString()} reach = ${formatCurrency(photoBudgetReach.impressions * card.cpiDisplay)}` : ''}
                             </Text>
                         </Box>
                     </VStack>

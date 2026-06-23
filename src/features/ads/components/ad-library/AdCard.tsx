@@ -2,6 +2,7 @@ import React from 'react';
 import { Box, HStack, Icon, Image, Text, VStack, Badge, Flex, Button } from '@chakra-ui/react';
 import { FiVideo, FiMusic, FiEdit2, FiZap } from 'react-icons/fi';
 import { CustomMenu } from '@/shared/components/CustomMenu';
+import { useToast } from '@/shared/hooks/useToast';
 import { useAdsStore } from '../../store/useAdsStore';
 import type { AdCampaign } from '../../types';
 
@@ -21,6 +22,7 @@ export const AdCard: React.FC<AdCardProps> = ({
     onSuspend,
 }) => {
     const { pauseCampaign } = useAdsStore();
+    const { toast } = useToast();
     const getStatusLabel = (campaign: AdCampaign) => {
         if (campaign.isStopped) {
             return 'Inactive';
@@ -64,16 +66,23 @@ export const AdCard: React.FC<AdCardProps> = ({
         }
     };
 
-    const handleShare = () => {
-        // TODO: Implement share functionality
-        console.log('Share campaign:', campaign.id);
+    const campaignLink = `${window.location.origin}/ads/view/${campaign.id}`;
+
+    const handleShare = async () => {
+        if (typeof navigator !== 'undefined' && navigator.share) {
+            try {
+                await navigator.share({ title: campaign.title, url: campaignLink });
+                return;
+            } catch {
+                // user dismissed the share sheet — fall back to copy
+            }
+        }
+        handleCopyLink();
     };
 
     const handleCopyLink = () => {
-        // TODO: Implement copy link functionality
-        const link = `${window.location.origin}/ads/campaign/${campaign.id}`;
-        navigator.clipboard.writeText(link);
-        console.log('Link copied:', link);
+        navigator.clipboard.writeText(campaignLink);
+        toast.success('Link copied', 'Campaign link copied to clipboard');
     };
 
     const handleSuspend = () => {
@@ -114,11 +123,10 @@ export const AdCard: React.FC<AdCardProps> = ({
         return `${day}, ${month} ${year}`;
     };
 
-    // Mock metrics - in real app, these would come from the campaign data or analytics API
-    // Using consistent values based on campaign ID for better UX
-    const views = Math.floor(((campaign.id.charCodeAt(0) || 0) * 1000000) % 9000000) + 1000000; // 1M - 10M
-    const clicks = Math.floor(views * 0.05); // ~5% click rate (shown as currency in design)
-    const impressions = Math.floor(views * 50); // ~50x impressions
+    // Real campaign metrics (honest zeros until traffic is served).
+    const impressions = campaign.impressions ?? 0;
+    const clicks = campaign.clicks ?? 0;
+    const spend = campaign.amountSpent ?? 0;
 
     // Helper function to get media preview URL
     const getMediaPreview = () => {
@@ -295,13 +303,13 @@ export const AdCard: React.FC<AdCardProps> = ({
                             </Text>
                         </VStack>
 
-                        {/* Views */}
+                        {/* Impressions */}
                         <VStack align="start" gap={0}>
                             <Text fontSize="12px" color="black" opacity={0.5} lineHeight="1.4">
-                                Views
+                                Impressions
                             </Text>
                             <Text fontSize="12px" fontWeight="semibold" color="black" lineHeight="1.4">
-                                {views.toLocaleString()}
+                                {impressions.toLocaleString()}
                             </Text>
                         </VStack>
 
@@ -311,17 +319,17 @@ export const AdCard: React.FC<AdCardProps> = ({
                                 Clicks
                             </Text>
                             <Text fontSize="12px" fontWeight="semibold" color="black" lineHeight="1.4">
-                                N{clicks.toLocaleString()}
+                                {clicks.toLocaleString()}
                             </Text>
                         </VStack>
 
-                        {/* Impression */}
+                        {/* Spend */}
                         <VStack align="start" gap={0}>
                             <Text fontSize="12px" color="black" opacity={0.5} lineHeight="1.4">
-                                Impression
+                                Spend
                             </Text>
                             <Text fontSize="12px" fontWeight="semibold" color="black" lineHeight="1.4">
-                                {impressions.toLocaleString()}
+                                ₦{spend.toLocaleString()}
                             </Text>
                         </VStack>
                     </HStack>

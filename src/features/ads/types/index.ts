@@ -64,9 +64,50 @@ export interface DepositToWalletRequest {
  */
 export interface DepositToWalletResponse {
   success: boolean;
+  intentId?: string;
   paymentUrl?: string;
   paymentReference?: string;
   message?: string;
+}
+
+/**
+ * Request to initiate a Flutterwave ad-wallet top-up
+ */
+export interface InitiateAdDepositRequest {
+  amountMinor: number;
+  paymentMethodId: string;
+  customerName?: string;
+  customerEmail?: string;
+  customerContact?: string;
+  redirectUrl?: string;
+}
+
+/**
+ * Deposit status returned by the poll endpoint
+ */
+export interface AdDepositStatusResponse {
+  intentId: string;
+  status: string;
+  amountMinor: number;
+  currency: string;
+  settledAt?: string;
+  failureReason?: string;
+}
+
+/**
+ * A supported top-up method (Flutterwave channel)
+ */
+export interface CollectionMethod {
+  id: string;
+  name: string;
+  fundType: string;
+  requiresOtp: boolean;
+}
+
+export interface CollectionMethodsResponse {
+  currency: string;
+  providerName: string;
+  methods: CollectionMethod[];
 }
 
 // ============================================
@@ -80,6 +121,8 @@ export interface AdCampaignDto {
   id: string;
   name: string;
   type: string;
+  /** Creative format (photo/video/audio) — what the library tabs and wizard use. */
+  format: string;
   status: CampaignStatus;
   budget: number;
   budgetDisplay: number;
@@ -176,18 +219,165 @@ export interface DailyMetricDto {
 }
 
 /**
+ * Demographic (gender × age band) breakdown row
+ */
+export interface AdDemographicRowDto {
+  gender: string;
+  ageBand: string;
+  impressions: number;
+  clicks: number;
+  spendMinor: number;
+}
+
+/**
+ * Location (country/state) breakdown row
+ */
+export interface AdGeoRowDto {
+  country: string;
+  state: string;
+  impressions: number;
+  clicks: number;
+  spendMinor: number;
+}
+
+/**
  * Campaign analytics DTO
  */
 export interface CampaignAnalyticsDto {
   campaignId: string;
   campaignName: string;
+  format: string;
+  status: CampaignStatus;
   impressions: number;
   clicks: number;
   clickThroughRate: number;
   amountSpent: number;
+  amountSpentDisplay: number;
+  budget: number;
+  budgetDisplay: number;
   costPerClick: number;
   costPerImpression: number;
+  startDate: string;
+  endDate?: string;
+  durationDays: number;
+  currency: string;
   dailyMetrics: DailyMetricDto[];
+  people: AdDemographicRowDto[];
+  location: AdGeoRowDto[];
+}
+
+/**
+ * Submit-for-approval response
+ */
+export interface SubmitCampaignResponse {
+  success: boolean;
+  campaignId: string;
+  status: string;
+  message?: string;
+}
+
+// ============================================
+// Rates DTOs
+// ============================================
+
+export interface AdRateCardDto {
+  cpcMinor: number;
+  cpcDisplay: number;
+  cpiMinor: number;
+  cpiDisplay: number;
+}
+
+export interface AdRatesDto {
+  photo: AdRateCardDto;
+  video: AdRateCardDto;
+  audio: AdRateCardDto;
+  minBudgetMinor: number;
+  currency: string;
+}
+
+// ============================================
+// Dashboard / Spending / Report DTOs
+// ============================================
+
+export interface AdActivityPointDto {
+  label: string;
+  impressions: number;
+  clicks: number;
+  spendMinor: number;
+}
+
+export interface AdSpendByFormatDto {
+  photoMinor: number;
+  videoMinor: number;
+  audioMinor: number;
+}
+
+export interface AdCountryReachDto {
+  country: string;
+  impressions: number;
+  clicks: number;
+  spendMinor: number;
+}
+
+export interface AdDashboardSummaryDto {
+  currency: string;
+  totalImpressions: number;
+  totalClicks: number;
+  totalSpendMinor: number;
+  clickThroughRate: number;
+  activeCampaigns: number;
+  totalCampaigns: number;
+  impressionsDeltaPct: number;
+  clicksDeltaPct: number;
+  spendDeltaPct: number;
+  optimisationScore: number;
+  visibilityScore: number;
+  presenceScore: number;
+  activity: AdActivityPointDto[];
+  spendByFormat: AdSpendByFormatDto;
+  countryReach: AdCountryReachDto[];
+}
+
+export interface AdSpendingBucketDto {
+  label: string;
+  photoMinor: number;
+  videoMinor: number;
+  audioMinor: number;
+  totalMinor: number;
+}
+
+export interface AdSpendingSeriesDto {
+  grouping: string;
+  currency: string;
+  buckets: AdSpendingBucketDto[];
+  totalSpendMinor: number;
+  totalImpressions: number;
+  totalClicks: number;
+  impressionsCostMinor: number;
+  clicksCostMinor: number;
+}
+
+export interface AdReportRowDto {
+  campaignId: string;
+  name: string;
+  format: string;
+  status: string;
+  impressions: number;
+  clicks: number;
+  clickThroughRate: number;
+  spendMinor: number;
+  costPerClick: number;
+  costPerImpression: number;
+  startDate: string;
+  endDate?: string;
+}
+
+export interface AdReportDto {
+  currency: string;
+  rows: AdReportRowDto[];
+  totalImpressions: number;
+  totalClicks: number;
+  totalSpendMinor: number;
 }
 
 // ============================================
@@ -238,8 +428,29 @@ export interface AdCampaign {
 /**
  * Maps AdCampaignDto to legacy AdCampaign for UI components
  */
+/**
+ * Normalises a backend campaign status (PascalCase enum name, e.g. "Active",
+ * "PendingApproval") to the web's lowercase CampaignStatus union.
+ */
+export function normalizeCampaignStatus(status: string): CampaignStatus {
+  switch ((status || '').toLowerCase()) {
+    case 'draft': return 'draft';
+    case 'pendingapproval':
+    case 'pending': return 'pending';
+    case 'active': return 'active';
+    case 'paused': return 'paused';
+    case 'stopped': return 'stopped';
+    case 'completed': return 'completed';
+    case 'rejected': return 'rejected';
+    default: return 'draft';
+  }
+}
+
 export function mapDtoToAdCampaign(dto: AdCampaignDto): AdCampaign {
-  const campaignType = dto.type.toLowerCase() as CampaignType;
+  // Prefer the explicit creative format from the backend; fall back to the raw
+  // type for older payloads.
+  const campaignType = (dto.format || dto.type || 'photo').toLowerCase() as CampaignType;
+  const status = normalizeCampaignStatus(dto.status);
 
   return {
     id: dto.id,
@@ -260,9 +471,9 @@ export function mapDtoToAdCampaign(dto: AdCampaignDto): AdCampaign {
       endTime: dto.endDate || '',
     },
     budget: dto.budgetDisplay,
-    status: dto.status,
-    isPaused: dto.status === 'paused',
-    isStopped: dto.status === 'stopped' || dto.status === 'completed',
+    status,
+    isPaused: status === 'paused',
+    isStopped: status === 'stopped' || status === 'completed',
     createdAt: dto.createdAt,
     updatedAt: dto.createdAt,
     mediaData: dto.creativeUrl,

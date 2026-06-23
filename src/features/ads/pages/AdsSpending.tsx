@@ -4,150 +4,93 @@ import {
     VStack,
     HStack,
     Text,
-    Button,
     Flex,
     Grid,
     Icon,
     Skeleton,
 } from '@chakra-ui/react';
-import { FiFilter } from 'react-icons/fi';
 import { AnimatedTabs } from '@shared/components';
 import Chart from 'react-apexcharts';
-import { useAdsStore } from '../store/useAdsStore';
+import { adsService } from '../services/adsService';
 import { formatCurrency } from '@/shared/lib';
 import { ClickFilledIcon, EyeFilledIcon, GalleryIcon, MusicFilledIcon, VideoPlayIcon } from '@/shared/icons/CustomIcons';
+import type { AdSpendingSeriesDto } from '../types';
+
+type Grouping = 'daily' | 'weekly' | 'monthly' | 'yearly';
 
 export const AdsSpending: React.FC = () => {
-    const [timeFilter, setTimeFilter] = useState<'daily' | 'weekly' | 'monthly' | 'yearly'>('daily');
-    const { campaigns, wallet, isLoading, isLoadingWallet, fetchCampaigns, fetchWallet } = useAdsStore();
+    const [grouping, setGrouping] = useState<Grouping>('daily');
+    const [data, setData] = useState<AdSpendingSeriesDto | null>(null);
+    const [loading, setLoading] = useState(true);
 
-    // Fetch data on mount
+    // The grouping tabs drive the query.
     useEffect(() => {
-        fetchCampaigns();
-        fetchWallet();
-    }, [fetchCampaigns, fetchWallet]);
+        let cancelled = false;
+        setLoading(true);
+        adsService
+            .getSpending(grouping)
+            .then((res) => {
+                if (!cancelled) setData(res);
+            })
+            .catch(() => {
+                if (!cancelled) setData(null);
+            })
+            .finally(() => {
+                if (!cancelled) setLoading(false);
+            });
+        return () => {
+            cancelled = true;
+        };
+    }, [grouping]);
 
-    // Calculate spending data from campaigns (using actual spent amounts)
-    const spendingData = useMemo(() => {
-        const audioSpending = campaigns
-            .filter(c => c.type === 'audio')
-            .reduce((sum, c) => sum + (c.amountSpent || 0), 0);
-        const photoSpending = campaigns
-            .filter(c => c.type === 'photo')
-            .reduce((sum, c) => sum + (c.amountSpent || 0), 0);
-        const videoSpending = campaigns
-            .filter(c => c.type === 'video')
-            .reduce((sum, c) => sum + (c.amountSpent || 0), 0);
+    const buckets = useMemo(() => data?.buckets ?? [], [data]);
 
-        const totalImpressions = campaigns.reduce((sum, c) => sum + (c.impressions || 0), 0);
-        const totalClicks = campaigns.reduce((sum, c) => sum + (c.clicks || 0), 0);
+    const photoTotal = buckets.reduce((s, b) => s + b.photoMinor, 0);
+    const videoTotal = buckets.reduce((s, b) => s + b.videoMinor, 0);
+    const audioTotal = buckets.reduce((s, b) => s + b.audioMinor, 0);
+    const totalSpend = (data?.totalSpendMinor ?? 0) / 100;
+    const avgSpend = buckets.length > 0 ? totalSpend / buckets.length : 0;
 
-        return { audioSpending, photoSpending, videoSpending, totalImpressions, totalClicks };
-    }, [campaigns]);
+    const totalClicks = data?.totalClicks ?? 0;
+    const totalViews = data?.totalImpressions ?? 0;
+    const clicksCost = (data?.clicksCostMinor ?? 0) / 100;
+    const viewsCost = (data?.impressionsCostMinor ?? 0) / 100;
+    const totalActions = clicksCost + viewsCost;
 
-    const { audioSpending, photoSpending, videoSpending, totalImpressions, totalClicks } = spendingData;
-    const totalSpending = wallet?.totalSpent || (audioSpending + photoSpending + videoSpending);
-    const dailySpend = totalSpending / 7; // Average daily calculation
-    const isDataLoading = isLoading || isLoadingWallet;
-
-    // Mock data for charts
     const spendingChartOptions = {
-        chart: {
-            type: 'bar' as const,
-            height: 350,
-            toolbar: { show: false },
-            fontFamily: 'Manrope, sans-serif',
-        },
-        colors: ['#f94444', '#ffa800', '#f97316'],
+        chart: { type: 'bar' as const, height: 350, toolbar: { show: false }, fontFamily: 'Manrope, sans-serif', stacked: true },
+        colors: ['#f94444', '#f97316', '#ffa800'],
         dataLabels: { enabled: false },
-        plotOptions: {
-            bar: {
-                horizontal: false,
-                columnWidth: '60%',
-                endingShape: 'rounded',
-                borderRadius: 1,
-            },
-        },
+        plotOptions: { bar: { horizontal: false, columnWidth: '55%', borderRadius: 2 } },
         xaxis: {
-            categories: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
-            labels: {
-                style: {
-                    fontSize: '10px',
-                    fontFamily: 'Manrope, sans-serif',
-                    color: '#7b91b0'
-                },
-            },
+            categories: buckets.map((b) => b.label),
+            labels: { style: { fontSize: '11px', fontFamily: 'Manrope, sans-serif', colors: '#7b91b0' } },
         },
         yaxis: {
-            min: 0,
-            max: 45000,
-            tickAmount: 5,
             labels: {
-                style: {
-                    fontSize: '10px',
-                    fontFamily: 'Manrope, sans-serif',
-                    color: '#7b91b0'
-                },
-                formatter: (value: number) => value >= 1000 ? (value / 1000) + 'k' : value.toString(),
+                style: { fontSize: '11px', fontFamily: 'Manrope, sans-serif', colors: '#7b91b0' },
+                formatter: (value: number) => (value >= 1000 ? value / 1000 + 'k' : Math.round(value).toString()),
             },
         },
-        legend: {
-            position: 'bottom' as const,
-            horizontalAlign: 'center' as const,
-            fontSize: '10px',
-            fontFamily: 'Manrope, sans-serif',
-        },
-        grid: {
-            show: true,
-            strokeDashArray: 3,
-        },
+        legend: { position: 'bottom' as const, horizontalAlign: 'center' as const, fontSize: '12px', fontFamily: 'Manrope, sans-serif' },
+        grid: { show: true, strokeDashArray: 3 },
     };
 
     const spendingChartSeries = [
-        {
-            name: 'Audio Ads',
-            data: [38000, 26000, 12000, 32000, 12000, 40000, 34000]
-        },
-        {
-            name: 'Photo Ads',
-            data: [34000, 18000, 44000, 42000, 4000, 20000, 20000]
-        },
-        {
-            name: 'Video Ads',
-            data: [20000, 6000, 19000, 12000, 11000, 9000, 15000]
-        }
+        { name: 'Photo Ads', data: buckets.map((b) => b.photoMinor / 100) },
+        { name: 'Video Ads', data: buckets.map((b) => b.videoMinor / 100) },
+        { name: 'Audio Ads', data: buckets.map((b) => b.audioMinor / 100) },
     ];
 
+    const distTotal = photoTotal + videoTotal + audioTotal;
     const distributionChartOptions = {
-        chart: {
-            type: 'pie' as const,
-            height: 350,
-            toolbar: { show: false },
-            fontFamily: 'Manrope, sans-serif',
-        },
-        colors: ['#f94444', '#ffa800', '#f97316'],
-        labels: ['Audio Ads', 'Photo Ads', 'Video Ads'],
-        legend: {
-            position: 'bottom' as const,
-            horizontalAlign: 'center' as const,
-            fontSize: '10px',
-            fontFamily: 'Manrope, sans-serif',
-        },
-        dataLabels: {
-            enabled: true,
-            formatter: (val: number) => `${val.toFixed(1)}%`,
-            style: {
-                fontSize: '10px',
-                fontFamily: 'Manrope, sans-serif',
-            },
-        },
+        chart: { type: 'pie' as const, height: 350, toolbar: { show: false }, fontFamily: 'Manrope, sans-serif' },
+        colors: ['#f94444', '#f97316', '#ffa800'],
+        labels: ['Photo Ads', 'Video Ads', 'Audio Ads'],
+        legend: { position: 'bottom' as const, horizontalAlign: 'center' as const, fontSize: '12px', fontFamily: 'Manrope, sans-serif' },
+        dataLabels: { enabled: true, formatter: (val: number) => `${val.toFixed(1)}%`, style: { fontSize: '11px', fontFamily: 'Manrope, sans-serif' } },
     };
-
-    const distributionChartSeries = [
-        Math.round((audioSpending / totalSpending) * 100) || 50,
-        Math.round((photoSpending / totalSpending) * 100) || 10.5,
-        Math.round((videoSpending / totalSpending) * 100) || 25,
-    ];
+    const distributionChartSeries = [photoTotal, videoTotal, audioTotal];
 
     const timeTabs = [
         { id: 'daily', label: 'Daily' },
@@ -156,12 +99,7 @@ export const AdsSpending: React.FC = () => {
         { id: 'yearly', label: 'Yearly' },
     ];
 
-    // Spending actions data from campaigns
-    const clicks = totalClicks;
-    const views = totalImpressions;
-    const clicksCost = totalClicks > 0 ? Math.round(totalSpending * 0.35) : 0; // Approximate click cost
-    const viewsCost = totalImpressions > 0 ? Math.round(totalSpending * 0.65) : 0; // Approximate view cost
-    const totalActions = clicksCost + viewsCost;
+    const hasData = !loading && buckets.length > 0;
 
     return (
         <Box bg="gray.50" minH="100vh" p={6}>
@@ -169,100 +107,73 @@ export const AdsSpending: React.FC = () => {
                 {/* Top Section - Tabs and Metrics */}
                 <Box bg="white" p={6} borderRadius="xl">
                     <Flex justify="space-between" align="center" mb={4} flexWrap="wrap" gap={4}>
-
-                        <HStack gap={4}>
-                            <AnimatedTabs
-                                tabs={timeTabs}
-                                activeTab={timeFilter}
-                                onTabChange={(tab) => setTimeFilter(tab as typeof timeFilter)}
-                                size="sm"
-                                backgroundColor="gray.100"
-                                selectedColor="primary.500"
-                                textColor="black"
-                                selectedTextColor="white"
-                                tabStyle={1}
-                            />
-
-                            <Button
-                                variant="outline"
-                                borderWidth="1px"
-                                borderColor="gray.blue.200"
-                                bg="white"
-                                size="xs"
-                                fontSize="10px"
-                                h="28px"
-                                _hover={{
-                                    bg: "gray.50",
-                                    borderColor: "gray.blue.300"
-                                }}
-                                rounded="5px"
-                                className='text-[#9cb1c5]'
-                                color="gray.blue.800"
-                                gap={2}
-                            >
-                                <Icon as={FiFilter} mr={1.5} /> Filter Duration
-                            </Button>
-
-                        </HStack>
+                        <AnimatedTabs
+                            tabs={timeTabs}
+                            activeTab={grouping}
+                            onTabChange={(tab) => setGrouping(tab as Grouping)}
+                            size="sm"
+                            backgroundColor="gray.100"
+                            selectedColor="primary.500"
+                            textColor="black"
+                            selectedTextColor="white"
+                            tabStyle={1}
+                        />
 
                         <HStack gap={6}>
                             <VStack align="end" gap={1}>
-                                {isDataLoading ? (
+                                {loading ? (
                                     <Skeleton height="24px" width="100px" />
                                 ) : (
-                                    <Text fontSize="lg" color="red.500" fontWeight="bold">
-                                        {formatCurrency(dailySpend)}
+                                    <Text fontSize="lg" color="primary.500" fontWeight="bold">
+                                        {formatCurrency(avgSpend)}
                                     </Text>
                                 )}
-                                <Text fontSize="11px" color="gray.900">
-                                    Daily Spend
+                                <Text fontSize="xs" color="gray.900">
+                                    Avg / {grouping === 'daily' ? 'day' : grouping === 'weekly' ? 'week' : grouping === 'monthly' ? 'month' : 'year'}
                                 </Text>
                             </VStack>
                             <VStack align="end" gap={1}>
-                                {isDataLoading ? (
+                                {loading ? (
                                     <Skeleton height="24px" width="120px" />
                                 ) : (
-                                    <Text fontSize="lg" color="red.500" fontWeight="bold">
-                                        {formatCurrency(totalSpending)}
+                                    <Text fontSize="lg" color="primary.500" fontWeight="bold">
+                                        {formatCurrency(totalSpend)}
                                     </Text>
                                 )}
-                                <Text fontSize="11px" color="gray.900">
+                                <Text fontSize="xs" color="gray.900">
                                     Total Expenditure
                                 </Text>
                             </VStack>
-
                         </HStack>
                     </Flex>
                 </Box>
 
                 {/* Charts Section */}
                 <Grid templateColumns={{ base: '1fr', lg: '1.5fr 1fr' }} gap={6}>
-                    {/* Advert Spending Chart */}
                     <Box bg="white" p={6} borderRadius="xl">
                         <Text fontSize="sm" fontWeight="semibold" color="gray.900" mb={4}>
                             Advert Spending
                         </Text>
-                        <Chart
-                            options={spendingChartOptions}
-                            series={spendingChartSeries}
-                            type="bar"
-                            width="100%"
-                            height={300}
-                        />
+                        {loading ? (
+                            <Skeleton height="300px" borderRadius="md" />
+                        ) : hasData ? (
+                            <Chart options={spendingChartOptions} series={spendingChartSeries} type="bar" width="100%" height={300} />
+                        ) : (
+                            <EmptyChart label="No spending in this period yet" />
+                        )}
                     </Box>
 
-                    {/* Distribution Chart */}
                     <Box bg="white" p={6} borderRadius="xl">
                         <Text fontSize="sm" fontWeight="semibold" color="gray.900" mb={4}>
                             Distribution
                         </Text>
-                        <Chart
-                            options={distributionChartOptions}
-                            series={distributionChartSeries}
-                            type="pie"
-                            width="100%"
-                            height={300}
-                        />
+                        {loading ? (
+                            <Skeleton height="300px" borderRadius="md" />
+                        ) : distTotal > 0 ? (
+                            <Chart options={distributionChartOptions} series={distributionChartSeries} type="pie" width="100%" height={300} />
+                        ) : (
+                            <EmptyChart label="No spend to distribute yet" />
+                        )}
                     </Box>
                 </Grid>
 
@@ -270,137 +181,32 @@ export const AdsSpending: React.FC = () => {
                 <Grid templateColumns={{ base: '1fr', lg: '1fr 1fr' }} gap={5}>
                     {/* Spending Allocation */}
                     <Box bg="white" borderRadius="xl" border="1px solid" borderColor="gray.200" p={5}>
-                        <Text fontSize="xs" fontWeight="semibold" color="gray.900" mb={3}>
+                        <Text fontSize="sm" fontWeight="semibold" color="gray.900" mb={3}>
                             Spending Allocation
                         </Text>
                         <HStack gap={3} justify="space-between" align="stretch">
-                            <VStack align="center" gap={2} flex="1">
-                                <Box
-                                    w={10}
-                                    h={10}
-                                    borderRadius="md"
-                                    border="1px solid"
-                                    borderColor="#f94444"
-                                    display="flex"
-                                    alignItems="center"
-                                    justifyContent="center"
-                                >
-                                    <Icon as={GalleryIcon} boxSize={5} color="#f94444" />
-                                </Box>
-                                <Text fontSize="10px" color="gray.600">Photo Ad</Text>
-                                <Text fontSize="xs" fontWeight="bold" color="#f94444">
-                                    N{photoSpending.toLocaleString()}.00
-                                </Text>
-                            </VStack>
+                            <AllocationItem icon={GalleryIcon} label="Photo Ad" amount={photoTotal / 100} />
                             <Box h="18" w="1px" bg="gray.200" alignSelf="center" />
-                            <VStack align="center" gap={2} flex="1">
-                                <Box
-                                    w={10}
-                                    h={10}
-                                    borderRadius="md"
-                                    border="1px solid"
-                                    borderColor="#f94444"
-                                    display="flex"
-                                    alignItems="center"
-                                    justifyContent="center"
-                                >
-                                    <Icon as={VideoPlayIcon} boxSize={5} color="#f94444" />
-                                </Box>
-                                <Text fontSize="10px" color="gray.600">Video Ad</Text>
-                                <Text fontSize="xs" fontWeight="bold" color="#f94444">
-                                    N{videoSpending.toLocaleString()}.00
-                                </Text>
-                            </VStack>
+                            <AllocationItem icon={VideoPlayIcon} label="Video Ad" amount={videoTotal / 100} />
                             <Box h="18" w="1px" bg="gray.200" alignSelf="center" />
-                            <VStack align="center" gap={2} flex="1">
-                                <Box
-                                    w={10}
-                                    h={10}
-                                    borderRadius="md"
-                                    border="1px solid"
-                                    borderColor="#f94444"
-                                    display="flex"
-                                    alignItems="center"
-                                    justifyContent="center"
-                                >
-                                    <Icon as={MusicFilledIcon} boxSize={5} color="#f94444" />
-                                </Box>
-                                <Text fontSize="10px" color="gray.600">Audio Ad</Text>
-                                <Text fontSize="xs" fontWeight="bold" color="#f94444">
-                                    N{audioSpending.toLocaleString()}.00
-                                </Text>
-                            </VStack>
+                            <AllocationItem icon={MusicFilledIcon} label="Audio Ad" amount={audioTotal / 100} />
                         </HStack>
                     </Box>
 
                     {/* Spending Actions */}
                     <Box bg="white" borderRadius="xl" border="1px solid" borderColor="gray.200" p={5}>
                         <Flex justify="space-between" align="center" mb={3} flexWrap="wrap" gap={2}>
-                            <Text fontSize="xs" fontWeight="semibold" color="gray.900">
+                            <Text fontSize="sm" fontWeight="semibold" color="gray.900">
                                 Spending Actions
                             </Text>
-                            <HStack gap={1}>
-                                <Text fontSize="xs" fontWeight="semibold" color="black">
-                                    {clicks.toLocaleString()}
-                                </Text>
-                                <Text fontSize="xs" fontWeight="semibold" color="black">
-                                    +
-                                </Text>
-                                <Text fontSize="xs" fontWeight="semibold" color="black">
-                                    {views.toLocaleString()}
-                                </Text>
-                                <Text fontSize="xs" fontWeight="semibold" color="black">
-                                    =
-                                </Text>
-                                <Text fontSize="xs" fontWeight="semibold" color="#f94444">
-                                    N{totalActions.toLocaleString()}.00
-                                </Text>
-                            </HStack>
+                            <Text fontSize="xs" fontWeight="semibold" color="primary.500">
+                                {formatCurrency(totalActions)}
+                            </Text>
                         </Flex>
                         <HStack gap={3} justify="space-between" align="stretch">
-                            <VStack align="center" gap={2} flex="1">
-                                <Box
-                                    w={10}
-                                    h={10}
-                                    borderRadius="md"
-                                    border="1px solid"
-                                    borderColor="#f94444"
-                                    display="flex"
-                                    alignItems="center"
-                                    justifyContent="center"
-                                >
-                                    <Icon as={ClickFilledIcon} boxSize={5} color="#f94444" />
-                                </Box>
-                                <Text fontSize="10px" color="gray.600">Clicks</Text>
-                                <Text fontSize="sm" fontWeight="bold" color="black">
-                                    {clicks.toLocaleString()}
-                                </Text>
-                                <Text fontSize="xs" fontWeight="medium" color="#f94444">
-                                    N{clicksCost.toLocaleString()}.00
-                                </Text>
-                            </VStack>
+                            <ActionItem icon={ClickFilledIcon} label="Clicks" count={totalClicks} cost={clicksCost} />
                             <Box h="20" w="1px" bg="gray.200" alignSelf="center" />
-                            <VStack align="center" gap={2} flex="1">
-                                <Box
-                                    w={10}
-                                    h={10}
-                                    borderRadius="md"
-                                    border="1px solid"
-                                    borderColor="#f94444"
-                                    display="flex"
-                                    alignItems="center"
-                                    justifyContent="center"
-                                >
-                                    <Icon as={EyeFilledIcon} boxSize={5} color="#f94444" />
-                                </Box>
-                                <Text fontSize="10px" color="gray.600">Views</Text>
-                                <Text fontSize="sm" fontWeight="bold" color="black">
-                                    {views.toLocaleString()}
-                                </Text>
-                                <Text fontSize="xs" fontWeight="medium" color="#f94444">
-                                    N{viewsCost.toLocaleString()}.00
-                                </Text>
-                            </VStack>
+                            <ActionItem icon={EyeFilledIcon} label="Impressions" count={totalViews} cost={viewsCost} />
                         </HStack>
                     </Box>
                 </Grid>
@@ -409,5 +215,43 @@ export const AdsSpending: React.FC = () => {
     );
 };
 
-export default AdsSpending;
+const EmptyChart: React.FC<{ label: string }> = ({ label }) => (
+    <Flex h="300px" align="center" justify="center" direction="column" gap={2}>
+        <Text fontSize="sm" color="gray.500">
+            {label}
+        </Text>
+    </Flex>
+);
 
+const AllocationItem: React.FC<{ icon: React.ElementType; label: string; amount: number }> = ({ icon, label, amount }) => (
+    <VStack align="center" gap={2} flex="1">
+        <Box w={10} h={10} borderRadius="md" border="1px solid" borderColor="primary.500" display="flex" alignItems="center" justifyContent="center">
+            <Icon as={icon} boxSize={5} color="primary.500" />
+        </Box>
+        <Text fontSize="xs" color="gray.600">
+            {label}
+        </Text>
+        <Text fontSize="sm" fontWeight="bold" color="primary.500">
+            {formatCurrency(amount)}
+        </Text>
+    </VStack>
+);
+
+const ActionItem: React.FC<{ icon: React.ElementType; label: string; count: number; cost: number }> = ({ icon, label, count, cost }) => (
+    <VStack align="center" gap={2} flex="1">
+        <Box w={10} h={10} borderRadius="md" border="1px solid" borderColor="primary.500" display="flex" alignItems="center" justifyContent="center">
+            <Icon as={icon} boxSize={5} color="primary.500" />
+        </Box>
+        <Text fontSize="xs" color="gray.600">
+            {label}
+        </Text>
+        <Text fontSize="sm" fontWeight="bold" color="black">
+            {count.toLocaleString()}
+        </Text>
+        <Text fontSize="xs" fontWeight="medium" color="primary.500">
+            {formatCurrency(cost)}
+        </Text>
+    </VStack>
+);
+
+export default AdsSpending;

@@ -1,13 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Text, VStack, HStack, Input, Button, Icon, Flex, Spinner } from '@chakra-ui/react';
-import { FiSearch, FiFilter, FiPlus } from 'react-icons/fi';
+import { FiSearch, FiPlus } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
 import { useAdsStore } from '../../store/useAdsStore';
 import { AdCard } from './AdCard';
-import { ConfirmModal } from '@shared/components';
+import { ConfirmModal, Select } from '@shared/components';
+
+const STATUS_OPTIONS = [
+    { value: 'all', label: 'All statuses' },
+    { value: 'active', label: 'Active' },
+    { value: 'paused', label: 'Paused' },
+    { value: 'pending', label: 'Pending' },
+    { value: 'draft', label: 'Draft' },
+    { value: 'completed', label: 'Completed' },
+    { value: 'stopped', label: 'Stopped' },
+];
 
 export const AudioAdsTab: React.FC = () => {
     const [searchQuery, setSearchQuery] = useState('');
+    const [statusFilter, setStatusFilter] = useState('all');
     const [deleteCampaignId, setDeleteCampaignId] = useState<string | null>(null);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const { getCampaignsByType, deleteCampaign, fetchCampaigns, isLoading } = useAdsStore();
@@ -20,9 +31,10 @@ export const AudioAdsTab: React.FC = () => {
 
     const audioCampaigns = getCampaignsByType('audio');
 
-    // Filter campaigns based on search query
+    // Filter campaigns by search query + status.
     const filteredCampaigns = audioCampaigns.filter((campaign) =>
-        campaign.title.toLowerCase().includes(searchQuery.toLowerCase())
+        campaign.title.toLowerCase().includes(searchQuery.toLowerCase()) &&
+        (statusFilter === 'all' || campaign.status === statusFilter)
     );
 
     const handleEdit = (campaignId: string) => {
@@ -47,11 +59,6 @@ export const AudioAdsTab: React.FC = () => {
 
     const handleNewCampaign = () => {
         navigate('/ads/create-campaign?tab=audio');
-    };
-
-    const handleFilters = () => {
-        // TODO: Implement filters modal
-        console.log('Open filters');
     };
 
     if (isLoading) {
@@ -112,22 +119,18 @@ export const AudioAdsTab: React.FC = () => {
                 {/* Separator */}
                 <Box w="1px" h="40px" bg="gray.200" mx={2} />
 
-                {/* Filters Button */}
-                <Button
-                    variant="outline"
-                    borderColor="gray.200"
-                    color="gray.600"
-                    fontSize="12px"
-                    h="40px"
-                    px={4}
-                    borderRadius="md"
-                    bg="white"
-                    _hover={{ bg: 'gray.50' }}
-                    onClick={handleFilters}
-                >
-                    <Icon as={FiFilter} boxSize={4} mr={2} />
-                    Filters
-                </Button>
+                {/* Status Filter */}
+                <Box w="160px">
+                    <Select
+                        value={statusFilter}
+                        onChange={setStatusFilter}
+                        options={STATUS_OPTIONS}
+                        width="100%"
+                        size="sm"
+                        borderRadius="md"
+                        borderColor="gray.200"
+                    />
+                </Box>
 
                 {/* Separator */}
                 <Box w="1px" h="40px" bg="gray.200" mx={2} />
