@@ -7,6 +7,10 @@ interface UploadSuccessPageProps {
     onUploadMore: () => void;
     actionType?: 'Media' | 'Campaign';
     successFor?: 'media' | 'Ads';
+    /** Overrides the default "going through review" heading (e.g. live or draft states). */
+    mainHeading?: string;
+    /** Overrides the default sub-text under the heading. */
+    subText?: string;
 }
 
 export const UploadSuccessPage: React.FC<UploadSuccessPageProps> = ({
@@ -14,9 +18,14 @@ export const UploadSuccessPage: React.FC<UploadSuccessPageProps> = ({
     onUploadMore,
     actionType = 'Media',
     successFor = 'media',
+    mainHeading,
+    subText,
 }) => {
     // Determine text based on context
     const getMainHeading = () => {
+        if (mainHeading) {
+            return mainHeading;
+        }
         if (successFor === 'Ads') {
             return 'Your ad is going through a review before publishing';
         }
@@ -93,7 +102,7 @@ export const UploadSuccessPage: React.FC<UploadSuccessPageProps> = ({
                                     w="75%"
                                     lineHeight="1.4"
                                 >
-                                    You will receive a notification through your email after review
+                                    {subText ?? 'You will receive a notification through your email after review'}
                                 </Text>
 
                                 {/* I Understand Button */}

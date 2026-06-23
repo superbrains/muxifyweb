@@ -10,7 +10,10 @@ import { fileToBase64 } from '@shared/lib/fileUtils';
 import { adsService } from '../../../services/adsService';
 import { useAdRates } from '../../wizard/useAdRates';
 import { formatNaira } from '@/shared/lib';
+import { useToast } from '@/shared/hooks/useToast';
 import type { CreateCampaignRequest } from '../../../types';
+
+type PublishOutcome = 'review' | 'live' | 'draft';
 
 export const PhotoAdsFlow3: React.FC<{
     onNext: () => void;
@@ -23,7 +26,9 @@ export const PhotoAdsFlow3: React.FC<{
 
     const [isPublished, setIsPublished] = useState(false);
     const [isPublishing, setIsPublishing] = useState(false);
+    const [publishOutcome, setPublishOutcome] = useState<PublishOutcome>('review');
     const navigate = useNavigate();
+    const { toast } = useToast();
 
     // Hide overflow and scroll to top when success page is shown
     useEffect(() => {
@@ -50,7 +55,7 @@ export const PhotoAdsFlow3: React.FC<{
         photoBudgetReach,
         resetPhotoAds,
     } = useAdsUploadStore();
-    const { addCampaign, updateCampaign, createCampaignApi, updateCampaignApi } = useAdsStore();
+    const { createCampaignApi, updateCampaignApi } = useAdsStore();
     const { card } = useAdRates('photo');
     const isEditMode = !!editCampaignId;
 
@@ -75,19 +80,13 @@ export const PhotoAdsFlow3: React.FC<{
         try {
             // Convert photo file to base64 if it exists
             let mediaData: string | undefined;
-            let mediaName: string | undefined;
-            let mediaSize: string | undefined;
 
             if (photoFile) {
-                mediaName = photoFile.name;
-
                 if (photoFile.file) {
                     // File exists, convert to base64
                     mediaData = await fileToBase64(photoFile.file);
-                    mediaSize = photoFile.size || `${(photoFile.file.size / (1024 * 1024)).toFixed(2)} MB`;
                 } else if (photoFile.url) {
                     // URL exists (from compressImage - already a data URL)
-                    // Extract base64 part from data URL
                     if (photoFile.url.startsWith('data:')) {
                         // Extract base64 string (everything after the comma)
                         mediaData = photoFile.url.split(',')[1];
@@ -95,7 +94,6 @@ export const PhotoAdsFlow3: React.FC<{
                         // Fallback: use URL as-is (shouldn't happen for photos)
                         mediaData = photoFile.url;
                     }
-                    mediaSize = photoFile.size || '0 MB';
                 }
             }
 
@@ -104,32 +102,7 @@ export const PhotoAdsFlow3: React.FC<{
                 ? photoAdInfo.schedule.date.toISOString()
                 : new Date().toISOString();
 
-            // Create campaign object
-            const campaign = {
-                title: photoAdInfo.title,
-                type: 'photo' as const,
-                location: {
-                    country: photoAdInfo.location.country,
-                    state: photoAdInfo.location.state,
-                },
-                target: {
-                    type: photoAdInfo.target.type === 'photo' ? 'music' : photoAdInfo.target.type,
-                    genre: photoAdInfo.target.genre,
-                    artists: photoAdInfo.target.artists || [],
-                },
-                schedule: {
-                    date: scheduleDate,
-                    startTime: photoAdInfo.schedule.startTime,
-                    endTime: photoAdInfo.schedule.endTime,
-                },
-                budget: photoBudgetReach.amount,
-                status: 'active' as const,
-                mediaData,
-                mediaName,
-                mediaSize,
-            };
-
-            // Try to create campaign via API first
+            // Build the create/update request for the API.
             const apiRequest: CreateCampaignRequest = {
                 name: photoAdInfo.title,
                 type: 'photo',
@@ -150,32 +123,44 @@ export const PhotoAdsFlow3: React.FC<{
                 }),
             };
 
-            // Add or update campaign
+            // Add or update campaign — surface real backend failures instead of
+            // showing a misleading "in review" screen with nothing persisted.
             if (isEditMode && editCampaignId) {
-                // Try API first for update
                 const apiSuccess = await updateCampaignApi(editCampaignId, apiRequest);
                 if (!apiSuccess) {
-                    // Fallback to local update
-                    updateCampaign(editCampaignId, campaign);
+                    toast.error(
+                        'Could not update campaign',
+                        useAdsStore.getState().error || 'Please try again.'
+                    );
+                    return;
                 }
+                setPublishOutcome('review');
             } else {
-                // Try API first for create
                 const campaignId = await createCampaignApi(apiRequest);
-                if (campaignId) {
-                    // Submit the freshly-created draft for admin approval so it
-                    // reaches the review queue (and goes live on approval).
-                    try {
-                        await adsService.submitCampaign(campaignId);
-                    } catch {
-                        // Stays a draft; the advertiser can submit again later.
-                    }
-                } else {
-                    // Fallback to local add
-                    addCampaign(campaign);
+                if (!campaignId) {
+                    toast.error(
+                        'Could not publish ad',
+                        useAdsStore.getState().error || 'Failed to create the campaign. Please try again.'
+                    );
+                    return;
+                }
+                // Submit the freshly-created draft for admin approval so it reaches
+                // the review queue (and goes live on approval).
+                try {
+                    const res = await adsService.submitCampaign(campaignId);
+                    setPublishOutcome(res.status === 'Active' ? 'live' : 'review');
+                } catch (submitError) {
+                    toast.error(
+                        'Saved as draft — not yet submitted',
+                        submitError instanceof Error
+                            ? submitError.message
+                            : 'Open the campaign in your library and submit it again for review.'
+                    );
+                    setPublishOutcome('draft');
                 }
             }
 
-            // Show success page first
+            // Only reached on a confirmed save — show the confirmation screen.
             setIsPublished(true);
 
             // Clear the upload store state after showing success
@@ -518,6 +503,20 @@ export const PhotoAdsFlow3: React.FC<{
                     onUploadMore={handleCreateMore}
                     actionType="Campaign"
                     successFor="Ads"
+                    mainHeading={
+                        publishOutcome === 'live'
+                            ? 'Your ad is now live'
+                            : publishOutcome === 'draft'
+                                ? 'Your ad was saved as a draft'
+                                : undefined
+                    }
+                    subText={
+                        publishOutcome === 'live'
+                            ? 'Your campaign was approved and is now serving.'
+                            : publishOutcome === 'draft'
+                                ? 'It is not under review yet — open it in your Ads Library and submit it again.'
+                                : undefined
+                    }
                 />
             )}
         </VStack>

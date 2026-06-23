@@ -10,7 +10,10 @@ import { fileToBase64 } from '@shared/lib/fileUtils';
 import { adsService } from '../../../services/adsService';
 import { useAdRates } from '../../wizard/useAdRates';
 import { formatNaira } from '@/shared/lib';
+import { useToast } from '@/shared/hooks/useToast';
 import type { CreateCampaignRequest } from '../../../types';
+
+type PublishOutcome = 'review' | 'live' | 'draft';
 
 export const VideoAdsFlow3: React.FC<{
     onNext: () => void;
@@ -23,7 +26,9 @@ export const VideoAdsFlow3: React.FC<{
 
     const [isPublished, setIsPublished] = useState(false);
     const [isPublishing, setIsPublishing] = useState(false);
+    const [publishOutcome, setPublishOutcome] = useState<PublishOutcome>('review');
     const navigate = useNavigate();
+    const { toast } = useToast();
 
     // Hide overflow and scroll to top when success page is shown
     useEffect(() => {
@@ -50,7 +55,7 @@ export const VideoAdsFlow3: React.FC<{
         videoBudgetReach,
         resetVideoAds,
     } = useAdsUploadStore();
-    const { addCampaign, updateCampaign, createCampaignApi, updateCampaignApi } = useAdsStore();
+    const { createCampaignApi, updateCampaignApi } = useAdsStore();
     const { card } = useAdRates('video');
     const isEditMode = !!editCampaignId;
 
@@ -75,20 +80,14 @@ export const VideoAdsFlow3: React.FC<{
         try {
             // Convert video file to base64 if it exists
             let mediaData: string | undefined;
-            let mediaName: string | undefined;
-            let mediaSize: string | undefined;
 
             if (videoFile) {
-                mediaName = videoFile.name;
-
                 if (videoFile.file) {
                     // File exists, convert to base64
                     mediaData = await fileToBase64(videoFile.file);
-                    mediaSize = videoFile.size || `${(videoFile.file.size / (1024 * 1024)).toFixed(2)} MB`;
                 } else if (videoFile.url && videoFile.url.startsWith('data:')) {
                     // URL is a data URL (base64), extract base64 part
                     mediaData = videoFile.url.split(',')[1];
-                    mediaSize = videoFile.size || '0 MB';
                 } else {
                     // Blob URL or no file - cannot convert to base64
                     console.warn('Video file not available for base64 conversion');
@@ -100,32 +99,7 @@ export const VideoAdsFlow3: React.FC<{
                 ? videoAdInfo.schedule.date.toISOString()
                 : new Date().toISOString();
 
-            // Create campaign object
-            const campaign = {
-                title: videoAdInfo.title,
-                type: 'video' as const,
-                location: {
-                    country: videoAdInfo.location.country,
-                    state: videoAdInfo.location.state,
-                },
-                target: {
-                    type: videoAdInfo.target.type === 'photo' ? 'music' : videoAdInfo.target.type,
-                    genre: videoAdInfo.target.genre,
-                    artists: (videoAdInfo.target.media || []).map((m) => m.title),
-                },
-                schedule: {
-                    date: scheduleDate,
-                    startTime: videoAdInfo.schedule.startTime,
-                    endTime: videoAdInfo.schedule.endTime,
-                },
-                budget: videoBudgetReach.amount,
-                status: 'active' as const,
-                mediaData,
-                mediaName,
-                mediaSize,
-            };
-
-            // Try to create campaign via API first
+            // Build the create/update request for the API.
             const apiRequest: CreateCampaignRequest = {
                 name: videoAdInfo.title,
                 type: 'video',
@@ -149,31 +123,43 @@ export const VideoAdsFlow3: React.FC<{
                 }),
             };
 
-            // Add or update campaign
+            // Add or update campaign — surface real backend failures instead of
+            // showing a misleading "in review" screen with nothing persisted.
             if (isEditMode && editCampaignId) {
-                // Try API first for update
                 const apiSuccess = await updateCampaignApi(editCampaignId, apiRequest);
                 if (!apiSuccess) {
-                    // Fallback to local update
-                    updateCampaign(editCampaignId, campaign);
+                    toast.error(
+                        'Could not update campaign',
+                        useAdsStore.getState().error || 'Please try again.'
+                    );
+                    return;
                 }
+                setPublishOutcome('review');
             } else {
-                // Try API first for create
                 const campaignId = await createCampaignApi(apiRequest);
-                if (campaignId) {
-                    // Submit the freshly-created draft for admin approval.
-                    try {
-                        await adsService.submitCampaign(campaignId);
-                    } catch {
-                        // Stays a draft; the advertiser can submit again later.
-                    }
-                } else {
-                    // Fallback to local add
-                    addCampaign(campaign);
+                if (!campaignId) {
+                    toast.error(
+                        'Could not publish ad',
+                        useAdsStore.getState().error || 'Failed to create the campaign. Please try again.'
+                    );
+                    return;
+                }
+                // Submit the freshly-created draft for admin approval.
+                try {
+                    const res = await adsService.submitCampaign(campaignId);
+                    setPublishOutcome(res.status === 'Active' ? 'live' : 'review');
+                } catch (submitError) {
+                    toast.error(
+                        'Saved as draft — not yet submitted',
+                        submitError instanceof Error
+                            ? submitError.message
+                            : 'Open the campaign in your library and submit it again for review.'
+                    );
+                    setPublishOutcome('draft');
                 }
             }
 
-            // Show success page first
+            // Only reached on a confirmed save — show the confirmation screen.
             setIsPublished(true);
 
             // Clear the upload store state after showing success
@@ -516,6 +502,20 @@ export const VideoAdsFlow3: React.FC<{
                     onUploadMore={handleCreateMore}
                     actionType="Campaign"
                     successFor="Ads"
+                    mainHeading={
+                        publishOutcome === 'live'
+                            ? 'Your ad is now live'
+                            : publishOutcome === 'draft'
+                                ? 'Your ad was saved as a draft'
+                                : undefined
+                    }
+                    subText={
+                        publishOutcome === 'live'
+                            ? 'Your campaign was approved and is now serving.'
+                            : publishOutcome === 'draft'
+                                ? 'It is not under review yet — open it in your Ads Library and submit it again.'
+                                : undefined
+                    }
                 />
             )}
         </VStack>

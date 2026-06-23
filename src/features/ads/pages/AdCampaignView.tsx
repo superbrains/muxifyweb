@@ -355,30 +355,48 @@ export const AdCampaignView = () => {
                                                 ? `Ad ends in ${daysUntilEnd} day${daysUntilEnd === 1 ? '' : 's'} (${formatDate(endDate.toISOString())})`
                                                 : 'Ongoing campaign'}
                                         </Text>
-                                        {(campaign.isStopped || campaign.isPaused || campaign.status === 'active') && (
-                                            <Badge
-                                                bg={
-                                                    campaign.isStopped
-                                                        ? '#f94444'
-                                                        : campaign.isPaused
-                                                            ? '#ffa800'
-                                                            : '#4ab58e'
-                                                }
-                                                color="white"
-                                                fontSize="10px"
-                                                fontWeight="bold"
-                                                px={3}
-                                                py={1}
-                                                borderRadius="19px"
-                                                ml={2}
-                                            >
-                                                {campaign.isStopped
+                                        {(() => {
+                                            const label = campaign.status === 'completed'
+                                                ? 'Completed'
+                                                : campaign.isStopped
                                                     ? 'Inactive'
                                                     : campaign.isPaused
                                                         ? 'Paused'
-                                                        : 'Active'}
-                                            </Badge>
-                                        )}
+                                                        : campaign.status === 'active'
+                                                            ? 'Active'
+                                                            : campaign.status === 'pending'
+                                                                ? 'In Review'
+                                                                : campaign.status === 'rejected'
+                                                                    ? 'Rejected'
+                                                                    : 'Draft';
+                                            const color = campaign.status === 'completed'
+                                                ? '#666'
+                                                : campaign.isStopped
+                                                    ? '#f94444'
+                                                    : campaign.isPaused
+                                                        ? '#ffa800'
+                                                        : campaign.status === 'active'
+                                                            ? '#4ab58e'
+                                                            : campaign.status === 'pending'
+                                                                ? '#ffa800'
+                                                                : campaign.status === 'rejected'
+                                                                    ? '#f94444'
+                                                                    : '#666';
+                                            return (
+                                                <Badge
+                                                    bg={color}
+                                                    color="white"
+                                                    fontSize="10px"
+                                                    fontWeight="bold"
+                                                    px={3}
+                                                    py={1}
+                                                    borderRadius="19px"
+                                                    ml={2}
+                                                >
+                                                    {label}
+                                                </Badge>
+                                            );
+                                        })()}
                                     </Box>
 
                                     <Grid templateColumns="repeat(4, 1fr)" gap={3} flex="1">

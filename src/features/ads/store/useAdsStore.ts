@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { indexedDbStorage } from "@/shared/lib/indexedDbStorage";
 import { adsService } from "../services/adsService";
+import { mapDtoToAdCampaign } from "../types";
 import type {
   AdCampaign,
   AdWalletDto,
@@ -98,34 +99,12 @@ export const useAdsStore = create<AdsState>()(
         try {
           const result: CampaignListDto = await adsService.getCampaigns(page, pageSize, status);
 
-          // Map DTOs to legacy format for UI compatibility
-          const campaigns: AdCampaign[] = result.campaigns.map((dto) => {
-            const campaignType = dto.type.toLowerCase() as 'photo' | 'video' | 'audio';
-            return {
-              id: dto.id,
-              title: dto.name,
-              type: campaignType,
-              location: { country: 'Nigeria', state: '' },
-              target: {
-                type: campaignType === 'audio' ? 'music' : campaignType,
-              },
-              schedule: {
-                date: dto.startDate,
-                startTime: '',
-                endTime: dto.endDate || '',
-              },
-              budget: dto.budgetDisplay,
-              status: dto.status,
-              isPaused: dto.status === 'paused',
-              isStopped: dto.status === 'stopped' || dto.status === 'completed',
-              createdAt: dto.createdAt,
-              updatedAt: dto.createdAt,
-              mediaData: dto.creativeUrl,
-              impressions: dto.impressions,
-              clicks: dto.clicks,
-              amountSpent: dto.amountSpentDisplay,
-            };
-          });
+          // Map DTOs via the canonical mapper so campaigns are categorised by the
+          // backend `format` ("photo"/"video"/"audio") — NOT the internal `type`
+          // enum name ("Banner"/"Spotlight"/"AudioAd") — and statuses are normalised
+          // to the web's lowercase union. Using `dto.type` here previously filed every
+          // campaign under a non-matching category, hiding them from every library tab.
+          const campaigns: AdCampaign[] = result.campaigns.map(mapDtoToAdCampaign);
 
           set({
             campaigns,

@@ -16,7 +16,11 @@ export interface SelectedMedia {
 interface SponsorableMediaSearchProps {
     /** Determines whether tracks (music) or videos are searched. */
     targetType: 'music' | 'video';
-    /** Optional genre filter passed to the search. */
+    /**
+     * Campaign genre slug (e.g. "afrobeat", "hip-hop") used to scope the picker
+     * to media of that genre. Must come from the shared GENRE_OPTIONS so it
+     * matches the GenreName upload persisted.
+     */
     genre?: string;
     selected: SelectedMedia[];
     onChange: (items: SelectedMedia[]) => void;
@@ -61,6 +65,9 @@ export const SponsorableMediaSearch: React.FC<SponsorableMediaSearchProps> = ({
     const heading = targetType === 'video' ? 'Sponsorable Videos' : 'Sponsorable Music';
 
     // Debounced live search whenever the query, target type or genre changes.
+    // The genre slug comes from the shared GENRE_OPTIONS, so it matches the
+    // GenreName upload persisted; the backend uses a case-insensitive contains
+    // match so it stays robust to slug-vs-display variance.
     useEffect(() => {
         const term = input.trim();
         if (term.length === 0) {

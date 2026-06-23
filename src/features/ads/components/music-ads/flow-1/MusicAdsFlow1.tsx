@@ -10,6 +10,7 @@ import { useChakraToast } from '@/shared/hooks/useChakraToast';
 import { MusicPlayerAndCutPreviewPane } from '../MusicPlayerAndCutPreviewPane';
 import { MusicViewPhonePreview } from '../MusicViewPhonePreview';
 import { SponsorableMediaSearch, type SelectedMedia } from '../../SponsorableMediaSearch';
+import { GENRE_OPTIONS_WITH_PLACEHOLDER } from '@shared/constants/genres';
 
 interface UploadFile {
     id: string;
@@ -289,13 +290,7 @@ export const MusicAdsFlow1: React.FC<{
                                     <Select
                                         value={genre}
                                         onChange={(value) => setGenre(value)}
-                                        options={[
-                                            { value: '', label: 'Select Genre' },
-                                            { value: 'afrobeats', label: 'Afrobeats' },
-                                            { value: 'pop', label: 'Pop' },
-                                            { value: 'hip-hop', label: 'Hip-Hop' },
-                                            { value: 'rnb', label: 'R&B' },
-                                        ]}
+                                        options={GENRE_OPTIONS_WITH_PLACEHOLDER}
                                         width="100%"
                                         fontSize="12px"
                                         borderRadius="10px"

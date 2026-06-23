@@ -9,6 +9,7 @@ import { useUploadStore } from '@upload/store/useUploadStore';
 import { useUploadMusicStore } from '../store/useUploadMusicStore';
 import { useUserType } from '@/features/auth/hooks/useUserType';
 import { shouldUseExtendedAudioWizard } from '@upload/lib/wizardFlow';
+import { GENRE_OPTIONS } from '@shared/constants/genres';
 
 interface UploadFile {
     id: string;
@@ -31,12 +32,9 @@ interface MusicUploadTabProps {
     setAlbumTab: (tab: 'mix' | 'album') => void;
 }
 
-const genreOptions = [
-    { label: 'Afrobeat', value: 'afrobeat' },
-    { label: 'Hip Hop', value: 'hip-hop' },
-    { label: 'Pop', value: 'pop' },
-    { label: 'R&B', value: 'rnb' },
-];
+// Single source of truth shared with the Ad Manager so genre values match what
+// upload persists to GenreName.
+const genreOptions = GENRE_OPTIONS;
 
 const releaseTypeOptions = [
     { label: 'New Release', value: 'new-release' },

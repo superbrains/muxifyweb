@@ -24,34 +24,51 @@ export const AdCard: React.FC<AdCardProps> = ({
     const { pauseCampaign } = useAdsStore();
     const { toast } = useToast();
     const getStatusLabel = (campaign: AdCampaign) => {
+        if (campaign.status === 'completed') {
+            return 'Completed';
+        }
         if (campaign.isStopped) {
             return 'Inactive';
         }
         if (campaign.isPaused) {
             return 'Paused';
         }
-        if (campaign.status === 'active') {
-            return 'Active';
+        switch (campaign.status) {
+            case 'active':
+                return 'Active';
+            case 'pending':
+                return 'In Review';
+            case 'rejected':
+                return 'Rejected';
+            case 'draft':
+                return 'Draft';
+            default:
+                return 'Draft';
         }
-        return campaign.status === 'draft' ? 'Draft' : 'Completed';
     };
 
     const getStatusColor = (campaign: AdCampaign) => {
+        if (campaign.status === 'completed') {
+            return '#666'; // Gray for completed
+        }
         if (campaign.isStopped) {
             return '#f94444'; // Red for inactive/stopped
         }
         if (campaign.isPaused) {
             return '#ffa800'; // Yellow for paused
         }
-        if (campaign.status === 'active') {
-            return '#4ab58e'; // Green for active
+        switch (campaign.status) {
+            case 'active':
+                return '#4ab58e'; // Green for active
+            case 'pending':
+                return '#ffa800'; // Amber for in-review
+            case 'rejected':
+                return '#f94444'; // Red for rejected
+            default:
+                return '#666'; // Gray for draft
         }
-        return '#666'; // Gray for draft/completed
     };
 
-    const shouldShowStatusBadge = (campaign: AdCampaign) => {
-        return campaign.isStopped || campaign.isPaused || campaign.status === 'active';
-    };
 
     const getTypeLabel = (type: AdCampaign['type']) => {
         switch (type) {
@@ -336,8 +353,8 @@ export const AdCard: React.FC<AdCardProps> = ({
 
                     {/* Status Badge and Edit Button Row */}
                     <Flex justify="space-between" align="center" mt={1}>
-                        {/* Status Badge */}
-                        {shouldShowStatusBadge(campaign) && (
+                        {/* Status Badge — always shown so advertisers can see review/approval state */}
+                        {(
                             <Badge
                                 bg={getStatusColor(campaign)}
                                 color="white"
