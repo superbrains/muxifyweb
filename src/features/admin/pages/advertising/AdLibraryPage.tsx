@@ -9,6 +9,7 @@ import {
     StatusBadge,
 } from '../../components/ui';
 import { Paginator } from '../../components/Paginator';
+import { useAuthedImageSrc } from '@/shared/hooks/useAuthedImageSrc';
 import { adminDate } from '../../lib/format';
 import { useHasPermission } from '../../hooks/useAdminManagement';
 import { useAdCreatives } from '../../hooks/useAdvertising';
@@ -112,7 +113,11 @@ const AdLibraryPage: React.FC = () => {
 
 export default AdLibraryPage;
 
-const CreativeCard: React.FC<{ creative: AdCreativeDto }> = ({ creative }) => (
+const CreativeCard: React.FC<{ creative: AdCreativeDto }> = ({ creative }) => {
+    // Prefer the cover image (audio ads); fall back to the creative (photo). Backend
+    // URLs are JWT-gated proxy paths, so resolve to a loadable blob URL.
+    const cover = useAuthedImageSrc(creative.coverImageUrl ?? creative.creativeUrl);
+    return (
     <Box
         bg="white"
         borderRadius="xl"
@@ -122,9 +127,9 @@ const CreativeCard: React.FC<{ creative: AdCreativeDto }> = ({ creative }) => (
         display="flex"
         flexDirection="column"
     >
-        {creative.creativeUrl ? (
+        {cover ? (
             <Image
-                src={creative.creativeUrl}
+                src={cover}
                 alt={creative.campaignName}
                 w="100%"
                 h="130px"
@@ -160,4 +165,5 @@ const CreativeCard: React.FC<{ creative: AdCreativeDto }> = ({ creative }) => (
             </Text>
         </VStack>
     </Box>
-);
+    );
+};

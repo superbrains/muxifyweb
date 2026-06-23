@@ -137,6 +137,8 @@ export interface AdCampaignDto {
   targetContentId?: string;
   targetContentType?: string;
   creativeUrl?: string;
+  /** Visual cover image (esp. for audio ads, where creativeUrl is the audio). */
+  coverImageUrl?: string;
   clickUrl?: string;
   impressions: number;
   clicks: number;
@@ -168,6 +170,7 @@ export interface CreateCampaignRequest {
   targetContentId?: string;
   targetContentType?: string;
   creativeUrl?: string;
+  coverImageUrl?: string;
   clickUrl?: string;
   targetingSettings?: string;
 }
@@ -182,6 +185,7 @@ export interface UpdateCampaignRequest {
   startDate?: string;
   endDate?: string;
   creativeUrl?: string;
+  coverImageUrl?: string;
   clickUrl?: string;
   targetingSettings?: string;
 }
@@ -442,6 +446,8 @@ export interface AdCampaign {
   mediaData?: string;
   mediaName?: string;
   mediaSize?: string;
+  /** Visual cover image (proxy URL); for audio ads mediaData is the audio. */
+  coverImageUrl?: string;
   // Backend campaign data
   impressions?: number;
   clicks?: number;
@@ -504,6 +510,7 @@ export function mapDtoToAdCampaign(dto: AdCampaignDto): AdCampaign {
     createdAt: dto.createdAt,
     updatedAt: dto.createdAt,
     mediaData: dto.creativeUrl,
+    coverImageUrl: dto.coverImageUrl,
     impressions: dto.impressions,
     clicks: dto.clicks,
     amountSpent: dto.amountSpentDisplay,

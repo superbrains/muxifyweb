@@ -1,11 +1,12 @@
 import React from 'react';
-import { Box, Button, HStack, Image, Link, Text, VStack } from '@chakra-ui/react';
-import { FiTarget } from 'react-icons/fi';
+import { Box, Button, HStack, Link, Text, VStack } from '@chakra-ui/react';
+import { FiTarget, FiImage } from 'react-icons/fi';
 import {
     AdminError,
     AdminLoading,
     AdminPageLayout,
     ConfirmActionModal,
+    CoverThumb,
     DataTable,
     DetailDrawer,
     FilterBar,
@@ -308,15 +309,13 @@ const CampaignDrawer: React.FC<{
             ) : (
                 <VStack align="stretch" gap={4}>
                     <StatusBadge status={data.status} />
-                    {data.creativeUrl && (
-                        <Image
-                            src={data.creativeUrl}
+                    {(data.coverImageUrl || data.creativeUrl) && (
+                        <CoverThumb
+                            src={data.coverImageUrl ?? data.creativeUrl}
                             alt={data.name}
-                            borderRadius="lg"
-                            maxH="180px"
-                            objectFit="cover"
-                            border="1px solid"
-                            borderColor="gray.100"
+                            size="180px"
+                            radius="lg"
+                            icon={FiImage}
                         />
                     )}
                     <DetailRow label="Budget" value={formatMinorAmount(data.budgetMinor, data.currency)} />

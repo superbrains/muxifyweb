@@ -1,8 +1,9 @@
 import React from 'react';
 import { Box, HStack, Icon, Image, Text, VStack, Badge, Flex, Button } from '@chakra-ui/react';
-import { FiVideo, FiMusic, FiEdit2, FiZap } from 'react-icons/fi';
+import { FiVideo, FiEdit2, FiZap } from 'react-icons/fi';
 import { CustomMenu } from '@/shared/components/CustomMenu';
 import { useToast } from '@/shared/hooks/useToast';
+import { useAuthedImageSrc } from '@/shared/hooks/useAuthedImageSrc';
 import { useAdsStore } from '../../store/useAdsStore';
 import type { AdCampaign } from '../../types';
 
@@ -145,49 +146,19 @@ export const AdCard: React.FC<AdCardProps> = ({
     const clicks = campaign.clicks ?? 0;
     const spend = campaign.amountSpent ?? 0;
 
-    // Helper function to get media preview URL
-    const getMediaPreview = () => {
-        if (!campaign.mediaData) {
-            // Return placeholder based on type
-            if (campaign.type === 'photo') {
-                return 'https://res.cloudinary.com/dygrsvya5/image/upload/v1762389746/photo-placeholder_f3yxip.png';
-            } else if (campaign.type === 'video') {
-                return 'https://res.cloudinary.com/dygrsvya5/image/upload/v1762389745/video-placeholder_puiyvz.png';
-            } else {
-                return 'https://res.cloudinary.com/dygrsvya5/image/upload/v1762389746/audio-placeholder_zna3bw.png';
-            }
-        }
-
-        // Check if mediaData already has data URL prefix
-        if (campaign.mediaData.startsWith('data:')) {
-            // Already a complete data URL, use as-is
-            return campaign.mediaData;
-        }
-
-        // Determine MIME type based on file extension or default to image/jpeg for photos
-        let mimeType = 'image/jpeg';
-        if (campaign.mediaName) {
-            const extension = campaign.mediaName.split('.').pop()?.toLowerCase();
-            if (extension === 'png') {
-                mimeType = 'image/png';
-            } else if (extension === 'gif') {
-                mimeType = 'image/gif';
-            } else if (extension === 'mp4' || extension === 'mov') {
-                mimeType = 'video/mp4';
-            } else if (extension === 'mp3' || extension === 'wav') {
-                mimeType = 'audio/mpeg';
-            }
-        } else if (campaign.type === 'video') {
-            mimeType = 'video/mp4';
-        } else if (campaign.type === 'audio') {
-            mimeType = 'audio/mpeg';
-        }
-
-        // Add data URL prefix if it's just base64 string
-        return `data:${mimeType};base64,${campaign.mediaData}`;
-    };
-
-    const mediaPreview = getMediaPreview();
+    // The visual to show: the cover image when present (audio ads carry the audio
+    // in mediaData), otherwise the creative itself (photo image / video). Backend
+    // URLs are JWT-gated proxy paths, so resolve them to a loadable blob URL.
+    const visualSrc = campaign.coverImageUrl ?? campaign.mediaData;
+    const resolvedVisual = useAuthedImageSrc(visualSrc);
+    const placeholder =
+        campaign.type === 'photo'
+            ? 'https://res.cloudinary.com/dygrsvya5/image/upload/v1762389746/photo-placeholder_f3yxip.png'
+            : campaign.type === 'video'
+                ? 'https://res.cloudinary.com/dygrsvya5/image/upload/v1762389745/video-placeholder_puiyvz.png'
+                : 'https://res.cloudinary.com/dygrsvya5/image/upload/v1762389746/audio-placeholder_zna3bw.png';
+    // For video, the creative is a video URL (no separate cover); for photo/audio it's an image.
+    const hasVideoCreative = campaign.type === 'video' && !campaign.coverImageUrl;
 
     return (
         <Box
@@ -229,19 +200,11 @@ export const AdCard: React.FC<AdCardProps> = ({
                     bg="gray.100"
                     position="relative"
                 >
-                    {campaign.type === 'photo' ? (
-                        <Image
-                            src={mediaPreview}
-                            alt={campaign.title}
-                            w="full"
-                            h="full"
-                            objectFit="cover"
-                        />
-                    ) : campaign.type === 'video' ? (
+                    {hasVideoCreative ? (
                         <Box w="full" h="full" overflow="hidden" position="relative">
-                            {campaign.mediaData ? (
+                            {resolvedVisual ? (
                                 <video
-                                    src={mediaPreview}
+                                    src={resolvedVisual}
                                     style={{
                                         width: '100%',
                                         height: '100%',
@@ -260,29 +223,19 @@ export const AdCard: React.FC<AdCardProps> = ({
                                     alignItems="center"
                                     justifyContent="center"
                                 >
-                                    <Icon
-                                        as={FiVideo}
-                                        boxSize={8}
-                                        color="gray.400"
-                                    />
+                                    <Icon as={FiVideo} boxSize={8} color="gray.400" />
                                 </Box>
                             )}
                         </Box>
                     ) : (
-                        <Box
+                        // Photo and audio ads both show an image (audio uses its cover art).
+                        <Image
+                            src={resolvedVisual || placeholder}
+                            alt={campaign.title}
                             w="full"
                             h="full"
-                            bg="gray.200"
-                            display="flex"
-                            alignItems="center"
-                            justifyContent="center"
-                        >
-                            <Icon
-                                as={FiMusic}
-                                boxSize={8}
-                                color="gray.400"
-                            />
-                        </Box>
+                            objectFit="cover"
+                        />
                     )}
                 </Box>
 

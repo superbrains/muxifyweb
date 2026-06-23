@@ -10,10 +10,14 @@ import type { CreateCampaignRequest } from '../types';
 export type PublishOutcome = 'review' | 'live' | 'draft';
 
 export interface PublishOptions {
-  /** Creative file — source of the base64 payload, byte size and thumbnail. */
+  /** Primary creative file — the image (photo ad), video (video ad), or audio
+   *  (audio ad, played as the interstitial). Uploaded to blob; becomes creativeUrl. */
   creativeFile: UploadFile | null;
-  /** Builds the API request once the creative is resolved to base64. */
-  buildRequest: (mediaData?: string) => CreateCampaignRequest;
+  /** Optional visual cover image (e.g. the audio ad's album art). Uploaded to
+   *  blob; becomes coverImageUrl — what's shown wherever the ad is displayed. */
+  coverFile?: UploadFile | null;
+  /** Builds the API request once the creative + cover are resolved to hosted URLs. */
+  buildRequest: (creativeUrl?: string, coverImageUrl?: string) => CreateCampaignRequest;
   /** When set, updates an existing campaign instead of creating + submitting. */
   editCampaignId?: string | null;
   /** Clears the relevant ad upload store slice on a confirmed save. */
@@ -88,7 +92,7 @@ export function useCampaignPublish() {
   const publish = useCallback(
     async (opts: PublishOptions) => {
       lastOptsRef.current = opts;
-      const { creativeFile, buildRequest, editCampaignId, onSaved } = opts;
+      const { creativeFile, coverFile, buildRequest, editCampaignId, onSaved } = opts;
       const isEditMode = !!editCampaignId;
 
       setIsModalOpen(true);
@@ -104,13 +108,17 @@ export function useCampaignPublish() {
 
       try {
         // Uploading — push the creative binary to blob storage first (the heavy
-        // transfer). The campaign create/update then carries only the URL, so the
-        // JSON body is tiny and no longer blows the 30s request timeout.
+        // transfer, with progress). The campaign create/update then carries only
+        // the URLs, so the JSON body is tiny and no longer blows the request timeout.
         const creativeUrl = await resolveCreativeUrl(creativeFile, onUploadProgress);
+
+        // Upload the separate cover image too (e.g. an audio ad's album art). It's
+        // small, so it doesn't drive the progress bar.
+        const coverImageUrl = await resolveCreativeUrl(coverFile ?? null, () => {});
 
         // Finalizing — persist the campaign (small JSON now).
         tracker.markFinalizing();
-        const apiRequest = buildRequest(creativeUrl);
+        const apiRequest = buildRequest(creativeUrl, coverImageUrl);
 
         if (isEditMode && editCampaignId) {
           const ok = await updateCampaignApi(editCampaignId, apiRequest);

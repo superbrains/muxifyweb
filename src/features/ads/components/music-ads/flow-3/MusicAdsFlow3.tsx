@@ -54,6 +54,7 @@ export const MusicAdsFlow3: React.FC<{
 
     const {
         musicFile,
+        photoFile,
         musicAdInfo,
         musicCallToAction,
         musicBudgetReach,
@@ -79,10 +80,13 @@ export const MusicAdsFlow3: React.FC<{
         }
 
         void publish({
+            // Audio ad: the audio is the creative (played as the interstitial); the
+            // separately-uploaded album art is the cover image shown everywhere.
             creativeFile: musicFile,
+            coverFile: photoFile,
             editCampaignId,
             onSaved: resetMusicAds,
-            buildRequest: (mediaData): CreateCampaignRequest => {
+            buildRequest: (creativeUrl, coverImageUrl): CreateCampaignRequest => {
                 // Format schedule date to ISO string
                 const scheduleDate = musicAdInfo.schedule.date
                     ? musicAdInfo.schedule.date.toISOString()
@@ -94,7 +98,8 @@ export const MusicAdsFlow3: React.FC<{
                     budget: musicBudgetReach.amount * 100, // Convert to smallest unit (kobo)
                     startDate: combineDateAndTime(scheduleDate, musicAdInfo.schedule.startTime) ?? scheduleDate,
                     endDate: combineDateAndTime(scheduleDate, musicAdInfo.schedule.endTime),
-                    creativeUrl: mediaData,
+                    creativeUrl,
+                    coverImageUrl,
                     // Primary targeted content (first selected sponsorable item).
                     targetContentId: musicAdInfo.target.media?.[0]?.id,
                     targetContentType: musicAdInfo.target.type === 'video' ? 'Video' : 'Track',

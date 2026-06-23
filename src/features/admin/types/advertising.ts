@@ -158,6 +158,7 @@ export interface AdCampaignDetailDto extends AdCampaignListItemDto {
     targetContentId?: string | null;
     targetContentType?: string | null;
     creativeUrl?: string | null;
+    coverImageUrl?: string | null;
     clickUrl?: string | null;
     targetingSettings?: string | null;
     rejectionReason?: string | null;
@@ -197,6 +198,7 @@ export interface AdCreativeDto {
     type: string;
     status: string;
     creativeUrl?: string | null;
+    coverImageUrl?: string | null;
     clickUrl?: string | null;
     targetContentType?: string | null;
     targetContentId?: string | null;

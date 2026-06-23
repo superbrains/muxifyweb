@@ -27,6 +27,7 @@ import { ResumeAdModal } from '../components/ResumeAdModal';
 import { SetSpendingLimitModal } from '../components/SetSpendingLimitModal';
 import { adsService } from '../services/adsService';
 import { useToast } from '@/shared/hooks/useToast';
+import { useAuthedImageSrc } from '@/shared/hooks/useAuthedImageSrc';
 import { normalizeCampaignStatus, type AdCampaignDto, type CampaignAnalyticsDto } from '../types';
 
 export const AdCampaignView = () => {
@@ -92,10 +93,16 @@ export const AdCampaignView = () => {
         createdAt: campaignDto.createdAt,
         updatedAt: campaignDto.createdAt,
         mediaData: campaignDto.creativeUrl,
+        coverImageUrl: campaignDto.coverImageUrl,
         impressions: campaignDto.impressions,
         clicks: campaignDto.clicks,
         amountSpent: campaignDto.amountSpentDisplay,
     } : null);
+
+    // The visual to show: cover image when present (audio ads carry the audio in
+    // mediaData), else the creative. Resolve the JWT-gated proxy path to a blob URL.
+    const resolvedVisual = useAuthedImageSrc(campaign?.coverImageUrl ?? campaign?.mediaData);
+    const hasVideoCreative = campaign?.type === 'video' && !campaign?.coverImageUrl;
 
     // Load campaign to upload store for phone previews
     useEffect(() => {
@@ -171,25 +178,6 @@ export const AdCampaignView = () => {
             return `${campaign.target.genre}${artists}`;
         }
         return 'General';
-    };
-
-    // Get media preview URL
-    const getMediaPreview = () => {
-        if (!campaign.mediaData) return '';
-        if (campaign.mediaData.startsWith('data:')) {
-            return campaign.mediaData;
-        }
-        // Determine MIME type
-        let mimeType = 'image/jpeg';
-        if (campaign.mediaName) {
-            const ext = campaign.mediaName.split('.').pop()?.toLowerCase();
-            if (ext === 'png') mimeType = 'image/png';
-            else if (ext === 'gif') mimeType = 'image/gif';
-            else if (ext === 'mp4' || ext === 'webm') mimeType = 'video/mp4';
-            else if (ext === 'mp3' || ext === 'wav') mimeType = 'audio/mpeg';
-        } else if (campaign.type === 'video') mimeType = 'video/mp4';
-        else if (campaign.type === 'audio') mimeType = 'audio/mpeg';
-        return `data:${mimeType};base64,${campaign.mediaData}`;
     };
 
     // Real campaign stats (prefer analytics; fall back to the campaign DTO).
@@ -308,43 +296,33 @@ export const AdCampaignView = () => {
                             {/* Ad Info Card */}
                             <Flex gap={4} align="start" p={4} borderRadius="7px">
                                 <Box w="149px" h="149px" bg="gray.300" borderRadius="7px" flexShrink={0} overflow="hidden" position="relative">
-                                    {campaign.mediaData && (
-                                        <>
-                                            {campaign.type === 'photo' ? (
-                                                <Image
-                                                    src={getMediaPreview()}
-                                                    alt={campaign.title}
-                                                    w="full"
-                                                    h="full"
-                                                    objectFit="cover"
-                                                />
-                                            ) : campaign.type === 'video' ? (
-                                                <Box w="full" h="full" overflow="hidden" position="relative">
-                                                    <video
-                                                        src={getMediaPreview()}
-                                                        style={{
-                                                            width: '100%',
-                                                            height: '100%',
-                                                            objectFit: 'cover',
-                                                        }}
-                                                        controls={false}
-                                                        muted
-                                                        playsInline
-                                                    />
-                                                </Box>
-                                            ) : (
-                                                <Box
-                                                    w="full"
-                                                    h="full"
-                                                    display="flex"
-                                                    alignItems="center"
-                                                    justifyContent="center"
-                                                    bg="gray.200"
-                                                >
-                                                    <Icon as={FiMusic} w={8} h={8} color="gray.500" />
-                                                </Box>
-                                            )}
-                                        </>
+                                    {hasVideoCreative ? (
+                                        resolvedVisual ? (
+                                            <video
+                                                src={resolvedVisual}
+                                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                                controls={false}
+                                                muted
+                                                playsInline
+                                            />
+                                        ) : (
+                                            <Box w="full" h="full" display="flex" alignItems="center" justifyContent="center" bg="gray.200">
+                                                <Icon as={FiMusic} w={8} h={8} color="gray.500" />
+                                            </Box>
+                                        )
+                                    ) : resolvedVisual ? (
+                                        // Photo and audio ads both show an image (audio uses its cover art).
+                                        <Image
+                                            src={resolvedVisual}
+                                            alt={campaign.title}
+                                            w="full"
+                                            h="full"
+                                            objectFit="cover"
+                                        />
+                                    ) : (
+                                        <Box w="full" h="full" display="flex" alignItems="center" justifyContent="center" bg="gray.200">
+                                            <Icon as={FiMusic} w={8} h={8} color="gray.500" />
+                                        </Box>
                                     )}
                                 </Box>
 

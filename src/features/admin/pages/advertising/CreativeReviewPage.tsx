@@ -1,10 +1,11 @@
 import React from 'react';
-import { Box, Button, HStack, Image, Link, Text, VStack } from '@chakra-ui/react';
-import { FiCheckSquare } from 'react-icons/fi';
+import { Button, HStack, Link, Text, VStack } from '@chakra-ui/react';
+import { FiCheckSquare, FiImage } from 'react-icons/fi';
 import {
     AdminError,
     AdminPageLayout,
     ConfirmActionModal,
+    CoverThumb,
     DataTable,
     StatusBadge,
 } from '../../components/ui';
@@ -36,20 +37,9 @@ const CreativeReviewPage: React.FC = () => {
         {
             key: 'preview',
             header: 'Creative',
-            render: (c) =>
-                c.creativeUrl ? (
-                    <Image
-                        src={c.creativeUrl}
-                        alt={c.name}
-                        boxSize="48px"
-                        objectFit="cover"
-                        borderRadius="md"
-                        border="1px solid"
-                        borderColor="gray.100"
-                    />
-                ) : (
-                    <Box boxSize="48px" bg="gray.50" borderRadius="md" />
-                ),
+            render: (c) => (
+                <CoverThumb src={c.coverImageUrl ?? c.creativeUrl} alt={c.name} size="48px" icon={FiImage} />
+            ),
         },
         {
             key: 'campaign',
