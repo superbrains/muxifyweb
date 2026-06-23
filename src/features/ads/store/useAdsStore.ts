@@ -40,8 +40,15 @@ interface AdsState {
   fetchWallet: () => Promise<void>;
   fetchCampaigns: (page?: number, pageSize?: number, status?: string) => Promise<void>;
   fetchCampaignById: (id: string) => Promise<AdCampaignDto | null>;
-  createCampaignApi: (request: CreateCampaignRequest) => Promise<string | null>;
-  updateCampaignApi: (id: string, updates: Partial<CreateCampaignRequest>) => Promise<boolean>;
+  createCampaignApi: (
+    request: CreateCampaignRequest,
+    onUploadProgress?: (event: import('axios').AxiosProgressEvent) => void
+  ) => Promise<string | null>;
+  updateCampaignApi: (
+    id: string,
+    updates: Partial<CreateCampaignRequest>,
+    onUploadProgress?: (event: import('axios').AxiosProgressEvent) => void
+  ) => Promise<boolean>;
   pauseCampaignApi: (id: string) => Promise<boolean>;
   resumeCampaignApi: (id: string) => Promise<boolean>;
   stopCampaignApi: (id: string) => Promise<boolean>;
@@ -137,10 +144,10 @@ export const useAdsStore = create<AdsState>()(
         }
       },
 
-      createCampaignApi: async (request: CreateCampaignRequest) => {
+      createCampaignApi: async (request: CreateCampaignRequest, onUploadProgress) => {
         set({ isLoading: true, error: null });
         try {
-          const result = await adsService.createCampaign(request);
+          const result = await adsService.createCampaign(request, onUploadProgress);
           if (result.success) {
             // Refresh campaigns list after creation
             await get().fetchCampaigns();
@@ -161,10 +168,10 @@ export const useAdsStore = create<AdsState>()(
         }
       },
 
-      updateCampaignApi: async (id: string, updates: Partial<CreateCampaignRequest>) => {
+      updateCampaignApi: async (id: string, updates: Partial<CreateCampaignRequest>, onUploadProgress) => {
         set({ isLoading: true, error: null });
         try {
-          const result = await adsService.updateCampaign(id, updates);
+          const result = await adsService.updateCampaign(id, updates, onUploadProgress);
           if (result.success) {
             // Refresh campaigns list after update
             await get().fetchCampaigns();

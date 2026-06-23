@@ -1,20 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { Box, VStack, HStack, Text, Button, Input, Flex, Icon, Avatar, Spinner } from '@chakra-ui/react';
 import { FiArrowLeft } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
 import { useAdsUploadStore } from '../../../store/useAdsUploadStore';
-import { useAdsStore } from '../../../store/useAdsStore';
 import { VideoAdsPhonePreview } from '../../VideoAdsPhonePreview';
 import { UploadSuccessPage } from '@upload/components';
-import { fileToBase64 } from '@shared/lib/fileUtils';
-import { adsService } from '../../../services/adsService';
+import { UploadProgressModal } from '@shared/components';
 import { useAdRates } from '../../wizard/useAdRates';
 import { formatNaira } from '@/shared/lib';
-import { useToast } from '@/shared/hooks/useToast';
 import { combineDateAndTime } from '../../../utils/schedule';
+import { useCampaignPublish } from '../../../hooks/useCampaignPublish';
 import type { CreateCampaignRequest } from '../../../types';
-
-type PublishOutcome = 'review' | 'live' | 'draft';
 
 export const VideoAdsFlow3: React.FC<{
     onNext: () => void;
@@ -25,11 +21,18 @@ export const VideoAdsFlow3: React.FC<{
     // onNext is not used - navigation handled by success page buttons
     void onNext;
 
-    const [isPublished, setIsPublished] = useState(false);
-    const [isPublishing, setIsPublishing] = useState(false);
-    const [publishOutcome, setPublishOutcome] = useState<PublishOutcome>('review');
     const navigate = useNavigate();
-    const { toast } = useToast();
+
+    const {
+        uploadProgress,
+        isModalOpen,
+        isPublished,
+        publishOutcome,
+        publish,
+        retry,
+        handleModalClose,
+        dismissSuccess,
+    } = useCampaignPublish();
 
     // Hide overflow and scroll to top when success page is shown
     useEffect(() => {
@@ -56,7 +59,6 @@ export const VideoAdsFlow3: React.FC<{
         videoBudgetReach,
         resetVideoAds,
     } = useAdsUploadStore();
-    const { createCampaignApi, updateCampaignApi } = useAdsStore();
     const { card } = useAdRates('video');
     const isEditMode = !!editCampaignId;
 
@@ -70,107 +72,46 @@ export const VideoAdsFlow3: React.FC<{
 
     const formatCurrency = (amount: number): string => formatNaira(amount, { compact: false });
 
-    const handlePublish = async () => {
+    const handlePublish = () => {
         if (!videoAdInfo || !videoBudgetReach) {
             console.error('Missing required ad information');
             return;
         }
 
-        setIsPublishing(true);
+        void publish({
+            creativeFile: videoFile,
+            editCampaignId,
+            onSaved: resetVideoAds,
+            buildRequest: (mediaData): CreateCampaignRequest => {
+                // Format schedule date to ISO string
+                const scheduleDate = videoAdInfo.schedule.date
+                    ? videoAdInfo.schedule.date.toISOString()
+                    : new Date().toISOString();
 
-        try {
-            // Convert video file to base64 if it exists
-            let mediaData: string | undefined;
-
-            if (videoFile) {
-                if (videoFile.file) {
-                    // File exists, convert to base64
-                    mediaData = await fileToBase64(videoFile.file);
-                } else if (videoFile.url && videoFile.url.startsWith('data:')) {
-                    // URL is a data URL (base64), extract base64 part
-                    mediaData = videoFile.url.split(',')[1];
-                } else {
-                    // Blob URL or no file - cannot convert to base64
-                    console.warn('Video file not available for base64 conversion');
-                }
-            }
-
-            // Format schedule date to ISO string
-            const scheduleDate = videoAdInfo.schedule.date
-                ? videoAdInfo.schedule.date.toISOString()
-                : new Date().toISOString();
-
-            // Build the create/update request for the API.
-            const apiRequest: CreateCampaignRequest = {
-                name: videoAdInfo.title,
-                type: 'video',
-                budget: videoBudgetReach.amount * 100, // Convert to smallest unit (kobo)
-                startDate: combineDateAndTime(scheduleDate, videoAdInfo.schedule.startTime) ?? scheduleDate,
-                endDate: combineDateAndTime(scheduleDate, videoAdInfo.schedule.endTime),
-                creativeUrl: mediaData,
-                // Primary targeted content (first selected sponsorable item).
-                targetContentId: videoAdInfo.target.media?.[0]?.id,
-                targetContentType: videoAdInfo.target.type === 'music' ? 'Track' : 'Video',
-                targetingSettings: JSON.stringify({
-                    location: {
-                        country: videoAdInfo.location.country,
-                        state: videoAdInfo.location.state,
-                    },
-                    target: {
-                        type: videoAdInfo.target.type,
-                        genre: videoAdInfo.target.genre,
-                        media: videoAdInfo.target.media || [],
-                    },
-                }),
-            };
-
-            // Add or update campaign — surface real backend failures instead of
-            // showing a misleading "in review" screen with nothing persisted.
-            if (isEditMode && editCampaignId) {
-                const apiSuccess = await updateCampaignApi(editCampaignId, apiRequest);
-                if (!apiSuccess) {
-                    toast.error(
-                        'Could not update campaign',
-                        useAdsStore.getState().error || 'Please try again.'
-                    );
-                    return;
-                }
-                setPublishOutcome('review');
-            } else {
-                const campaignId = await createCampaignApi(apiRequest);
-                if (!campaignId) {
-                    toast.error(
-                        'Could not publish ad',
-                        useAdsStore.getState().error || 'Failed to create the campaign. Please try again.'
-                    );
-                    return;
-                }
-                // Submit the freshly-created draft for admin approval.
-                try {
-                    const res = await adsService.submitCampaign(campaignId);
-                    setPublishOutcome(res.status === 'Active' ? 'live' : 'review');
-                } catch (submitError) {
-                    toast.error(
-                        'Saved as draft — not yet submitted',
-                        submitError instanceof Error
-                            ? submitError.message
-                            : 'Open the campaign in your library and submit it again for review.'
-                    );
-                    setPublishOutcome('draft');
-                }
-            }
-
-            // Only reached on a confirmed save — show the confirmation screen.
-            setIsPublished(true);
-
-            // Clear the upload store state after showing success
-            resetVideoAds();
-        } catch (error) {
-            console.error('Publish failed:', error);
-            // Handle error if needed
-        } finally {
-            setIsPublishing(false);
-        }
+                return {
+                    name: videoAdInfo.title,
+                    type: 'video',
+                    budget: videoBudgetReach.amount * 100, // Convert to smallest unit (kobo)
+                    startDate: combineDateAndTime(scheduleDate, videoAdInfo.schedule.startTime) ?? scheduleDate,
+                    endDate: combineDateAndTime(scheduleDate, videoAdInfo.schedule.endTime),
+                    creativeUrl: mediaData,
+                    // Primary targeted content (first selected sponsorable item).
+                    targetContentId: videoAdInfo.target.media?.[0]?.id,
+                    targetContentType: videoAdInfo.target.type === 'music' ? 'Track' : 'Video',
+                    targetingSettings: JSON.stringify({
+                        location: {
+                            country: videoAdInfo.location.country,
+                            state: videoAdInfo.location.state,
+                        },
+                        target: {
+                            type: videoAdInfo.target.type,
+                            genre: videoAdInfo.target.genre,
+                            media: videoAdInfo.target.media || [],
+                        },
+                    }),
+                };
+            },
+        });
     };
 
     const handleUnderstand = () => {
@@ -180,7 +121,7 @@ export const VideoAdsFlow3: React.FC<{
 
     const handleCreateMore = () => {
         // Close success page and reset to flow 1
-        setIsPublished(false);
+        dismissSuccess();
         if (onResetFlow) {
             onResetFlow();
         } else {
@@ -483,9 +424,9 @@ export const VideoAdsFlow3: React.FC<{
                     justifyContent="center"
                     px={3}
                     _hover={{ bg: 'primary.600' }}
-                    disabled={isPublishing}
+                    disabled={isModalOpen}
                 >
-                    {isPublishing ? (
+                    {isModalOpen ? (
                         <HStack gap={2}>
                             <Spinner size="sm" color="white" />
                             <Text fontSize="12px">{isEditMode ? 'Updating...' : 'Publishing...'}</Text>
@@ -495,6 +436,16 @@ export const VideoAdsFlow3: React.FC<{
                     )}
                 </Button>
             </Flex>
+
+            {/* Upload Progress Modal — mirrors the audio/video track upload flow */}
+            <UploadProgressModal
+                isOpen={isModalOpen}
+                title={videoAdInfo?.title || 'Your ad'}
+                fileSize={videoFile?.file?.size ?? 0}
+                progress={uploadProgress}
+                onRetry={retry}
+                onClose={handleModalClose}
+            />
 
             {/* Success Page Modal */}
             {isPublished && (

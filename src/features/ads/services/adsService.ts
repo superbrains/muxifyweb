@@ -1,3 +1,4 @@
+import type { AxiosProgressEvent } from 'axios';
 import { axiosInstance } from '@app/lib/axiosInstance';
 import { getApiErrorMessage } from '@shared/lib/errorUtils';
 import type {
@@ -88,13 +89,18 @@ export const adsService = {
 
   /**
    * POST /api/v1/ads/campaigns
-   * Creates a new campaign
+   * Creates a new campaign. The creative is carried as base64 in the request
+   * body, so `onUploadProgress` reflects real upload progress of the payload.
    */
-  async createCampaign(request: CreateCampaignRequest): Promise<CreateCampaignResponse> {
+  async createCampaign(
+    request: CreateCampaignRequest,
+    onUploadProgress?: (event: AxiosProgressEvent) => void
+  ): Promise<CreateCampaignResponse> {
     try {
       const response = await axiosInstance.post<CreateCampaignResponse>(
         `${ADS_BASE}/campaigns`,
-        request
+        request,
+        { onUploadProgress }
       );
       return response.data;
     } catch (error) {
@@ -103,17 +109,48 @@ export const adsService = {
   },
 
   /**
+   * POST /api/v1/ads/campaigns/creatives  (multipart field: `file`)
+   * Uploads the creative binary to blob storage and returns its URL, so the
+   * campaign create/update can reference the URL instead of inlining a large
+   * base64 string (which blew the 30s request timeout).
+   */
+  async uploadCreative(
+    file: File,
+    onUploadProgress?: (event: AxiosProgressEvent) => void
+  ): Promise<{ url: string }> {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const response = await axiosInstance.post<{ url: string }>(
+        `${ADS_BASE}/campaigns/creatives`,
+        formData,
+        {
+          headers: { 'Content-Type': 'multipart/form-data' },
+          onUploadProgress,
+          timeout: 300000, // 5 minutes for large audio/video creatives
+        }
+      );
+      return response.data;
+    } catch (error) {
+      throw new Error(getApiErrorMessage(error, 'Failed to upload creative'));
+    }
+  },
+
+  /**
    * PUT /api/v1/ads/campaigns/{id}
-   * Updates a campaign
+   * Updates a campaign. Accepts `onUploadProgress` for the same reason as
+   * createCampaign (the updated creative rides in the request body).
    */
   async updateCampaign(
     id: string,
-    request: UpdateCampaignRequest
+    request: UpdateCampaignRequest,
+    onUploadProgress?: (event: AxiosProgressEvent) => void
   ): Promise<CampaignActionResponse> {
     try {
       const response = await axiosInstance.put<CampaignActionResponse>(
         `${ADS_BASE}/campaigns/${id}`,
-        request
+        request,
+        { onUploadProgress }
       );
       return response.data;
     } catch (error) {
