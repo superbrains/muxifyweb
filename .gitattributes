@@ -1,0 +1,5 @@
+
+# Consumed by Linux containers, and shipped to the server by rsync from a Windows
+# working copy — pin LF so core.autocrlf cannot corrupt them in transit.
+Dockerfile*  text eol=lf
+*.sh         text eol=lf

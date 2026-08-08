@@ -1,14 +1,21 @@
 /**
- * Resumable / chunked audio upload hook.
+ * Direct-to-storage audio upload hook.
  *
  * Three-phase flow that matches the backend:
- *   1. POST /uploads/begin            → { sessionId, uploadUri (SAS), recommendedBlockSize }
- *   2. PUT each block to uploadUri    → Azure Blob block upload (no JWT, signed URL is the credential)
- *   3. PUT block-list                 → Azure commits the blocks into a single blob
- *   4. POST /uploads/{id}/complete    → backend moves the staged blob into its final container,
+ *   1. POST /uploads/begin            → { sessionId, uploadUri (presigned PUT), requiredContentType }
+ *   2. PUT the file to uploadUri      → straight to object storage in one request. No JWT: the
+ *                                       signed URL *is* the credential, and attaching an
+ *                                       Authorization header would break the signature. This also
+ *                                       bypasses our origin and the Cloudflare edge entirely, so
+ *                                       the 100 MB edge body limit does not apply.
+ *   3. POST /uploads/{id}/complete    → backend copies the staged object into its final container,
  *                                       creates the Track entity (with albumId), enqueues processing.
  *
  * Real bytes-on-wire progress, suitable for files up to 2 GB.
+ *
+ * Note there is no resume on a dropped connection — a single PUT either lands or it doesn't. That
+ * is an accepted trade for deleting the provider-specific block/commit machinery this replaced.
+ * If large-file resumability is ever needed, the answer is S3 multipart, not the old block API.
  */
 
 import { useCallback, useRef, useState } from 'react';
@@ -17,13 +24,18 @@ import { axiosInstance, ensureFreshAccessToken } from '@app/lib/axiosInstance';
 import type { TrackDto } from '../types';
 import type { FeaturedArtistInput } from '../types/album';
 
-export type UploadPhase = 'idle' | 'staging' | 'uploading' | 'committing' | 'finalizing' | 'done' | 'error' | 'aborted';
+export type UploadPhase = 'idle' | 'staging' | 'uploading' | 'finalizing' | 'done' | 'error' | 'aborted';
 
 interface BeginUploadResponse {
   sessionId: string;
   uploadUri: string;
   expiresAt: string;
-  recommendedBlockSize: number;
+  /**
+   * The exact Content-Type the PUT must carry. Send it verbatim rather than the file's own MIME
+   * type: browsers normalize MIME types (audio/mp3 → audio/mpeg), and if the storage provider
+   * ever signs the content-type header a mismatch becomes an intermittent 403.
+   */
+  requiredContentType: string;
 }
 
 interface CompleteUploadResponse {
@@ -56,25 +68,6 @@ export interface UseResumableUploadResult {
   start: (file: File, complete: CompleteAudioUploadInput) => Promise<TrackDto>;
   abort: () => void;
   reset: () => void;
-}
-
-/**
- * Build the Azure Blob block-list XML the commit step needs.
- * Each block has a base64-encoded ID; we keep them in upload order.
- */
-function buildBlockListXml(blockIds: string[]): string {
-  const items = blockIds.map((id) => `<Latest>${id}</Latest>`).join('');
-  return `<?xml version="1.0" encoding="utf-8"?><BlockList>${items}</BlockList>`;
-}
-
-/**
- * Azure block IDs must be base64 strings of the same length across all blocks in the upload.
- * 16-byte left-padded index → 24-character base64. Plenty of room for very large files.
- */
-function blockId(index: number): string {
-  const padded = index.toString().padStart(16, '0');
-  // Browser-only — the SAS upload only runs in the page; no SSR fallback needed.
-  return window.btoa(padded);
 }
 
 export function useResumableUpload(): UseResumableUploadResult {
@@ -121,67 +114,32 @@ export function useResumableUpload(): UseResumableUploadResult {
         });
         const session = beginResponse.data;
 
-        // Azure block size must divide evenly into the file size; we tolerate any positive
-        // recommended size from the server and floor block count from there.
-        const blockSize = Math.max(session.recommendedBlockSize ?? 8 * 1024 * 1024, 1024 * 1024);
-        const blockCount = Math.max(1, Math.ceil(file.size / blockSize));
-        const blockIds: string[] = [];
-
-        // 2. Upload blocks directly to Azure Blob via SAS URL.
+        // 2. Upload the whole file directly to object storage with the presigned PUT.
+        // Deliberately plain `axios`, not `axiosInstance`: the interceptor would attach our
+        // Authorization header, which both breaks the request signature and leaks the JWT to a
+        // third-party host.
         setPhase('uploading');
         cancelTokenRef.current = axios.CancelToken.source();
-        let cumulativeBytes = 0;
-        for (let i = 0; i < blockCount; i++) {
-          if (abortedRef.current) throw new Error('Upload aborted.');
-
-          const start = i * blockSize;
-          const end = Math.min(start + blockSize, file.size);
-          const blob = file.slice(start, end);
-          const id = blockId(i);
-          blockIds.push(id);
-
-          const blockUrl = `${session.uploadUri}&comp=block&blockid=${encodeURIComponent(id)}`;
-          // Capture this block's start position for the progress callback so per-block
-          // loaded bytes accumulate correctly.
-          const blockStart = cumulativeBytes;
-          await axios.put(blockUrl, blob, {
-            headers: {
-              'x-ms-blob-type': 'BlockBlob',
-              'Content-Type': file.type || 'application/octet-stream',
-            },
-            cancelToken: cancelTokenRef.current.token,
-            onUploadProgress: (e) => {
-              const loaded = blockStart + (e.loaded ?? 0);
-              setBytesUploaded(loaded);
-              setProgress(Math.min(99, Math.round((loaded / file.size) * 100)));
-            },
-            // The browser already buffers efficiently; let axios stream the slice straight through.
-            transformRequest: [(d) => d],
-          });
-          cumulativeBytes = end;
-          setBytesUploaded(cumulativeBytes);
-        }
-
-        // 3. Commit block list — tells Azure to assemble the blocks into a single blob.
-        // Inspect the response status: if Azure rejects the commit, we want a visible
-        // upload-side error here, not a confusing "staging blob not found" 400 from
-        // /complete later. Azure returns 201 Created on success.
-        setPhase('committing');
-        const commitUrl = `${session.uploadUri}&comp=blocklist`;
-        const commitResp = await axios.put(commitUrl, buildBlockListXml(blockIds), {
-          headers: { 'Content-Type': 'application/xml' },
-          validateStatus: () => true,
+        await axios.put(session.uploadUri, file, {
+          headers: { 'Content-Type': session.requiredContentType },
+          cancelToken: cancelTokenRef.current.token,
+          timeout: 0,                 // axios' default would kill a multi-GB upload mid-flight
+          maxBodyLength: Infinity,
+          maxContentLength: Infinity,
+          onUploadProgress: (e) => {
+            const loaded = e.loaded ?? 0;
+            setBytesUploaded(loaded);
+            // Hold at 99 until /complete returns — the upload is not "done" until we say so.
+            setProgress(Math.min(99, Math.round((loaded / file.size) * 100)));
+          },
+          // Stop axios from trying to JSON-stringify the File; stream it straight through.
+          transformRequest: [(d) => d],
         });
-        if (commitResp.status !== 201) {
-          const body = typeof commitResp.data === 'string' ? commitResp.data.slice(0, 500) : '';
-          throw new Error(
-            `Azure block-list commit failed (status ${commitResp.status}). ${body}`,
-          );
-        }
+        setBytesUploaded(file.size);
 
-        // 4. Complete: tell our backend to finalize, persist the Track, and enqueue processing.
-        // Block uploads to Azure can take many minutes; refresh the access token if it's
-        // close to expiry so /complete doesn't 401 right at the finish line.
+        // 3. Complete: tell our backend to finalize, persist the Track, and enqueue processing.
+        // A 2 GB upload can take many minutes; refresh the access token if it's close to expiry
+        // so /complete doesn't 401 right at the finish line.
         setPhase('finalizing');
         await ensureFreshAccessToken(60);
         const completeResponse = await axiosInstance.post<CompleteUploadResponse>(

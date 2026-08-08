@@ -17,7 +17,7 @@ import type {
 } from '../types';
 
 // =============================================================================
-// Chunked-upload DTOs (mirror backend BeginUploadResultDto / CompleteUploadResultDto)
+// Direct-to-storage upload DTOs (mirror backend BeginUploadResultDto / CompleteUploadResultDto)
 // =============================================================================
 
 interface BeginUploadRequest {
@@ -31,7 +31,11 @@ interface BeginUploadResult {
   sessionId: string;
   uploadUri: string;
   expiresAt: string;
-  recommendedBlockSize: number;
+  /**
+   * The exact Content-Type the PUT to `uploadUri` must carry. Send verbatim — do not substitute
+   * the file's own MIME type. The final object is re-typed from its extension on commit.
+   */
+  requiredContentType: string;
 }
 
 interface CompleteUploadRequest {
@@ -77,15 +81,16 @@ export interface UploadProgress {
 
 export const videoService = {
   /**
-   * Upload a new video using direct-to-blob (chunked) upload.
-   *   1. POST /api/v1/uploads/begin             → SAS URL for the staging blob
-   *   2. PUT  <sasUri>                          → file goes straight to Azure Blob
+   * Upload a new video direct to object storage.
+   *   1. POST /api/v1/uploads/begin             → presigned PUT URL for the staging object
+   *   2. PUT  <presignedUrl>                    → file goes straight to storage, one request
    *   3. POST /api/v1/uploads/{id}/complete     → backend moves staging → final and creates the Video row
    *   4. POST /api/v1/video/{id}/thumbnail      → optional thumbnail attach
    *
-   * The bare `axios.put` in step 2 deliberately bypasses `axiosInstance` — the SAS is the
-   * credential for Azure Blob, and adding our `Authorization: Bearer ...` header would
-   * cause Azure to reject the PUT.
+   * The bare `axios.put` in step 2 deliberately bypasses `axiosInstance` — the presigned URL is
+   * itself the credential, so adding our `Authorization: Bearer ...` header would both break the
+   * request signature and leak the JWT to a third-party host. Step 2 also bypasses Cloudflare, so
+   * the edge's 100 MB request-body limit does not apply here.
    */
   uploadVideo: async (
     data: UploadVideoData,
@@ -99,13 +104,14 @@ export const videoService = {
       sizeBytes: data.file.size,
     } as BeginUploadRequest);
 
-    // Step 2 — PUT directly to Azure Blob via SAS
+    // Step 2 — PUT the whole file to the presigned URL. Send `requiredContentType` verbatim:
+    // the server states the exact header value it expects rather than letting the browser's
+    // normalized MIME type drift out of sync with what was signed.
     await axios.put(begin.data.uploadUri, data.file, {
-      headers: {
-        'x-ms-blob-type': 'BlockBlob',
-        'Content-Type': data.file.type || 'application/octet-stream',
-      },
+      headers: { 'Content-Type': begin.data.requiredContentType },
       timeout: 0, // no timeout — large uploads can take a while
+      maxBodyLength: Infinity,
+      maxContentLength: Infinity,
       onUploadProgress: (progressEvent: AxiosProgressEvent) => {
         if (progressEvent.total && onProgress) {
           // Cap at 95% so the UI doesn't sit at 100% while /complete is still running

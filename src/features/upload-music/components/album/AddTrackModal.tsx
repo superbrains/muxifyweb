@@ -65,7 +65,6 @@ export const AddTrackModal: React.FC<AddTrackModalProps> = ({
   const isUploading =
     upload.phase === 'staging' ||
     upload.phase === 'uploading' ||
-    upload.phase === 'committing' ||
     upload.phase === 'finalizing';
 
   const startUpload = async () => {
@@ -220,7 +219,6 @@ export const AddTrackModal: React.FC<AddTrackModalProps> = ({
                     <Text fontSize="11px" color="gray.600">
                       {upload.phase === 'staging' && 'Preparing…'}
                       {upload.phase === 'uploading' && `${upload.progress}% uploaded`}
-                      {upload.phase === 'committing' && 'Committing blocks…'}
                       {upload.phase === 'finalizing' && 'Finalizing…'}
                       {upload.phase === 'done' && 'Done'}
                     </Text>
