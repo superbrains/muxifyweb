@@ -10,6 +10,8 @@ import { useUploadStore } from '@upload/store/useUploadStore';
 import { VideoPlayer } from './VideoPlayer';
 import { URLInput } from '@shared/components';
 import { AuthedImage } from '@shared/components/AuthedImage';
+import { buildUnlockCostOptions } from '@shared/constants/unlockPricing';
+import { useCoinRate } from '@shared/hooks';
 
 interface UploadFile {
     id: string;
@@ -27,12 +29,6 @@ const releaseTypeOptions = [
     { label: 'New Release', value: 'new-release' },
     { label: 'Re-release', value: 're-release' },
     { label: 'Remix', value: 'remix' },
-];
-
-const unlockCostOptions = [
-    { label: '<₦100.00', value: '100.00' },
-    { label: '₦200.00', value: '200.00' },
-    { label: '₦500.00', value: '500.00' },
 ];
 
 const sponsorshipOptions = [
@@ -132,6 +128,14 @@ export const VideoUploadTab: React.FC = () => {
     const [searchParams] = useSearchParams();
     const { setActiveTab } = useUploadStore();
     const { isEditing } = useUploadStore();
+
+    // Tiers are coin amounts; the label carries the ≈₦ equivalent at the live
+    // admin-set rate, so it stays correct if the rate is ever changed.
+    const { rate: coinsPerNairaMajor } = useCoinRate();
+    const unlockCostOptions = React.useMemo(
+        () => buildUnlockCostOptions(coinsPerNairaMajor),
+        [coinsPerNairaMajor],
+    );
     const {
         videoFile,
         thumbnails,

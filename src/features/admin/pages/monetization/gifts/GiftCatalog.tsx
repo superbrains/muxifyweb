@@ -55,7 +55,7 @@ const GiftCatalog: React.FC = () => {
     const [creating, setCreating] = React.useState(false);
     const [toggle, setToggle] = React.useState<AdminGiftType | null>(null);
 
-    const rate = settings?.coinsPerNairaMajor ?? 50;
+    const rate = settings?.coinsPerNairaMajor ?? 10;
     const gifts = data ?? [];
 
     const kpis: KpiItem[] = [

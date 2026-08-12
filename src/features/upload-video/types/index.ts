@@ -33,6 +33,8 @@ export interface UpdateVideoRequest {
   videoType?: string;
   genre?: string;
   allowSponsorship?: boolean;
+  /** Unlock price in coins (10 coins = ₦1). 0 = free, omit = unchanged. */
+  unlockCostCoins?: number;
 }
 
 // =============================================================================
@@ -94,6 +96,9 @@ export interface VideoDto {
   fps?: number;
   codec?: string;
   genre?: string;
+
+  /** Unlock price in coins (10 coins = ₦1). 0 = free. */
+  unlockCostCoins?: number;
 
   // Metrics
   viewCount: number;

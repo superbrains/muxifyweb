@@ -78,7 +78,7 @@ const initialState = {
   coverArt: null,
   genre: ["afrobeat"],
   releaseType: ["new-release"],
-  unlockCost: ["100.00"],
+  unlockCost: ["1000"],
   allowSponsorship: ["yes"],
   releaseYear: "",
   musicianName: "",

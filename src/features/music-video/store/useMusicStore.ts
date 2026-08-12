@@ -71,6 +71,8 @@ function albumDtoToAlbumItem(dto: AlbumManageDto): AlbumItem {
     tracks: [], // The grid only needs metadata; the album editor fetches tracks on demand.
     genre: dto.genreName ? [dto.genreName] : [],
     releaseType: [dto.releaseType],
+    // Albums have no single price of their own — the wizard's album-level
+    // picker seeds each track's price at upload time.
     unlockCost: [],
     allowSponsorship: [],
     releaseYear: dto.releaseDate
@@ -99,7 +101,11 @@ function trackDtoToSingleItem(track: TrackDto): SingleItem {
     isrc: track.isrc,
     genre: track.genre ? [track.genre] : [],
     releaseType: [],
-    unlockCost: [],
+    // Coin price, kept as a string so the edit form's FormSelect can match it
+    // against its option values. Empty when the API didn't return one, which
+    // leaves the wizard on its default.
+    unlockCost:
+      track.unlockCostCoins != null ? [String(track.unlockCostCoins)] : [],
     allowSponsorship: [],
     releaseYear: track.releaseDate
       ? new Date(track.releaseDate).getFullYear().toString()

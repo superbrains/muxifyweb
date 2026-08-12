@@ -14,8 +14,12 @@ import type {
     CompanyOnboardingData,
     AdManagerOnboardingData,
 } from '@/features/auth/store/useUserManagementStore';
+import { parseUnlockCostCoins } from '@shared/constants/unlockPricing';
+import { useCoinRate } from '@shared/hooks';
 
-const isArtistData = (data: unknown): data is ArtistOnboardingData =>
+const coinFormatter = new Intl.NumberFormat('en-NG');
+
+const isArtistData =(data: unknown): data is ArtistOnboardingData =>
     !!data && typeof (data as ArtistOnboardingData).performingName !== 'undefined';
 
 const isCompanyData = (data: unknown): data is CompanyOnboardingData =>
@@ -27,6 +31,7 @@ const isAdManagerData = (data: unknown): data is AdManagerOnboardingData =>
 export const AlbumReview: React.FC = () => {
     const { album } = useUploadMusicStore();
     const { isRecordLabelOnly, userData, userType } = useUserType();
+    const { nairaLabel } = useCoinRate();
     const {
         tracks,
         coverArt,
@@ -38,7 +43,9 @@ export const AlbumReview: React.FC = () => {
         trackTitles,
         selectedArtists,
     } = album;
-    
+
+    const unlockCostCoins = parseUnlockCostCoins(unlockCost);
+
     // Get artist name - for record labels, use selected artists; otherwise use logged in user
     const getArtistName = () => {
         if (selectedArtists.length > 0) {
@@ -134,10 +141,10 @@ export const AlbumReview: React.FC = () => {
                                 align="center"
                             >
                                 <Text fontSize="11px" color="gray.700">
-                                    ₦{unlockCost[0] || '100.00'}
+                                    {coinFormatter.format(unlockCostCoins)} coins
                                 </Text>
                                 <Text fontSize="11px" color="gray.400">
-                                    m{unlockCost[0] || '100.00'}
+                                    ≈{nairaLabel(unlockCostCoins)}
                                 </Text>
                             </Flex>
                         </Box>

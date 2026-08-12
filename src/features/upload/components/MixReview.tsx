@@ -16,9 +16,14 @@ import { ReviewTrackItem, ReleaseScheduler } from './';
 import { formatPercentBps } from '@/features/record-label/lib/format';
 import { detectLyricsFormat } from '@uploadMusic/lib/lyricsFormat';
 import { LyricsFormatBadge } from '@uploadMusic/components/LyricsField';
+import { parseUnlockCostCoins } from '@shared/constants/unlockPricing';
+import { useCoinRate } from '@shared/hooks';
+
+const coinFormatter = new Intl.NumberFormat('en-NG');
 
 export const MixReview: React.FC = () => {
     const { mix } = useUploadMusicStore();
+    const { nairaLabel } = useCoinRate();
     const {
         tracks,
         coverArt,
@@ -34,6 +39,7 @@ export const MixReview: React.FC = () => {
         rights,
     } = mix;
 
+    const unlockCostCoins = parseUnlockCostCoins(unlockCost);
     const lyricsFormat = detectLyricsFormat(lyrics);
 
     // Get artist name - Mix tab always uses selected artists (as it was before)
@@ -117,10 +123,10 @@ export const MixReview: React.FC = () => {
                                 align="center"
                             >
                                 <Text fontSize="11px" color="gray.700">
-                                    ₦{unlockCost[0] || '100.00'}
+                                    {coinFormatter.format(unlockCostCoins)} coins
                                 </Text>
                                 <Text fontSize="11px" color="gray.400">
-                                    m{unlockCost[0] || '100.00'}
+                                    ≈{nairaLabel(unlockCostCoins)}
                                 </Text>
                             </Flex>
                         </Box>

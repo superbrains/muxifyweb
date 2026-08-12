@@ -35,6 +35,8 @@ export interface UploadMusicData {
   // Lyrics — plain text or synchronized LRC; backend accepts both.
   lyrics?: string;
   lyricsLanguage?: string;
+  // What a fan pays to unlock the track, in coins (10 coins = ₦1). 0 = free.
+  unlockCostCoins?: number;
   // Royalty splits as compact rows: { recipientUserId, recipientRole, percentBps }
   splits?: Array<{
     recipientUserId: string;
@@ -79,6 +81,10 @@ export const uploadMusicService = {
     if (data.iswc) formData.append('iswc', data.iswc);
     if (data.lyrics?.trim()) formData.append('lyrics', data.lyrics);
     if (data.lyricsLanguage) formData.append('lyricsLanguage', data.lyricsLanguage);
+    // Explicit null check — 0 is a legitimate price meaning "free".
+    if (data.unlockCostCoins != null) {
+      formData.append('unlockCostCoins', String(data.unlockCostCoins));
+    }
     if (data.splits && data.splits.length > 0) {
       formData.append('splits', JSON.stringify(data.splits));
     }

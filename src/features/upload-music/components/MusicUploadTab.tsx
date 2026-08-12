@@ -10,6 +10,8 @@ import { useUploadMusicStore } from '../store/useUploadMusicStore';
 import { useUserType } from '@/features/auth/hooks/useUserType';
 import { shouldUseExtendedAudioWizard } from '@upload/lib/wizardFlow';
 import { GENRE_OPTIONS } from '@shared/constants/genres';
+import { buildUnlockCostOptions } from '@shared/constants/unlockPricing';
+import { useCoinRate } from '@shared/hooks';
 
 interface UploadFile {
     id: string;
@@ -42,12 +44,6 @@ const releaseTypeOptions = [
     { label: 'Single', value: 'single' },
 ];
 
-const unlockCostOptions = [
-    { label: '₦100.00', value: '100.00' },
-    { label: '₦200.00', value: '200.00' },
-    { label: '₦500.00', value: '500.00' },
-];
-
 const sponsorshipOptions = [
     { label: 'yes', value: 'yes' },
     { label: 'no', value: 'no' },
@@ -57,6 +53,14 @@ export const MusicUploadTab: React.FC<MusicUploadTabProps> = ({ albumTab, setAlb
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const { isPodcaster, isDJ, isMusician, isArtist, isRecordLabel } = useUserType();
+
+    // Tiers are coin amounts; the label carries the ≈₦ equivalent at the live
+    // admin-set rate, so it stays correct if the rate is ever changed.
+    const { rate: coinsPerNairaMajor } = useCoinRate();
+    const unlockCostOptions = React.useMemo(
+        () => buildUnlockCostOptions(coinsPerNairaMajor),
+        [coinsPerNairaMajor],
+    );
 
     // Get sub tabs based on user type
     const getSubTabs = () => {

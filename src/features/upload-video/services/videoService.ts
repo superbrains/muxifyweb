@@ -46,6 +46,8 @@ interface CompleteUploadRequest {
   videoType?: VideoType;
   trackId?: string;
   thumbnailUrl?: string;
+  /** Unlock price in coins (10 coins = ₦1). 0 = free. */
+  unlockCostCoins?: number;
 }
 
 interface CompleteUploadResult {
@@ -66,6 +68,8 @@ export interface UploadVideoData {
   artistName?: string;
   file: File;
   thumbnail?: File;
+  /** Unlock price in coins (10 coins = ₦1). 0 = free. */
+  unlockCostCoins?: number;
 }
 
 export interface UploadProgress {
@@ -139,6 +143,7 @@ export const videoService = {
         genre: data.genre,
         videoType: data.videoType,
         trackId: data.trackId,
+        unlockCostCoins: data.unlockCostCoins,
       } as CompleteUploadRequest
     );
 

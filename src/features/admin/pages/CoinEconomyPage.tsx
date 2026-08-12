@@ -112,7 +112,7 @@ const ConversionTab: React.FC = () => {
     const { data, isLoading, error } = useCoinEconomySettings();
     const update = useUpdateCoinEconomySettings();
 
-    const [rate, setRate] = React.useState('50');
+    const [rate, setRate] = React.useState('10');
     const [currency, setCurrency] = React.useState('NGN');
     const [fee, setFee] = React.useState('20');
     const [confirm, setConfirm] = React.useState(false);
@@ -245,7 +245,7 @@ const PackagesTab: React.FC = () => {
     const [creating, setCreating] = React.useState(false);
     const [toggle, setToggle] = React.useState<AdminCoinPackage | null>(null);
 
-    const rate = settings?.coinsPerNairaMajor ?? 50;
+    const rate = settings?.coinsPerNairaMajor ?? 10;
 
     const columns: AdminTableColumn<AdminCoinPackage>[] = [
         {

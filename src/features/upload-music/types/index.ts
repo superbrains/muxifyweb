@@ -36,6 +36,8 @@ export interface UpdateTrackRequest {
   bpm?: number;
   key?: string;
   allowSponsorship?: boolean;
+  /** Unlock price in coins (10 coins = ₦1). 0 = free, omit = unchanged. */
+  unlockCostCoins?: number;
 }
 
 // =============================================================================
@@ -67,6 +69,9 @@ export interface TrackDto {
   isrc?: string;
   bpm?: number;
   key?: string;
+
+  /** Unlock price in coins (10 coins = ₦1). 0 = free. */
+  unlockCostCoins?: number;
 
   // Metrics
   playCount: number;

@@ -8,6 +8,10 @@ import { UploadSuccessPage, ReleaseScheduler } from './';
 import { UploadProgressModal } from '@shared/components';
 import { AuthedImage } from '@shared/components/AuthedImage';
 import type { UploadProgressDetail } from '@shared/types/upload';
+import { parseUnlockCostCoins } from '@shared/constants/unlockPricing';
+import { useCoinRate } from '@shared/hooks';
+
+const coinFormatter = new Intl.NumberFormat('en-NG');
 
 interface VideoReviewProps {
     onPublish: () => Promise<void>;
@@ -37,6 +41,9 @@ export const VideoReview: React.FC<VideoReviewProps> = ({
         allowSponsorship,
         resetVideoUpload,
     } = useUploadVideoStore();
+
+    const { nairaLabel } = useCoinRate();
+    const unlockCostCoins = parseUnlockCostCoins(unlockCost);
 
     const selectedThumbnail = thumbnails[0]; // For demo, using first thumbnail
 
@@ -197,10 +204,10 @@ export const VideoReview: React.FC<VideoReviewProps> = ({
                                 align="center"
                             >
                                 <Text fontSize="11px" color="gray.700">
-                                    ₦{unlockCost[0] || '100.00'}
+                                    {coinFormatter.format(unlockCostCoins)} coins
                                 </Text>
                                 <Text fontSize="11px" color="gray.400">
-                                    m{unlockCost[0] || '100.00'}
+                                    ≈{nairaLabel(unlockCostCoins)}
                                 </Text>
                             </Flex>
                         </Box>

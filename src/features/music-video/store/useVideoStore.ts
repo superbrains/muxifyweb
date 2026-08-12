@@ -64,7 +64,11 @@ function videoDtoToVideoItem(video: VideoDto): VideoItem {
     description: video.description,
     videoType: video.videoType,
     releaseType: video.videoType ? [video.videoType] : [],
-    unlockCost: [],
+    // Coin price, kept as a string so the edit form's FormSelect can match it
+    // against its option values. Empty when the API didn't return one, which
+    // leaves the wizard on its default.
+    unlockCost:
+      video.unlockCostCoins != null ? [String(video.unlockCostCoins)] : [],
     allowSponsorship: [],
     createdAt: video.createdAt,
     heldForDuplicateReview: video.heldForDuplicateReview,

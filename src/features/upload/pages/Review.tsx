@@ -22,6 +22,7 @@ import { useUploadVideo } from '@/features/upload-video/hooks/useUploadVideo';
 import { uploadMusicService } from '@uploadMusic/services/uploadMusicService';
 import { videoService } from '@/features/upload-video/services/videoService';
 import { useChakraToast } from '@shared/hooks';
+import { parseUnlockCostCoins } from '@shared/constants/unlockPricing';
 
 const isArtistData = (data: unknown): data is ArtistOnboardingData =>
     !!data && typeof (data as ArtistOnboardingData).performingName !== 'undefined';
@@ -124,6 +125,7 @@ export const Review: React.FC = () => {
                     genre: mix.genre.join(', ') || undefined,
                     isrc: mix.rights.isrc || undefined,
                     allowSponsorship: mix.allowSponsorship[0] === 'yes',
+                    unlockCostCoins: parseUnlockCostCoins(mix.unlockCost),
                 });
                 toast.success('Changes saved', 'Your track has been updated.');
             } else if (isEditingVideo) {
@@ -140,6 +142,7 @@ export const Review: React.FC = () => {
                     description: existing?.description,
                     videoType: existing?.videoType,
                     allowSponsorship: videoUpload.allowSponsorship[0] === 'yes',
+                    unlockCostCoins: parseUnlockCostCoins(videoUpload.unlockCost),
                 });
                 toast.success('Changes saved', 'Your video has been updated.');
             } else if (isEditingAlbum) {
@@ -172,6 +175,7 @@ export const Review: React.FC = () => {
                         upc: mix.rights.upc || undefined,
                         iswc: mix.rights.iswc || undefined,
                         lyrics: mix.lyrics?.trim() || undefined,
+                        unlockCostCoins: parseUnlockCostCoins(mix.unlockCost),
                         splits:
                             mix.splits.length > 0
                                 ? mix.splits.map((s) => ({
@@ -246,6 +250,7 @@ export const Review: React.FC = () => {
                             releaseDate,
                             file: track.file,
                             coverArt: i === 0 ? album.coverArt?.file : undefined, // Only send cover art with first track
+                            unlockCostCoins: parseUnlockCostCoins(album.unlockCost),
                         });
 
                         if (trackResult) {
@@ -334,6 +339,7 @@ export const Review: React.FC = () => {
                     file: videoFile,
                     thumbnail: thumbnailFile,
                     artistName: currentArtistName,
+                    unlockCostCoins: parseUnlockCostCoins(videoUpload.unlockCost),
                 });
 
                 if (!videoResult) {
