@@ -1,4 +1,3 @@
 export { AddPayoutAccountModal } from "./AddPayoutAccountModal";
-export { AccountAuthorizationModal } from "./AccountAuthorizationModal";
-export { PayoutAuthorizationModal } from "./PayoutAuthorizationModal";
+export { PayoutPinModal } from "./PayoutPinModal";
 export { PaymentSuccessfulModal } from "./PaymentSuccessfulModal";

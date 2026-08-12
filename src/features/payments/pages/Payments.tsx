@@ -13,9 +13,10 @@ import {
 import { EmptyWalletIcon, Receipt2Icon } from '@/shared/icons/CustomIcons';
 import { usePayoutStore } from '../store/usePayoutStore';
 import { AddPayoutAccountModal } from '../components/AddPayoutAccountModal';
-import { AccountAuthorizationModal } from '../components/AccountAuthorizationModal';
-import { PayoutAuthorizationModal } from '../components/PayoutAuthorizationModal';
+import { PayoutPinModal } from '../components/PayoutPinModal';
 import { PaymentSuccessfulModal } from '../components/PaymentSuccessfulModal';
+import { UpdateTransactionPinModal } from '@/features/settings/components/UpdateTransactionPinModal';
+import { userService } from '@/shared/services/userService';
 import { toaster } from '@/components/ui/toaster-instance';
 import { FaCheck } from "react-icons/fa6";
 import { IoClose } from "react-icons/io5";
@@ -93,10 +94,30 @@ export const Payments: React.FC = () => {
     }, [fetchPayoutMethods, setEarningBalance, refreshWithdrawals]);
 
     const [showAddAccount, setShowAddAccount] = useState(false);
-    const [showAccountAuth, setShowAccountAuth] = useState(false);
-    const [showPayoutAuth, setShowPayoutAuth] = useState(false);
+    const [showPayoutPin, setShowPayoutPin] = useState(false);
+    const [showSetPin, setShowSetPin] = useState(false);
+    const [hasPin, setHasPin] = useState<boolean | null>(null);
     const [showSuccess, setShowSuccess] = useState(false);
     const [payoutAmount, setPayoutAmount] = useState('');
+
+    // Whether the artist has a transactional PIN configured. The PIN authorises
+    // payouts, so we need to know up front whether to prompt for it or send the
+    // artist through initial setup first.
+    const refreshPinStatus = React.useCallback(async () => {
+        try {
+            const status = await userService.getPinStatus();
+            setHasPin(status.hasPin);
+            return status.hasPin;
+        } catch (error) {
+            console.warn('Failed to fetch pin status', error);
+            setHasPin(false);
+            return false;
+        }
+    }, []);
+
+    useEffect(() => {
+        refreshPinStatus();
+    }, [refreshPinStatus]);
 
     const formatCurrency = (amount: number) => {
         return new Intl.NumberFormat('en-NG', {
@@ -110,19 +131,12 @@ export const Payments: React.FC = () => {
         setShowAddAccount(true);
     };
 
-    const handleAccountSaved = () => {
+    // The account is already persisted (and marked verified server-side) by the
+    // time this fires, so there is nothing left to authorise — just refresh the
+    // list so the new account shows up without a reload.
+    const handleAccountSaved = async () => {
         setShowAddAccount(false);
-        setShowAccountAuth(true);
-    };
-
-    const handleAccountAuthorized = () => {
-        setShowAccountAuth(false);
-        toaster.create({
-            title: 'Account Verified',
-            description: 'Your payout account has been verified',
-            type: 'success',
-            duration: 3000,
-        });
+        await fetchPayoutMethods();
     };
 
     const handleContinue = async () => {
@@ -148,25 +162,45 @@ export const Payments: React.FC = () => {
             return;
         }
 
-        setShowPayoutAuth(true);
-    };
-
-    const handlePayoutAuthorized = async () => {
-        setShowPayoutAuth(false);
-        const amount = parseFloat(payoutAmount);
-
-        const response = await initiatePayout(amount);
-        if (!response) {
-            // Store captured the error; surface it instead of a false success.
-            toaster.create({
-                title: 'Request failed',
-                description: usePayoutStore.getState().error ?? 'Could not submit your withdrawal request',
-                type: 'error',
-                duration: 4000,
-            });
+        // Payouts are authorised with the artist's transactional PIN. If they
+        // have not set one yet, send them through setup first.
+        const pinConfigured = hasPin ?? (await refreshPinStatus());
+        if (!pinConfigured) {
+            setShowSetPin(true);
             return;
         }
 
+        setShowPayoutPin(true);
+    };
+
+    // Returns an error message to display inline in the PIN modal, or null on
+    // success. A wrong PIN keeps the modal open so the artist can retry.
+    const handlePayoutPinSubmit = async (pin: string): Promise<string | null> => {
+        const amount = parseFloat(payoutAmount);
+
+        const response = await initiatePayout(amount, pin);
+        if (!response) {
+            const { error, errorCode } = usePayoutStore.getState();
+
+            if (errorCode === 'invalid_pin' || errorCode === 'pin_not_set') {
+                if (errorCode === 'pin_not_set') {
+                    setHasPin(false);
+                }
+                return error ?? 'That PIN was not accepted';
+            }
+
+            // Anything else is a real failure, not a bad PIN: close and surface it.
+            setShowPayoutPin(false);
+            toaster.create({
+                title: 'Request failed',
+                description: error ?? 'Could not submit your withdrawal request',
+                type: 'error',
+                duration: 4000,
+            });
+            return null;
+        }
+
+        setShowPayoutPin(false);
         setShowSuccess(true);
         setPayoutAmount('');
         await Promise.all([refreshWithdrawals(), refreshSummary()]);
@@ -182,6 +216,8 @@ export const Payments: React.FC = () => {
             type: 'success',
             duration: 4000,
         });
+
+        return null;
     };
 
     const handleSuccessClose = () => {
@@ -394,16 +430,22 @@ export const Payments: React.FC = () => {
                 onNext={handleAccountSaved}
             />
 
-            <AccountAuthorizationModal
-                isOpen={showAccountAuth}
-                onClose={() => setShowAccountAuth(false)}
-                onComplete={handleAccountAuthorized}
+            <PayoutPinModal
+                isOpen={showPayoutPin}
+                onClose={() => setShowPayoutPin(false)}
+                onSubmit={handlePayoutPinSubmit}
+                amountLabel={payoutAmount ? formatCurrency(parseFloat(payoutAmount)) : undefined}
             />
 
-            <PayoutAuthorizationModal
-                isOpen={showPayoutAuth}
-                onClose={() => setShowPayoutAuth(false)}
-                onComplete={handlePayoutAuthorized}
+            <UpdateTransactionPinModal
+                isOpen={showSetPin}
+                isInitialSetup
+                onClose={() => setShowSetPin(false)}
+                onSuccess={async () => {
+                    setShowSetPin(false);
+                    await refreshPinStatus();
+                    setShowPayoutPin(true);
+                }}
             />
 
             <PaymentSuccessfulModal

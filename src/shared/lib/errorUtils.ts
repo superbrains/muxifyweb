@@ -60,6 +60,23 @@ export function getApiErrorMessage(error: unknown, fallback = 'Something went wr
 }
 
 /**
+ * Reads the machine-readable `code` the API attaches to an error body, so
+ * callers can branch on the kind of failure rather than match on message text.
+ */
+export function getApiErrorCode(error: unknown): string | undefined {
+  if (error instanceof AxiosError) {
+    return (error.response?.data as { code?: string } | undefined)?.code;
+  }
+
+  if (error && typeof error === 'object' && 'response' in error) {
+    const axiosLike = error as { response?: { data?: { code?: string } } };
+    return axiosLike.response?.data?.code;
+  }
+
+  return undefined;
+}
+
+/**
  * Checks if an error is a specific API error code
  */
 export function isApiError(error: unknown, code: string): boolean {

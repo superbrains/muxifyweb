@@ -92,6 +92,8 @@ export interface WithdrawalRequest {
   accountNumber: string;
   accountName: string;
   bankCode?: string;
+  /** Transaction PIN authorising the payout; verified server-side. */
+  pin?: string;
 }
 
 export interface WithdrawalResponse {
