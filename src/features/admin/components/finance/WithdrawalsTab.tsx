@@ -137,8 +137,8 @@ export function WithdrawalsTab() {
                 isOpen={action?.kind === 'approve'}
                 onClose={close}
                 title="Approve withdrawal"
-                description="Moves the withdrawal into processing."
-                confirmLabel="Approve"
+                description="Sends the money. Approving dispatches a Flutterwave transfer to the bank account on this request, and the withdrawal closes itself once the gateway settles or fails. Leave the reference blank unless you are recording an external one."
+                confirmLabel="Approve & send"
                 optionalFields={[{ key: 'paymentReference', label: 'Payment reference (optional)', placeholder: 'Gateway / transfer reference' }]}
                 isLoading={pending}
                 onConfirm={({ fields }) => action && approve.mutate({ id: action.id, paymentReference: fields.paymentReference || undefined }, { onSuccess: close })}
@@ -158,7 +158,7 @@ export function WithdrawalsTab() {
                 isOpen={action?.kind === 'retry'}
                 onClose={close}
                 title="Retry withdrawal"
-                description="Re-drives a failed withdrawal back into processing."
+                description="Re-attempts the Flutterwave transfer for a failed withdrawal. Only do this once you know the first attempt did not send funds."
                 confirmLabel="Retry"
                 optionalFields={[{ key: 'paymentReference', label: 'Payment reference (optional)' }]}
                 isLoading={pending}
@@ -168,7 +168,7 @@ export function WithdrawalsTab() {
                 isOpen={action?.kind === 'markPaid'}
                 onClose={close}
                 title="Mark as paid"
-                description="Completes the withdrawal."
+                description="Escape hatch for money sent outside Muxify. Blocked while a Flutterwave transfer is still in flight — that one closes the withdrawal on its own."
                 confirmLabel="Mark paid"
                 optionalFields={[
                     { key: 'gatewayTransactionId', label: 'Gateway transaction ID (optional)' },
