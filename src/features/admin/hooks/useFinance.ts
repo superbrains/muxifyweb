@@ -208,6 +208,11 @@ const invalidateFinance = (qc: ReturnType<typeof useQueryClient>) =>
 /**
  * Shared factory for the finance "action" mutations (approve, retry, reverse…).
  * Keeps the toast + invalidation behaviour identical across every action.
+ *
+ * When maker-checker (`Finance:RequireDualApproval`) is on, the server files the
+ * action for a second reviewer and returns success WITHOUT executing it. Saying
+ * "done" there is a lie that reads as "the button is broken" — nothing on the
+ * row changes. So the toast switches to the queued wording in that mode.
  */
 function useFinanceAction<TVars>(
     fn: (vars: TVars) => Promise<unknown>,
@@ -216,11 +221,21 @@ function useFinanceAction<TVars>(
 ) {
     const qc = useQueryClient();
     const toast = useChakraToast();
+    const { data: approvals } = useApprovalSummary();
+    const queued = approvals?.dualApprovalEnabled === true;
+
     return useMutation({
         mutationFn: fn,
         onSuccess: () => {
             invalidateFinance(qc);
-            toast.success(successTitle, successBody);
+            if (queued) {
+                toast.success(
+                    'Sent for second approval',
+                    'Dual approval is on, so this has not run yet. A different admin must approve it under Payouts → Approvals.',
+                );
+            } else {
+                toast.success(successTitle, successBody);
+            }
         },
         onError: (err) => toast.error('Action failed', getApiErrorMessage(err)),
     });

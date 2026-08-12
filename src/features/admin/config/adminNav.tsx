@@ -180,7 +180,6 @@ export const useAdminNavGroups = (): NavGroup[] => {
             icon: FiDollarSign,
             items: [
                 { label: 'Coin Economy', to: '/admin/coin-economy', icon: FiCreditCard, visible: canAccess({ permission: 'CoinEconomyView' }) },
-                { label: 'Approvals', to: '/admin/finance/approvals', icon: FiCheckSquare, visible: canAccess({ permission: 'FinanceView' }) },
                 { label: 'Coin Transactions', to: '/admin/monetization/coin-transactions', icon: FiCreditCard, visible: canAccess({ permission: 'FinanceView' }) },
                 { label: 'Gifts', to: '/admin/monetization/gifts', icon: FiGift, visible: canAccess({ permission: 'FinanceView' }) },
                 { label: 'Unlocks', to: '/admin/monetization/unlocks', icon: FiUnlock, visible: canAccess({ permission: 'FinanceView' }) },
@@ -219,6 +218,17 @@ export const useAdminNavGroups = (): NavGroup[] => {
             icon: FiCreditCard,
             items: [
                 { label: 'All Requests', to: '/admin/payouts/requests', icon: FiList, exact: true, visible: canAccess({ permission: 'FinanceView' }) },
+                // Maker-checker queue. It lives here, next to the requests it gates,
+                // rather than under Monetization where it was easy to miss. Visible to
+                // the dedicated second-reviewer role too, which need not hold FinanceView.
+                {
+                    label: 'Approvals',
+                    to: '/admin/finance/approvals',
+                    icon: FiCheckSquare,
+                    visible:
+                        canAccess({ permission: 'FinanceView' }) ||
+                        canAccess({ permission: 'FinanceApproveSecondReviewer' }),
+                },
                 { label: 'Payout History', to: '/admin/payouts/history', icon: FiClock, visible: canAccess({ permission: 'FinanceView' }) },
                 { label: 'Payout Accounts', to: '/admin/payouts/accounts', icon: FiCreditCard, visible: canAccess({ permission: 'FinanceView' }) },
                 { label: 'Payout Settings', to: '/admin/payouts/settings', icon: FiSettings, visible: canAccess({ permission: 'SettingsView' }) },

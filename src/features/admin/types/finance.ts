@@ -377,6 +377,11 @@ export interface FinanceApprovalSummaryDto {
     pendingReview: number;
     approved: number;
     rejected: number;
+    /**
+     * When true, sensitive finance actions are queued for a second reviewer
+     * instead of executing on the first click. The UI must not report them done.
+     */
+    dualApprovalEnabled?: boolean;
 }
 
 export interface PayoutQuery extends DateRange {
