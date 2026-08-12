@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { payoutService } from "../services/payoutService";
-import { getApiErrorMessage } from "@shared/lib/errorUtils";
+import { getApiErrorCode, getApiErrorMessage } from "@shared/lib/errorUtils";
 import { earningsService } from "@/features/earnings-and-royalty/services/earningsService";
 import type { WithdrawalResponse } from "@/features/earnings-and-royalty/types";
 import type {
@@ -34,6 +34,8 @@ interface PayoutStore {
   isBanksLoading: boolean;
   isVerifying: boolean;
   error: string | null;
+  /** Machine-readable code for the last failure, e.g. 'invalid_pin'. */
+  errorCode: string | null;
 
   // Actions - Payout Methods
   fetchPayoutMethods: () => Promise<void>;
@@ -50,7 +52,7 @@ interface PayoutStore {
   setPayoutAccount: (account: PayoutAccount) => Promise<void>;
   addPayoutHistory: (payout: PayoutHistoryItem) => void;
   setEarningBalance: (balance: number) => void;
-  initiatePayout: (amount: number) => Promise<WithdrawalResponse | null>;
+  initiatePayout: (amount: number, pin: string) => Promise<WithdrawalResponse | null>;
   clearError: () => void;
 }
 
@@ -65,6 +67,7 @@ export const usePayoutStore = create<PayoutStore>((set, get) => ({
   isBanksLoading: false,
   isVerifying: false,
   error: null,
+  errorCode: null,
 
   // Fetch all payout methods
   fetchPayoutMethods: async () => {
@@ -354,18 +357,18 @@ export const usePayoutStore = create<PayoutStore>((set, get) => ({
   // Initiate a withdrawal request. The backend resolves real bank details from the
   // artist's default payout account and routes the request (label-managed artists go
   // through their label first; independent artists go straight to admin).
-  initiatePayout: async (amount: number) => {
+  initiatePayout: async (amount: number, pin: string) => {
     const { payoutAccount, earningBalance } = get();
     if (!payoutAccount) {
-      set({ error: "No payout account configured" });
+      set({ error: "No payout account configured", errorCode: "no_account" });
       return null;
     }
     if (amount > earningBalance) {
-      set({ error: "Insufficient balance" });
+      set({ error: "Insufficient balance", errorCode: "insufficient_balance" });
       return null;
     }
 
-    set({ isLoading: true, error: null });
+    set({ isLoading: true, error: null, errorCode: null });
     try {
       const response = await earningsService.requestWithdrawal({
         amountInSmallestUnit: Math.round(amount * 100),
@@ -373,6 +376,7 @@ export const usePayoutStore = create<PayoutStore>((set, get) => ({
         accountNumber: payoutAccount.accountNumber,
         accountName: payoutAccount.accountName,
         bankCode: payoutAccount.bankCode,
+        pin,
       });
 
       // Optimistically reduce the visible available balance; the next summary fetch
@@ -386,6 +390,7 @@ export const usePayoutStore = create<PayoutStore>((set, get) => ({
     } catch (error) {
       set({
         error: getApiErrorMessage(error, "Withdrawal request failed"),
+        errorCode: getApiErrorCode(error) ?? null,
         isLoading: false,
       });
       return null;
@@ -394,6 +399,6 @@ export const usePayoutStore = create<PayoutStore>((set, get) => ({
 
   // Clear error
   clearError: () => {
-    set({ error: null });
+    set({ error: null, errorCode: null });
   },
 }));
