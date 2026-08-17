@@ -1,4 +1,4 @@
-import { isoDaysAgo, todayIso } from '../../lib/format';
+import { isoDaysAgo, todayIso } from '@shared/console/lib/format';
 import type { DateRangeQuery } from '../../types/monetization';
 
 /** Date-range presets shared by the Revenue / Commission / Royalties summary pages. */

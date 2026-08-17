@@ -2,7 +2,7 @@ import React from 'react';
 import { Box, Button, Drawer, HStack, Portal, Spinner, Text, VStack } from '@chakra-ui/react';
 import { StatusBadge } from '../StatusBadge';
 import { financeStatusStyle, transactionTypeStyle } from '../../lib/financeStatusColor';
-import { adminDateTime, formatCount } from '../../lib/format';
+import { adminDateTime, formatCount } from '@shared/console/lib/format';
 import { useFinanceTransaction, useRefundPurchase } from '../../hooks/useFinance';
 import { ActionDialog } from './ActionDialog';
 import { WalletAdjustDialog } from './WalletAdjustDialog';

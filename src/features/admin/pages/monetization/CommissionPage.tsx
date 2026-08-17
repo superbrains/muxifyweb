@@ -24,9 +24,9 @@ import {
     IdentityCell,
     KpiStrip,
     StatusBadge,
-} from '../../components/ui';
-import type { KpiItem } from '../../components/ui';
-import { adminDate, formatCount, formatMinorAmount } from '../../lib/format';
+} from '@shared/console';
+import type { KpiItem } from '@shared/console';
+import { adminDate, formatCount, formatMinorAmount } from '@shared/console/lib/format';
 import { useHasPermission } from '../../hooks/useAdminManagement';
 import {
     useCommission,

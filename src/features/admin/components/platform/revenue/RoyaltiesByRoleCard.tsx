@@ -1,7 +1,7 @@
 import React from 'react';
 import ReactApexChart from 'react-apexcharts';
 import type { ApexOptions } from 'apexcharts';
-import { formatCount, formatMinorAmount } from '../../../lib/format';
+import { formatCount, formatMinorAmount } from '@shared/console/lib/format';
 import type { RoyaltiesSummaryDto } from '../../../types/monetization';
 import { ChartCard } from '../ChartCard';
 

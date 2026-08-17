@@ -3,7 +3,7 @@ import { Box, Center, Icon, Text, VStack } from '@chakra-ui/react';
 import { FiLock } from 'react-icons/fi';
 import { AnimatedTabs } from '@shared/components';
 import { AdminPageHeader } from '../components/AdminPageHeader';
-import { AdminLoading } from '../components/AdminStateBlock';
+import { AdminLoading } from '@shared/console/components/AdminStateBlock';
 import { AdminsTab } from '../components/management/AdminsTab';
 import { RolesTab } from '../components/management/RolesTab';
 import { ActivityTab } from '../components/management/ActivityTab';

@@ -24,9 +24,9 @@ import {
     IdentityCell,
     KpiStrip,
     StatusBadge,
-} from '../../components/ui';
-import type { DataColumn } from '../../components/ui';
-import { adminDate } from '../../lib/format';
+} from '@shared/console';
+import type { DataColumn } from '@shared/console';
+import { adminDate } from '@shared/console/lib/format';
 import { useHasPermission } from '../../hooks/useAdminManagement';
 import {
     useApproveLyrics,

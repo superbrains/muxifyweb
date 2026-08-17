@@ -13,8 +13,8 @@ import {
     FiVideo,
 } from 'react-icons/fi';
 import { UserAvatar } from '@shared/components';
-import { CoverThumb, StatusBadge, toneStyle } from '../../components/ui';
-import { formatCount } from '../../lib/format';
+import { CoverThumb, StatusBadge, toneStyle } from '@shared/console';
+import { formatCount } from '@shared/console/lib/format';
 import type { CurationAction } from '../../types/discovery';
 import { CURATION_TONE, rankChangeStyle } from './discoveryUtils';
 

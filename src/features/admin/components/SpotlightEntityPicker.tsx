@@ -1,7 +1,7 @@
 import React from 'react';
 import { Badge, Box, HStack, Icon, Input, Spinner, Text } from '@chakra-ui/react';
 import { FiSearch, FiX } from 'react-icons/fi';
-import { CoverThumb } from './ui';
+import { CoverThumb } from '@shared/console';
 import { contentService } from '../services/contentService';
 import { spotlightService } from '../services/spotlightService';
 import type { ContentItemDto, ContentKind } from '../types/content';

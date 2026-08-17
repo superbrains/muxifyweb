@@ -12,11 +12,11 @@ import {
     KpiStrip,
     MetaGrid,
     StatusBadge,
-} from '../ui';
-import type { AuditEntry, DataColumn, KpiItem, MetaField } from '../ui';
+} from '@shared/console';
+import type { AuditEntry, DataColumn, KpiItem, MetaField } from '@shared/console';
 import { getApiErrorMessage } from '@/shared/lib/errorUtils';
-import { exportCsv } from '../../lib/exportCsv';
-import { adminDate, adminDateTime, formatMinorAmount } from '../../lib/format';
+import { exportCsv } from '@shared/console/lib/exportCsv';
+import { adminDate, adminDateTime, formatMinorAmount } from '@shared/console/lib/format';
 import { financeStatusStyle } from '../../lib/financeStatusColor';
 import {
     useApproveWithdrawal,

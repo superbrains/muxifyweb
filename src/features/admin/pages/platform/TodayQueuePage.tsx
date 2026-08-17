@@ -1,12 +1,12 @@
 import React from 'react';
 import { Button, Grid, GridItem, HStack } from '@chakra-ui/react';
 import { FiRefreshCw } from 'react-icons/fi';
-import { AdminPageLayout, AdminError, AdminLoading, KpiStrip } from '../../components/ui';
-import type { KpiItem } from '../../components/ui';
+import { AdminPageLayout, AdminError, AdminLoading, KpiStrip } from '@shared/console';
+import type { KpiItem } from '@shared/console';
 import { getApiErrorMessage } from '@/shared/lib/errorUtils';
-import { formatCount, todayIso } from '../../lib/format';
-import { exportCsv } from '../../lib/exportCsv';
-import type { CsvColumn } from '../../lib/exportCsv';
+import { formatCount, todayIso } from '@shared/console/lib/format';
+import { exportCsv } from '@shared/console/lib/exportCsv';
+import type { CsvColumn } from '@shared/console/lib/exportCsv';
 import { ExportButton } from '../../components/finance/FinanceFilters';
 import { RiskBreakdownDonut } from '../../components/platform/risk/RiskBreakdownDonut';
 import { QueueInflowChart } from '../../components/platform/queue/QueueInflowChart';

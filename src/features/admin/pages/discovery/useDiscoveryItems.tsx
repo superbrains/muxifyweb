@@ -1,5 +1,5 @@
 import React from 'react';
-import type { DataColumn } from '../../components/ui';
+import type { DataColumn } from '@shared/console';
 import { useHasPermission } from '../../hooks/useAdminManagement';
 import {
     useCreateOverride,

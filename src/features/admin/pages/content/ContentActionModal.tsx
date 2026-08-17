@@ -1,6 +1,6 @@
 import React from 'react';
-import { ConfirmActionModal } from '../../components/ui';
-import type { ActionTone } from '../../components/ui';
+import { ConfirmActionModal } from '@shared/console';
+import type { ActionTone } from '@shared/console';
 import type { ContentActionKind, useContentItems } from './useContentItems';
 
 type Controller = ReturnType<typeof useContentItems>;

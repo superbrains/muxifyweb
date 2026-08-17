@@ -1,7 +1,7 @@
 import { Box, SimpleGrid, Text } from '@chakra-ui/react';
 import ReactApexChart from 'react-apexcharts';
 import type { ApexOptions } from 'apexcharts';
-import { formatMinorAmount } from '../../lib/format';
+import { formatMinorAmount } from '@shared/console/lib/format';
 import type { FinanceOverview } from '../../types/finance';
 
 function ChartCard({ title, children }: { title: string; children: React.ReactNode }) {

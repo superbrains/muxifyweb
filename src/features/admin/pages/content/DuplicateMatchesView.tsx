@@ -11,9 +11,9 @@ import {
     KpiStrip,
     StatusBadge,
     toneStyle,
-} from '../../components/ui';
-import type { DataColumn, KpiItem, SelectFilter } from '../../components/ui';
-import { adminDate } from '../../lib/format';
+} from '@shared/console';
+import type { DataColumn, KpiItem, SelectFilter } from '@shared/console';
+import { adminDate } from '@shared/console/lib/format';
 import { useHasPermission } from '../../hooks/useAdminManagement';
 import {
     useConfirmMatch,

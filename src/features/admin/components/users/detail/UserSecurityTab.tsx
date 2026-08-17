@@ -1,6 +1,6 @@
 import React from 'react';
 import { Box } from '@chakra-ui/react';
-import { ConfirmActionModal } from '../../ui';
+import { ConfirmActionModal } from '@shared/console';
 import { SecurityPanelBody } from '../../security/SecurityPanelBody';
 import { useLockUser } from '../../../hooks/useSecurity';
 

@@ -5,7 +5,22 @@ import tailwindcss from "@tailwindcss/vite";
 import tsconfigPaths from "vite-tsconfig-paths";
 import svgr from "@svgr/rollup";
 
-export default defineConfig({
+/**
+ * Two build targets share this config:
+ *
+ *   vite build                 → dist/       from index.html  (fan / artist app)
+ *   vite build --mode admin    → dist-admin/ from admin.html  (staff console)
+ *
+ * They are deployed as separate origins (app./admin.getmuxify.com) so the admin
+ * console's route table, nav and services never ship to non-staff users, and an
+ * XSS in the creator app cannot reach an admin session. `--mode` is used rather
+ * than an env var so the same command works on Windows and in the Linux image
+ * build without needing cross-env.
+ */
+export default defineConfig(({ mode }) => {
+  const isAdmin = mode === "admin";
+
+  return {
   plugins: [react(), tailwindcss(), tsconfigPaths(), svgr({ icon: true })],
   resolve: {
     alias: {
@@ -36,15 +51,18 @@ export default defineConfig({
       "@settings": path.resolve(__dirname, "./src/features/settings"),
       "@onboarding": path.resolve(__dirname, "./src/features/onboarding"),
       "@ads": path.resolve(__dirname, "./src/features/ads"),
+      "@admin": path.resolve(__dirname, "./src/features/admin"),
     },
   },
   build: {
+    outDir: isAdmin ? "dist-admin" : "dist",
     rollupOptions: {
       input: {
-        main: path.resolve(__dirname, "index.html"),
+        main: path.resolve(__dirname, isAdmin ? "admin.html" : "index.html"),
       },
     },
     copyPublicDir: true,
   },
   publicDir: "public",
+  };
 });

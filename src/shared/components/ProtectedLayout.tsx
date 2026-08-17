@@ -3,6 +3,7 @@ import { Box } from '@chakra-ui/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
+import type { SidebarNavContext } from './Sidebar';
 import { Navbar } from './Navbar';
 import { ErrorBoundary } from './ErrorBoundary';
 import { useSidebarStore } from '@/shared/store/useSidebarStore';
@@ -14,9 +15,11 @@ import { usePlayerStore } from '@/features/player/store/usePlayerStore';
 
 interface ProtectedLayoutProps {
     children: React.ReactNode;
+    /** Forwarded to `Sidebar`. Each app supplies its own nav — see `Sidebar`. */
+    renderNav: (ctx: SidebarNavContext) => React.ReactNode;
 }
 
-export const ProtectedLayout: React.FC<ProtectedLayoutProps> = ({ children }) => {
+export const ProtectedLayout: React.FC<ProtectedLayoutProps> = ({ children, renderNav }) => {
     const { isCollapsed, isMobileOpen, setMobileOpen, setCollapsed } = useSidebarStore();
     const [isInitialRender, setIsInitialRender] = React.useState(true);
     const [isChecking, setIsChecking] = React.useState(true);
@@ -88,6 +91,7 @@ export const ProtectedLayout: React.FC<ProtectedLayoutProps> = ({ children }) =>
                 <Sidebar
                     isCollapsed={isCollapsed}
                     onToggle={() => { }} // No toggle needed as per requirements
+                    renderNav={renderNav}
                 />
             </motion.div>
 

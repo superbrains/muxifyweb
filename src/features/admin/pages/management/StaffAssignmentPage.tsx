@@ -7,7 +7,7 @@ import {
     DataTable,
     IdentityCell,
     type DataColumn,
-} from '../../components/ui';
+} from '@shared/console';
 import { ManagementDialog } from '../../components/management/ManagementDialog';
 import {
     useAdmins,

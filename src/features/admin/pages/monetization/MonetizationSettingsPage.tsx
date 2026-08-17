@@ -6,7 +6,7 @@ import {
     AdminError,
     AdminLoading,
     AdminPageLayout,
-} from '../../components/ui';
+} from '@shared/console';
 import { useChakraToast } from '@shared/hooks';
 import { useHasPermission } from '../../hooks/useAdminManagement';
 import { useCoinEconomySettings, useUpdateCoinEconomySettings } from '../../hooks/useCoinEconomy';

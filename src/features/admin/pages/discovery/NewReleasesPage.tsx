@@ -1,6 +1,6 @@
 import React from 'react';
 import { FiClock } from 'react-icons/fi';
-import { AdminPageLayout, FilterBar } from '../../components/ui';
+import { AdminPageLayout, FilterBar } from '@shared/console';
 import { useNewReleases } from '../../hooks/useDiscovery';
 import { useDiscoveryItems } from './useDiscoveryItems';
 import { useTrendingFamilyFilters } from './useTrendingFamilyFilters';

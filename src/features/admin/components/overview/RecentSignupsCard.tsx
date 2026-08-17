@@ -1,9 +1,9 @@
 import React from 'react';
 import { Box, HStack, Text, VStack } from '@chakra-ui/react';
 import { useNavigate } from 'react-router-dom';
-import { IdentityCell } from '../IdentityCell';
+import { IdentityCell } from '@shared/console/components/IdentityCell';
 import { roleLabel } from '../../lib/statusColor';
-import { adminRelative } from '../../lib/format';
+import { adminRelative } from '@shared/console/lib/format';
 import type { AdminUserDto } from '../../types';
 
 interface RecentSignupsCardProps {

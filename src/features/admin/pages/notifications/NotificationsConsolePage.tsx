@@ -26,11 +26,11 @@ import {
     ConfirmActionModal,
     DataTable,
     KpiStrip,
-} from '../../components/ui';
-import type { DataColumn, KpiItem } from '../../components/ui';
+} from '@shared/console';
+import type { DataColumn, KpiItem } from '@shared/console';
 import { Select } from '@shared/components';
 import { getApiErrorMessage } from '@/shared/lib/errorUtils';
-import { adminDateTime, formatCount, isoDaysAgo, todayIso } from '../../lib/format';
+import { adminDateTime, formatCount, isoDaysAgo, todayIso } from '@shared/console/lib/format';
 import { useHasPermission } from '../../hooks/useAdminManagement';
 import {
     useBroadcasts,

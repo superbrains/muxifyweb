@@ -23,8 +23,8 @@ import {
 } from 'react-icons/fi';
 import { formatNaira } from '@shared/utils';
 import { formatTrend } from '@/features/record-label/lib/format';
-import { KpiStrip, StatusBadge, resolveStatusStyle } from '@/features/admin/components/ui';
-import type { KpiItem } from '@/features/admin/components/ui';
+import { KpiStrip, StatusBadge, resolveStatusStyle } from '@shared/console';
+import type { KpiItem } from '@shared/console';
 import {
     useContributorEarningsSummary,
     useContributorEarningsHistory,

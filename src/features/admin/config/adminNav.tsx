@@ -43,7 +43,7 @@ import {
     FiUsers,
     FiVideo,
 } from 'react-icons/fi';
-import type { NavGroup, NavLink } from '../components/ui';
+import type { NavGroup, NavLink } from '@shared/console';
 import { useRoleScope } from '../hooks/useAdminManagement';
 import { PLATFORM_ROLES, type PlatformRole } from './adminRoles';
 

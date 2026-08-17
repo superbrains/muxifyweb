@@ -8,8 +8,8 @@ import {
     KpiStrip,
     StatusBadge,
     toneStyle,
-} from '@/features/admin/components/ui';
-import type { DataColumn, KpiItem } from '@/features/admin/components/ui';
+} from '@shared/console';
+import type { DataColumn, KpiItem } from '@shared/console';
 import {
     useContributorEarningsSummary,
     useContributorEarningsHistory,

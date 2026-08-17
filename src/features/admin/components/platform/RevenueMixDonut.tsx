@@ -1,7 +1,7 @@
 import React from 'react';
 import ReactApexChart from 'react-apexcharts';
 import type { ApexOptions } from 'apexcharts';
-import { formatMinorAmount } from '../../lib/format';
+import { formatMinorAmount } from '@shared/console/lib/format';
 import type { RevenueMixSlice } from '../../types/platform';
 import { ChartCard } from './ChartCard';
 

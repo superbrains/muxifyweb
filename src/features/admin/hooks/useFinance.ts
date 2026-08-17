@@ -209,26 +209,32 @@ const invalidateFinance = (qc: ReturnType<typeof useQueryClient>) =>
  * Shared factory for the finance "action" mutations (approve, retry, reverse…).
  * Keeps the toast + invalidation behaviour identical across every action.
  *
- * When maker-checker (`Finance:RequireDualApproval`) is on, the server files the
- * action for a second reviewer and returns success WITHOUT executing it. Saying
- * "done" there is a lie that reads as "the button is broken" — nothing on the
- * row changes. So the toast switches to the queued wording in that mode.
+ * Pass `gated` for the actions the server routes through `RequireSecondReviewerAsync`.
+ * With `Finance:RequireDualApproval` on, those return success WITHOUT executing —
+ * the action is only filed for a second reviewer — so reporting "done" reads as
+ * "the button is broken" when nothing on the row changes.
+ *
+ * `gated` must stay OFF for everything else, and especially for the reviewer's own
+ * approve/reject on the Approvals page: those always execute, and telling the
+ * checker their decision "still needs a second approval" is both wrong and a
+ * dead end.
  */
 function useFinanceAction<TVars>(
     fn: (vars: TVars) => Promise<unknown>,
     successTitle: string,
     successBody: string,
+    gated = false,
 ) {
     const qc = useQueryClient();
     const toast = useChakraToast();
     const { data: approvals } = useApprovalSummary();
-    const queued = approvals?.dualApprovalEnabled === true;
+    const queuedForReview = gated && approvals?.dualApprovalEnabled === true;
 
     return useMutation({
         mutationFn: fn,
         onSuccess: () => {
             invalidateFinance(qc);
-            if (queued) {
+            if (queuedForReview) {
                 toast.success(
                     'Sent for second approval',
                     'Dual approval is on, so this has not run yet. A different admin must approve it under Payouts → Approvals.',
@@ -246,7 +252,8 @@ export const useApproveWithdrawal = () =>
         (v: { id: string; paymentReference?: string; adminNotes?: string }) =>
             financeService.approveWithdrawal(v.id, { paymentReference: v.paymentReference, adminNotes: v.adminNotes }),
         'Withdrawal approved',
-        'The withdrawal is now processing.',
+        'Flutterwave transfer dispatched — the withdrawal closes itself once it settles.',
+        true,
     );
 
 export const useRejectWithdrawal = () =>
@@ -273,6 +280,7 @@ export const useMarkWithdrawalPaid = () =>
             }),
         'Marked as paid',
         'The withdrawal is now completed.',
+        true,
     );
 
 export const useRetryPayout = () =>
@@ -332,6 +340,7 @@ export const useCreditWallet = () =>
             financeService.creditWallet(v.userId, { amount: v.amount, reason: v.reason }),
         'Wallet credited',
         'Coins were added to the wallet.',
+        true,
     );
 
 export const useDebitWallet = () =>
@@ -340,6 +349,7 @@ export const useDebitWallet = () =>
             financeService.debitWallet(v.userId, { amount: v.amount, reason: v.reason }),
         'Wallet debited',
         'Coins were removed from the wallet.',
+        true,
     );
 
 export const useReverseGift = () =>
@@ -347,6 +357,7 @@ export const useReverseGift = () =>
         (v: { id: string; reason: string }) => financeService.reverseGift(v.id, { reason: v.reason }),
         'Gift reversed',
         'The gift was reversed and the sender refunded.',
+        true,
     );
 
 export const useRefundPurchase = () =>
@@ -354,6 +365,7 @@ export const useRefundPurchase = () =>
         (v: { id: string; reason: string }) => financeService.refundPurchase(v.id, { reason: v.reason }),
         'Purchase refunded',
         'The purchase was refunded.',
+        true,
     );
 
 export const useRefundContentUnlock = () =>
@@ -361,6 +373,7 @@ export const useRefundContentUnlock = () =>
         (v: { id: string; reason: string }) => financeService.refundContentUnlock(v.id, { reason: v.reason }),
         'Unlock refunded',
         'The unlock was refunded and the fan was credited back.',
+        true,
     );
 
 export const useRefundAirtimeUnlock = () =>
@@ -368,15 +381,18 @@ export const useRefundAirtimeUnlock = () =>
         (v: { id: string; reason: string }) => financeService.refundAirtimeUnlock(v.id, { reason: v.reason }),
         'Airtime unlock refunded',
         'The airtime unlock was marked as refunded.',
+        true,
     );
 
 // ----- Maker-checker (dual-approval) -----
+// These are the CHECKER's own actions. They always execute, so they must never
+// carry `gated` — the reviewer is the second approval, not waiting on one.
 
 export const useApproveRequest = () =>
     useFinanceAction(
         (v: { id: string }) => financeService.approveRequest(v.id),
-        'Request approved',
-        'The second review was recorded and the action applied.',
+        'Approved and executed',
+        'The original action has now run.',
     );
 
 export const useRejectRequest = () =>

@@ -13,7 +13,7 @@ import {
 } from '@chakra-ui/react';
 import { FiDownload } from 'react-icons/fi';
 import { adsService } from '../services/adsService';
-import { exportCsv, type CsvColumn } from '@/features/admin/lib/exportCsv';
+import { exportCsv, type CsvColumn } from '@shared/console/lib/exportCsv';
 import { formatNaira } from '@/shared/lib';
 import type { AdReportDto, AdReportRowDto } from '../types';
 

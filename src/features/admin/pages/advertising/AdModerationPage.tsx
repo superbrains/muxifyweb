@@ -8,9 +8,9 @@ import {
     DataTable,
     FilterBar,
     StatusBadge,
-} from '../../components/ui';
-import type { ActionTone, DataColumn } from '../../components/ui';
-import { adminDate, formatMinorAmount } from '../../lib/format';
+} from '@shared/console';
+import type { ActionTone, DataColumn } from '@shared/console';
+import { adminDate, formatMinorAmount } from '@shared/console/lib/format';
 import { useHasPermission } from '../../hooks/useAdminManagement';
 import { useAdModeration, useRejectCampaign, useStopCampaign } from '../../hooks/useAdvertising';
 import {

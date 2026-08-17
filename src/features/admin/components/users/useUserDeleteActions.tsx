@@ -1,6 +1,6 @@
 import React from 'react';
 import { ConfirmModal } from '@shared/components';
-import { ConfirmActionModal } from '../ui';
+import { ConfirmActionModal } from '@shared/console';
 import { useHasPermission } from '../../hooks/useAdminManagement';
 import {
     usePermanentDeleteUser,

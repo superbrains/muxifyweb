@@ -4,11 +4,11 @@ import { FiPlus } from 'react-icons/fi';
 import { CustomMenu } from '@shared/components';
 import { useUserStore } from '@app/store/useUserStore';
 import { AdminTable, type AdminTableColumn } from '../AdminTable';
-import { AdminError, AdminLoading } from '../AdminStateBlock';
-import { IdentityCell } from '../IdentityCell';
+import { AdminError, AdminLoading } from '@shared/console/components/AdminStateBlock';
+import { IdentityCell } from '@shared/console/components/IdentityCell';
 import { StatusBadge } from '../StatusBadge';
 import { accountStatusStyle } from '../../lib/statusColor';
-import { adminDate } from '../../lib/format';
+import { adminDate } from '@shared/console/lib/format';
 import { InviteAdminModal } from './InviteAdminModal';
 import { AdminDetailModal } from './AdminDetailModal';
 import {

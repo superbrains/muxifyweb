@@ -8,9 +8,9 @@ import {
     DataTable,
     KpiStrip,
     StatusBadge,
-} from '../../components/ui';
-import type { DataColumn, KpiItem } from '../../components/ui';
-import { formatCount, formatMinorAmount } from '../../lib/format';
+} from '@shared/console';
+import type { DataColumn, KpiItem } from '@shared/console';
+import { formatCount, formatMinorAmount } from '@shared/console/lib/format';
 import { useHasPermission } from '../../hooks/useAdminManagement';
 import { useAdOverview } from '../../hooks/useAdvertising';
 import type { AdStatusCountDto } from '../../types/advertising';

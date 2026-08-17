@@ -30,8 +30,8 @@ import {
     StatusBadge,
     AdminPageLayout,
     IdentityCell,
-} from '../../components/ui';
-import type { ActionTone, AuditEntry, DataColumn, KpiItem } from '../../components/ui';
+} from '@shared/console';
+import type { ActionTone, AuditEntry, DataColumn, KpiItem } from '@shared/console';
 import { useHasPermission } from '../../hooks/useAdminManagement';
 import {
     useAddContributor,
@@ -50,7 +50,7 @@ import {
     useUpdateSplits,
     useUpdateTemplate,
 } from '../../hooks/useMonetization';
-import { formatCount } from '../../lib/format';
+import { formatCount } from '@shared/console/lib/format';
 import {
     SPLIT_RECIPIENT_ROLE_OPTIONS,
     type RoyaltyRecipientDto,

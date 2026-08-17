@@ -2,7 +2,7 @@ import React from 'react';
 import { Box, HStack, SimpleGrid, Stack, Text, VStack } from '@chakra-ui/react';
 import { FiExternalLink } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
-import { IdentityCell, StatusBadge } from '../../ui';
+import { IdentityCell, StatusBadge } from '@shared/console';
 import { StatusBadge as LegacyStatusBadge } from '../../StatusBadge';
 import { DocumentViewer } from '../../verification/DocumentViewer';
 import { medalStyle, verificationStatusStyle } from '../../../lib/statusColor';
@@ -11,7 +11,7 @@ import {
     adminDateTime,
     formatCount,
     formatMinorAmount,
-} from '../../../lib/format';
+} from '@shared/console/lib/format';
 import { Field, Panel } from './Panel';
 import type {
     AdminAddressDto,

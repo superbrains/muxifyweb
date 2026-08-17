@@ -3,7 +3,7 @@ import { Box, Button, Center, HStack, Text } from '@chakra-ui/react';
 import ReactApexChart from 'react-apexcharts';
 import type { ApexOptions } from 'apexcharts';
 import { baseChartTheme } from '@/features/record-label/lib/chartTheme';
-import { formatCount } from '../../../lib/format';
+import { formatCount } from '@shared/console/lib/format';
 import type { Granularity, GrowthSignupPoint } from '../../../types/platform';
 import { ChartCard } from '../ChartCard';
 import { formatBucket, formatCompact } from '../chartFormat';

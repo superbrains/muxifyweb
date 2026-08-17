@@ -22,7 +22,7 @@ import { useWindowWidth } from '@/shared/hooks/useWindowsWidth';
 import { useUserType } from '@/features/auth/hooks/useUserType';
 import { useDashboard } from '../hooks/useDashboard';
 import { formatNaira } from '@shared/lib';
-import { exportCsv } from '@/features/admin/lib/exportCsv';
+import { exportCsv } from '@shared/console/lib/exportCsv';
 import { DashboardDateFilter, type DashboardDateSelection } from '../components/DashboardDateFilter';
 import { leaderboardService } from '@/features/leaderboard/services/leaderboardService';
 import type { TopGifterDto } from '@/features/leaderboard/types';

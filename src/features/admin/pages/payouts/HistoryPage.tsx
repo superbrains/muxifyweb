@@ -12,12 +12,12 @@ import {
     KpiStrip,
     MetaGrid,
     StatusBadge,
-} from '../../components/ui';
-import type { DataColumn, KpiItem, MetaField } from '../../components/ui';
+} from '@shared/console';
+import type { DataColumn, KpiItem, MetaField } from '@shared/console';
 import { ActionDialog } from '../../components/finance/ActionDialog';
 import { getApiErrorMessage } from '@/shared/lib/errorUtils';
-import { exportCsv } from '../../lib/exportCsv';
-import { adminDateTime, formatMinorAmount } from '../../lib/format';
+import { exportCsv } from '@shared/console/lib/exportCsv';
+import { adminDateTime, formatMinorAmount } from '@shared/console/lib/format';
 import { financeStatusStyle } from '../../lib/financeStatusColor';
 import {
     useCancelPayout,

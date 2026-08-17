@@ -13,9 +13,9 @@ import {
     KpiStrip,
     MetaGrid,
     StatusBadge,
-} from '../../components/ui';
-import type { DataColumn, KpiItem, MetaField, SortState } from '../../components/ui';
-import { adminDateTime, formatCount, formatMinorAmount } from '../../lib/format';
+} from '@shared/console';
+import type { DataColumn, KpiItem, MetaField, SortState } from '@shared/console';
+import { adminDateTime, formatCount, formatMinorAmount } from '@shared/console/lib/format';
 import { useChakraToast } from '@shared/hooks';
 import { getApiErrorMessage } from '@/shared/lib/errorUtils';
 import {

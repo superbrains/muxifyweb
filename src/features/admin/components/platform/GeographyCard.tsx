@@ -1,9 +1,9 @@
 import React from 'react';
 import { Box, Text, VStack } from '@chakra-ui/react';
 import { FiGlobe } from 'react-icons/fi';
-import { DataTable } from '../ui';
-import type { DataColumn } from '../ui';
-import { formatCount, formatMinorAmount } from '../../lib/format';
+import { DataTable } from '@shared/console';
+import type { DataColumn } from '@shared/console';
+import { formatCount, formatMinorAmount } from '@shared/console/lib/format';
 import { useGeographyAnalytics } from '../../hooks/usePlatform';
 import type { DateWindow, GeographyRow } from '../../types/platform';
 

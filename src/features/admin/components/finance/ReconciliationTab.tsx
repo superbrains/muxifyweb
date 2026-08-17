@@ -1,9 +1,9 @@
 import React from 'react';
 import { Badge, Box, HStack, SimpleGrid, Text, VStack } from '@chakra-ui/react';
 import { AdminTable, type AdminTableColumn } from '../AdminTable';
-import { AdminLoading, AdminError } from '../AdminStateBlock';
+import { AdminLoading, AdminError } from '@shared/console/components/AdminStateBlock';
 import { getApiErrorMessage } from '@/shared/lib/errorUtils';
-import { formatCount, formatMinorAmount } from '../../lib/format';
+import { formatCount, formatMinorAmount } from '@shared/console/lib/format';
 import { useReconciliation } from '../../hooks/useFinance';
 import type { DateRange, LedgerAccountBalance } from '../../types/finance';
 import { DateRangeFilter, ToolbarCard } from './FinanceFilters';

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Box, HStack, Text, VStack } from '@chakra-ui/react';
-import { formatCount } from '../../../lib/format';
+import { formatCount } from '@shared/console/lib/format';
 import type { PlatformActiveRow } from '../../../types/platform';
 import { ChartCard } from '../ChartCard';
 

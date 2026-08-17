@@ -2,7 +2,7 @@ import React from 'react';
 import { Box, Grid, HStack, Text, VStack } from '@chakra-ui/react';
 import { useNavigate } from 'react-router-dom';
 import { FiArrowRight, FiClock } from 'react-icons/fi';
-import { formatCount } from '../../../lib/format';
+import { formatCount } from '@shared/console/lib/format';
 import type { TodayQueueItem } from '../../../types/platform';
 import { AGING_COLORS, bySlaSeverityDesc, formatAge, slaStyle } from './queueFormat';
 

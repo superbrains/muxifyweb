@@ -10,9 +10,9 @@ import {
     IdentityCell,
     KpiStrip,
     StatusBadge,
-} from '../../components/ui';
-import type { DataColumn, KpiItem } from '../../components/ui';
-import { formatCount } from '../../lib/format';
+} from '@shared/console';
+import type { DataColumn, KpiItem } from '@shared/console';
+import { formatCount } from '@shared/console/lib/format';
 import { useHasPermission } from '../../hooks/useAdminManagement';
 import { useCreateExclusion, useTopGivers } from '../../hooks/useDiscovery';
 import {

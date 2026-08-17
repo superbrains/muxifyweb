@@ -8,9 +8,9 @@ import {
     DataTable,
     DetailDrawer,
     FilterBar,
-} from '../../components/ui';
-import type { DataColumn } from '../../components/ui';
-import { adminDateTime } from '../../lib/format';
+} from '@shared/console';
+import type { DataColumn } from '@shared/console';
+import { adminDateTime } from '@shared/console/lib/format';
 import { useHasPermission } from '../../hooks/useAdminManagement';
 import { useAuditTrail } from '../../hooks/useGovernance';
 import type { AuditTrailEntryDto, AuditTrailQuery } from '../../types/governance';

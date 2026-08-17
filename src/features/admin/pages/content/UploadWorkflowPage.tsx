@@ -14,10 +14,10 @@ import {
     KpiStrip,
     MetaGrid,
     StatusBadge,
-} from '../../components/ui';
-import type { DataColumn, DetailTab, MetaField } from '../../components/ui';
+} from '@shared/console';
+import type { DataColumn, DetailTab, MetaField } from '@shared/console';
 import { RescheduleModal } from '../../components/content/RescheduleModal';
-import { adminDateTime } from '../../lib/format';
+import { adminDateTime } from '@shared/console/lib/format';
 import { useHasPermission } from '../../hooks/useAdminManagement';
 import {
     useProcessingItems,

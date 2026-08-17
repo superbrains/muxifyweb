@@ -32,9 +32,9 @@ import {
     DetailDrawer,
     FilterBar,
     StatusBadge,
-} from '../../components/ui';
-import type { AuditEntry, DataColumn } from '../../components/ui';
-import { adminDate, adminDateTime, formatMinorAmount } from '../../lib/format';
+} from '@shared/console';
+import type { AuditEntry, DataColumn } from '@shared/console';
+import { adminDate, adminDateTime, formatMinorAmount } from '@shared/console/lib/format';
 import { useHasPermission } from '../../hooks/useAdminManagement';
 import {
     useAddDisputeNote,

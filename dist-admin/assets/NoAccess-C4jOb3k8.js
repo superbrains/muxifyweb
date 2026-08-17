@@ -1,0 +1,1 @@
+import{j as s,ab as i}from"./main-CXGnWUAb.js";import{A as e}from"./EmptyState-CHIMNlDE.js";const r=()=>s.jsx(e,{icon:i,title:"You do not have access",description:"This area requires the advertising view permission."});export{r as N};

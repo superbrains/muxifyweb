@@ -1,0 +1,1 @@
+import{j as i,k as a,B as e,T as t}from"./main-CXGnWUAb.js";const r=({style:o,label:s})=>i.jsxs(a,{gap:1.5,bg:o.bg,color:o.color,fontSize:"10px",fontWeight:"semibold",px:2.5,py:1,borderRadius:"full",display:"inline-flex",w:"fit-content",children:[i.jsx(e,{boxSize:"6px",borderRadius:"full",bg:o.dot}),i.jsx(t,{children:s??o.label})]});export{r as S};

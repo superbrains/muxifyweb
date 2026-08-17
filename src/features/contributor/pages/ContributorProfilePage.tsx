@@ -16,7 +16,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { FiCheckCircle, FiClock, FiExternalLink, FiXCircle, FiShield } from 'react-icons/fi';
 import { useChakraToast } from '@shared/hooks';
 import { getApiErrorMessage } from '@/shared/lib/errorUtils';
-import { StatusBadge } from '@/features/admin/components/ui';
+import { StatusBadge } from '@shared/console';
 import {
     useContributorProfile,
     useSaveContributorProfile,

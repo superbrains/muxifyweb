@@ -23,8 +23,8 @@ import {
     DataTable,
     KpiStrip,
     StatusBadge as KitStatusBadge,
-} from '../components/ui';
-import type { DataColumn, KpiItem } from '../components/ui';
+} from '@shared/console';
+import type { DataColumn, KpiItem } from '@shared/console';
 import { ConfirmModal } from '@shared/components';
 import { useChakraToast } from '@shared/hooks';
 import { useAuthedImageSrc } from '@/shared/hooks/useAuthedImageSrc';

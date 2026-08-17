@@ -10,11 +10,11 @@ import {
     KpiStrip,
     StatusBadge,
     toneStyle,
-} from '../ui';
-import type { DataColumn } from '../ui';
+} from '@shared/console';
+import type { DataColumn } from '@shared/console';
 import { useModerationItems } from '../../hooks/useSupport';
 import { useModerationStats } from '../../hooks/useContent';
-import { adminRelative } from '../../lib/format';
+import { adminRelative } from '@shared/console/lib/format';
 import { ModerationActionDialog } from './ModerationActionDialog';
 import { DisputeResolveDialog } from './DisputeResolveDialog';
 import type { ModerationContentType, ModerationItemDto, ModerationQuery, ModerationStatus } from '../../types';

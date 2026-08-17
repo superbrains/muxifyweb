@@ -1,7 +1,7 @@
 import React from 'react';
 import { Box, Button, HStack, Input, Switch, Text, VStack } from '@chakra-ui/react';
 import { FiEdit2 } from 'react-icons/fi';
-import { AdminPageLayout, AdminError, AdminLoading, AdminEmptyState } from '../../components/ui';
+import { AdminPageLayout, AdminError, AdminLoading, AdminEmptyState } from '@shared/console';
 import { getApiErrorMessage } from '@/shared/lib/errorUtils';
 import { useHasPermission } from '../../hooks/useAdminManagement';
 import { usePlatformSettings, useUpdateSetting } from '../../hooks/usePlatform';

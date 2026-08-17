@@ -10,6 +10,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:admin": "tsc -b && vite build --mode admin",
+    "verify:split": "node scripts/verify-bundle-split.mjs",
     "lint": "eslint .",
     "preview": "vite preview",
     "push:all": "git push -u private main && git push -u origin main"

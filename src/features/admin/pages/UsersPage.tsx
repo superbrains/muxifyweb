@@ -11,13 +11,13 @@ import {
     IdentityCell,
     KpiStrip,
     StatusBadge,
-} from '../components/ui';
-import type { DataColumn, KpiItem } from '../components/ui';
+} from '@shared/console';
+import type { DataColumn, KpiItem } from '@shared/console';
 import { CustomMenu, ConfirmModal } from '@shared/components';
 import { useActivateUser, useSuspendUser, useUsers, useUsersSummary } from '../hooks/useUsers';
 import { useUserDeleteActions } from '../components/users/useUserDeleteActions';
 import { roleLabel } from '../lib/statusColor';
-import { adminDate, adminRelative, formatCount } from '../lib/format';
+import { adminDate, adminRelative, formatCount } from '@shared/console/lib/format';
 import { PLATFORM_ROLES } from '../config/adminRoles';
 import {
     ROLE_STATUS_OPTIONS,

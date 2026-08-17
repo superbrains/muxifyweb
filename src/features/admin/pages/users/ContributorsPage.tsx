@@ -7,7 +7,7 @@ import {
     DataTable,
     FilterBar,
     KpiStrip,
-} from '../../components/ui';
+} from '@shared/console';
 import { ConfirmModal } from '@shared/components';
 import { PLATFORM_ROLES } from '../../config/adminRoles';
 import { ROLE_STATUS_OPTIONS, ROLE_VERIFICATION_OPTIONS, useRoleUsers } from './useRoleUsers';

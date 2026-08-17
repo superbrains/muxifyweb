@@ -2,7 +2,7 @@ import React from 'react';
 import { Grid, GridItem, VStack } from '@chakra-ui/react';
 import { AdminPageHeader } from '../components/AdminPageHeader';
 import { AdminKpiStrip } from '../components/AdminKpiStrip';
-import { AdminError, AdminLoading } from '../components/AdminStateBlock';
+import { AdminError, AdminLoading } from '@shared/console/components/AdminStateBlock';
 import { PlatformActivityChart } from '../components/overview/PlatformActivityChart';
 import { PendingQueueCard } from '../components/overview/PendingQueueCard';
 import { RecentSignupsCard } from '../components/overview/RecentSignupsCard';

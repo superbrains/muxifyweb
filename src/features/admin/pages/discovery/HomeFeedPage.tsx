@@ -2,11 +2,11 @@ import React from 'react';
 import { Box, Button, HStack, Image, SimpleGrid, Text, VStack } from '@chakra-ui/react';
 import { useNavigate } from 'react-router-dom';
 import { FiHome } from 'react-icons/fi';
-import { AdminEmptyState, AdminError, AdminLoading, AdminPageLayout, KpiStrip } from '../../components/ui';
-import type { KpiItem } from '../../components/ui';
+import { AdminEmptyState, AdminError, AdminLoading, AdminPageLayout, KpiStrip } from '@shared/console';
+import type { KpiItem } from '@shared/console';
 import { useAuthedImageSrc } from '@/shared/hooks/useAuthedImageSrc';
 import { useHomeFeed } from '../../hooks/useDiscovery';
-import { adminDateTime } from '../../lib/format';
+import { adminDateTime } from '@shared/console/lib/format';
 import type { AdminHomeFeedItemDto, AdminHomeFeedSectionDto } from '../../types/discovery';
 
 /**

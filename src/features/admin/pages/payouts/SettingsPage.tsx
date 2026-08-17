@@ -16,10 +16,10 @@ import {
     AdminError,
     AdminLoading,
     AdminPageLayout,
-} from '../../components/ui';
+} from '@shared/console';
 import { useHasPermission } from '../../hooks/useAdminManagement';
 import { usePlatformSettings, useUpdateSetting } from '../../hooks/usePlatform';
-import { adminRelative, formatMinorAmount } from '../../lib/format';
+import { adminRelative, formatMinorAmount } from '@shared/console/lib/format';
 import type { PlatformSetting } from '../../types/platform';
 
 /* -------------------------------------------------------------------------- */

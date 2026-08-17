@@ -1,0 +1,1 @@
+import{j as n,I as a}from"./main-CXGnWUAb.js";const l=({controller:e})=>e.query.vertical==="video"?null:n.jsx(a,{size:"sm",fontSize:"xs",maxW:"220px",placeholder:"Filter by genre name",value:e.query.genre??"",onChange:r=>e.setQuery(t=>({...t,genre:r.target.value||void 0,page:1}))});export{l as G};

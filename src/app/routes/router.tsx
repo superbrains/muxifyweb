@@ -1,10 +1,10 @@
 import { useRoutes, BrowserRouter } from 'react-router-dom';
 import { Suspense } from 'react';
-import { appRoutes } from './routes';
+import { creatorRoutes } from './routes.creator';
 import { LoadingScreen } from '@shared/components';
 
 const AppRouter = () => {
-    const routes = useRoutes(appRoutes);
+    const routes = useRoutes(creatorRoutes);
     return <Suspense fallback={<LoadingScreen />}>{routes}</Suspense>;
 };
 

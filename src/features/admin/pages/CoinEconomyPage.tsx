@@ -16,7 +16,7 @@ import {
 import { MdClose } from 'react-icons/md';
 import { useNavigate } from 'react-router-dom';
 import { AdminPageHeader } from '../components/AdminPageHeader';
-import { AdminError, AdminLoading } from '../components/AdminStateBlock';
+import { AdminError, AdminLoading } from '@shared/console/components/AdminStateBlock';
 import { AdminTable, type AdminTableColumn } from '../components/AdminTable';
 import { ConfirmModal } from '@shared/components';
 import {

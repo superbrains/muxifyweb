@@ -1,6 +1,6 @@
 import { SimpleGrid } from '@chakra-ui/react';
 import { KpiCard } from '@/features/record-label/components/KpiCard';
-import { formatCount, formatMinorAmount } from '../../lib/format';
+import { formatCount, formatMinorAmount } from '@shared/console/lib/format';
 import type { FinanceOverview } from '../../types/finance';
 
 export function FinanceKpiStrip({ overview }: { overview: FinanceOverview }) {

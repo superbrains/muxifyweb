@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button, HStack } from '@chakra-ui/react';
-import { AdminPageLayout } from '../../components/ui';
+import { AdminPageLayout } from '@shared/console';
 import GiftCatalog from './gifts/GiftCatalog';
 import GiftTransactions from './gifts/GiftTransactions';
 

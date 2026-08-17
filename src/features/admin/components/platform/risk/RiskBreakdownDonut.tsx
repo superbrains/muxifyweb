@@ -1,7 +1,7 @@
 import React from 'react';
 import ReactApexChart from 'react-apexcharts';
 import type { ApexOptions } from 'apexcharts';
-import { formatCount } from '../../../lib/format';
+import { formatCount } from '@shared/console/lib/format';
 import type { RiskBreakdownSlice } from '../../../types/platform';
 import { ChartCard } from '../ChartCard';
 import { humanizeLabel } from './riskFormat';

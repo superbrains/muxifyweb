@@ -7,8 +7,8 @@ import {
     IdentityCell,
     StatusBadge,
     toneStyle,
-} from '../../components/ui';
-import { adminDate, formatCount } from '../../lib/format';
+} from '@shared/console';
+import { adminDate, formatCount } from '@shared/console/lib/format';
 import { useContentItem } from '../../hooks/useContent';
 import type { ContentActionTarget, useContentItems } from './useContentItems';
 import type { ContentItemDto } from '../../types/content';

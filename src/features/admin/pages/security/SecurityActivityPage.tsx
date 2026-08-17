@@ -12,12 +12,12 @@ import {
     IdentityCell,
     KpiStrip,
     StatusBadge,
-} from '../../components/ui';
-import type { DataColumn, KpiItem } from '../../components/ui';
+} from '@shared/console';
+import type { DataColumn, KpiItem } from '@shared/console';
 import { CustomMenu } from '@shared/components';
 import { SecurityPanelBody } from '../../components/security/SecurityPanelBody';
 import { useUserDeleteActions } from '../../components/users/useUserDeleteActions';
-import { adminDateTime, adminRelative, formatCount } from '../../lib/format';
+import { adminDateTime, adminRelative, formatCount } from '@shared/console/lib/format';
 import { roleLabel } from '../../lib/statusColor';
 import { PLATFORM_ROLES } from '../../config/adminRoles';
 import { useLockUser, useSecurityActivity, useSecuritySummary } from '../../hooks/useSecurity';

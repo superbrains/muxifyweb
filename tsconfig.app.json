@@ -37,7 +37,8 @@
       "@payments/*": ["./src/features/payments/*"],
       "@settings/*": ["./src/features/settings/*"],
       "@onboarding/*": ["./src/features/onboarding/*"],
-      "@ads/*": ["./src/features/ads/*"]
+      "@ads/*": ["./src/features/ads/*"],
+      "@admin/*": ["./src/features/admin/*"]
     },
 
     /* Linting */

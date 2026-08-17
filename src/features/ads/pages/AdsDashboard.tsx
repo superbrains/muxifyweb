@@ -16,7 +16,7 @@ import { CalendarIcon, UploadIcon, EyeIcon, FlashIcon, PodCastAdsIcon, EyeOpenIc
 import BackgroundBlueImg from '@/assets/images/Background-blue.png';
 import { useWindowWidth } from '@/shared/hooks/useWindowsWidth';
 import { formatNaira } from '@/shared/lib';
-import { exportCsv, type CsvColumn } from '@/features/admin/lib/exportCsv';
+import { exportCsv, type CsvColumn } from '@shared/console/lib/exportCsv';
 import { adsService } from '../services/adsService';
 import type { AdActivityPointDto, AdDashboardSummaryDto } from '../types';
 

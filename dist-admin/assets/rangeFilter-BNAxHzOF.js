@@ -1,0 +1,1 @@
+import{t as a,i as e}from"./format-egy2CzA6.js";const t=[{value:"7d",label:"Last 7 days"},{value:"30d",label:"Last 30 days"},{value:"90d",label:"Last 90 days"},{value:"all",label:"All time"}],r=s=>{switch(s){case"7d":return{from:e(7),to:a()};case"90d":return{from:e(90),to:a()};case"all":return{};case"30d":default:return{from:e(30),to:a()}}};export{t as R,r};

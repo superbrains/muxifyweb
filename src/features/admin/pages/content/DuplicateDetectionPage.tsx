@@ -1,5 +1,5 @@
 import React from 'react';
-import { AdminPageLayout } from '../../components/ui';
+import { AdminPageLayout } from '@shared/console';
 import { DuplicateMatchesView } from './DuplicateMatchesView';
 
 const DISPUTED_OPTIONS = [

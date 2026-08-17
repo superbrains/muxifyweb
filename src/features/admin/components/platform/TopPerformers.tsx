@@ -1,9 +1,9 @@
 import React from 'react';
 import { SimpleGrid, Text, VStack } from '@chakra-ui/react';
 import { FiAward, FiMusic, FiUsers } from 'react-icons/fi';
-import { DataTable, IdentityCell } from '../ui';
-import type { DataColumn } from '../ui';
-import { formatCount, formatMinorAmount } from '../../lib/format';
+import { DataTable, IdentityCell } from '@shared/console';
+import type { DataColumn } from '@shared/console';
+import { formatCount, formatMinorAmount } from '@shared/console/lib/format';
 import type { BusinessTop, TopArtist, TopContent, TopSpender } from '../../types/platform';
 
 type Ranked<T> = T & { rank: number };

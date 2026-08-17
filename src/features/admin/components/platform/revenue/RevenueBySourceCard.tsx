@@ -1,6 +1,6 @@
 import React from 'react';
 import { Box, HStack, Text, VStack } from '@chakra-ui/react';
-import { formatMinorAmount } from '../../../lib/format';
+import { formatMinorAmount } from '@shared/console/lib/format';
 import type { RevenueBySourceDto } from '../../../types/monetization';
 import { ChartCard } from '../ChartCard';
 

@@ -1,6 +1,6 @@
 import React from 'react';
 import { FiBarChart2 } from 'react-icons/fi';
-import { AdminPageLayout, FilterBar } from '../../components/ui';
+import { AdminPageLayout, FilterBar } from '@shared/console';
 import { useTopCharts } from '../../hooks/useDiscovery';
 import { DISCOVERY_PERIOD_OPTIONS } from '../../types/discovery';
 import { useDiscoveryItems } from './useDiscoveryItems';

@@ -3,7 +3,7 @@ import { HStack, Text, VStack } from '@chakra-ui/react';
 import ReactApexChart from 'react-apexcharts';
 import type { ApexOptions } from 'apexcharts';
 import { baseChartTheme } from '@/features/record-label/lib/chartTheme';
-import { formatMinorAmount } from '../../../lib/format';
+import { formatMinorAmount } from '@shared/console/lib/format';
 import { ChartCard } from '../ChartCard';
 import { formatMinorCompact } from '../chartFormat';
 

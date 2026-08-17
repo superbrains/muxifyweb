@@ -9,8 +9,8 @@ import {
     DataTable,
     FilterBar,
     KpiStrip,
-} from '../../components/ui';
-import type { Breadcrumb, BulkAction, KpiItem, SelectFilter } from '../../components/ui';
+} from '@shared/console';
+import type { Breadcrumb, BulkAction, KpiItem, SelectFilter } from '@shared/console';
 import { useContentStats } from '../../hooks/useContent';
 import {
     CONTENT_PUBLISHED_OPTIONS,

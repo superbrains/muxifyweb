@@ -23,10 +23,10 @@ import {
     FilterBar,
     KpiStrip,
     StatusBadge,
-} from '../../components/ui';
-import type { DataColumn, KpiItem } from '../../components/ui';
-import { adminDate, formatMinorAmount } from '../../lib/format';
-import { exportCsv } from '../../lib/exportCsv';
+} from '@shared/console';
+import type { DataColumn, KpiItem } from '@shared/console';
+import { adminDate, formatMinorAmount } from '@shared/console/lib/format';
+import { exportCsv } from '@shared/console/lib/exportCsv';
 import { useHasPermission } from '../../hooks/useAdminManagement';
 import {
     useAdBilling,

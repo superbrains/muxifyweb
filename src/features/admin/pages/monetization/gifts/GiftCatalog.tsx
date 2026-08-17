@@ -22,8 +22,8 @@ import {
     DataTable,
     KpiStrip,
     StatusBadge,
-} from '../../../components/ui';
-import type { DataColumn, KpiItem } from '../../../components/ui';
+} from '@shared/console';
+import type { DataColumn, KpiItem } from '@shared/console';
 import { useChakraToast } from '@shared/hooks';
 import { useAuthedImageSrc } from '@/shared/hooks/useAuthedImageSrc';
 import { compressImage } from '@/shared/lib/fileUtils';

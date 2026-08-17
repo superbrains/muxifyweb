@@ -1,13 +1,13 @@
 import React from 'react';
 import { Box, Grid, GridItem, HStack, SimpleGrid, VStack } from '@chakra-ui/react';
-import { AdminPageLayout, AdminError, AdminLoading, KpiStrip } from '../../components/ui';
-import type { KpiItem } from '../../components/ui';
+import { AdminPageLayout, AdminError, AdminLoading, KpiStrip } from '@shared/console';
+import type { KpiItem } from '@shared/console';
 import { Select } from '@shared/components';
 import { getApiErrorMessage } from '@/shared/lib/errorUtils';
 import { formatTrend } from '@/features/record-label/lib/format';
-import { formatCount, formatMinorAmount, isoDaysAgo, todayIso } from '../../lib/format';
-import { exportCsv } from '../../lib/exportCsv';
-import type { CsvColumn } from '../../lib/exportCsv';
+import { formatCount, formatMinorAmount, isoDaysAgo, todayIso } from '@shared/console/lib/format';
+import { exportCsv } from '@shared/console/lib/exportCsv';
+import type { CsvColumn } from '@shared/console/lib/exportCsv';
 import { ExportButton } from '../../components/finance/FinanceFilters';
 import { ChartCard } from '../../components/platform/ChartCard';
 import { QuickRanges } from '../../components/platform/QuickRanges';

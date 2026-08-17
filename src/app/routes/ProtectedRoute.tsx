@@ -1,6 +1,7 @@
 import { Navigate, Outlet } from "react-router-dom";
 import { useUserStore } from "@app/store/useUserStore";
 import { LoadingScreen, ProtectedLayout } from "@shared/components";
+import { CreatorSidebarNav } from "@shared/components/CreatorSidebarNav";
 
 /**
  * Gates the authenticated app on the session `status` driven by `AuthBootstrap`:
@@ -20,7 +21,16 @@ const ProtectedRoute = () => {
   }
 
   return (
-    <ProtectedLayout>
+    <ProtectedLayout
+      renderNav={({ currentPath, isCollapsed, isInitialRender, onNavigate }) => (
+        <CreatorSidebarNav
+          currentPath={currentPath}
+          isCollapsed={isCollapsed}
+          isInitialRender={isInitialRender}
+          onNavigate={onNavigate}
+        />
+      )}
+    >
       <Outlet />
     </ProtectedLayout>
   );

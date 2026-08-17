@@ -12,12 +12,12 @@ import {
 } from '@chakra-ui/react';
 import { FiX } from 'react-icons/fi';
 import { ConfirmModal } from '@shared/components';
-import { IdentityCell } from '../IdentityCell';
+import { IdentityCell } from '@shared/console/components/IdentityCell';
 import { StatusBadge } from '../StatusBadge';
 import { ReasonDialog } from '../ReasonDialog';
 import { DocumentViewer } from './DocumentViewer';
 import { verificationStatusStyle } from '../../lib/statusColor';
-import { adminDateTime } from '../../lib/format';
+import { adminDateTime } from '@shared/console/lib/format';
 import {
     useApproveVerification,
     useRejectVerification,

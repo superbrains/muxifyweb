@@ -8,11 +8,11 @@ import {
     IdentityCell,
     KpiStrip,
     StatusBadge,
-} from '../ui';
-import type { DataColumn } from '../ui';
+} from '@shared/console';
+import type { DataColumn } from '@shared/console';
 import { useTickets, useTicketStats } from '../../hooks/useSupport';
 import { ticketPriorityStyle, ticketStatusStyle } from '../../lib/statusColor';
-import { adminRelative } from '../../lib/format';
+import { adminRelative } from '@shared/console/lib/format';
 import { TicketDetailDrawer } from './TicketDetailDrawer';
 import type { TicketDto, TicketQuery, TicketStatus } from '../../types';
 

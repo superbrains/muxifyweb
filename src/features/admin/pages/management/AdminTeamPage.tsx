@@ -1,5 +1,5 @@
 import React from 'react';
-import { AdminPageLayout } from '../../components/ui';
+import { AdminPageLayout } from '@shared/console';
 import { AdminsTab } from '../../components/management/AdminsTab';
 
 /**

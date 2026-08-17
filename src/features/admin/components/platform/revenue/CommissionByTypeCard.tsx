@@ -1,9 +1,9 @@
 import React from 'react';
 import { Box, Text, VStack } from '@chakra-ui/react';
 import { FiPercent } from 'react-icons/fi';
-import { DataTable } from '../../ui';
-import type { DataColumn } from '../../ui';
-import { formatCount, formatMinorAmount } from '../../../lib/format';
+import { DataTable } from '@shared/console';
+import type { DataColumn } from '@shared/console';
+import { formatCount, formatMinorAmount } from '@shared/console/lib/format';
 import type { CommissionByTypeDto, CommissionSummaryDto } from '../../../types/monetization';
 
 const TYPE_LABELS: Record<string, string> = {

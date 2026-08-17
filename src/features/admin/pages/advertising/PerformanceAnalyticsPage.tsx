@@ -8,9 +8,9 @@ import {
     DataTable,
     FilterBar,
     KpiStrip,
-} from '../../components/ui';
-import type { DataColumn, KpiItem } from '../../components/ui';
-import { adminDate, formatCount, formatMinorAmount } from '../../lib/format';
+} from '@shared/console';
+import type { DataColumn, KpiItem } from '@shared/console';
+import { adminDate, formatCount, formatMinorAmount } from '@shared/console/lib/format';
 import { useHasPermission } from '../../hooks/useAdminManagement';
 import { useAdAnalytics } from '../../hooks/useAdvertising';
 import type {

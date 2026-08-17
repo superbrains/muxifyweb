@@ -1,6 +1,6 @@
 import React from 'react';
 import { FiZap } from 'react-icons/fi';
-import { AdminPageLayout, FilterBar } from '../../components/ui';
+import { AdminPageLayout, FilterBar } from '@shared/console';
 import { useHotReleases } from '../../hooks/useDiscovery';
 import { useDiscoveryItems } from './useDiscoveryItems';
 import { useTrendingFamilyFilters } from './useTrendingFamilyFilters';

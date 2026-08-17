@@ -4,9 +4,9 @@ import { Text, VStack } from '@chakra-ui/react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useChakraToast } from '@shared/hooks';
 import { getApiErrorMessage } from '@/shared/lib/errorUtils';
-import { IdentityCell, MediaCell, StatusBadge, toneStyle } from '../../components/ui';
-import type { DataColumn } from '../../components/ui';
-import { adminDate, formatCount } from '../../lib/format';
+import { IdentityCell, MediaCell, StatusBadge, toneStyle } from '@shared/console';
+import type { DataColumn } from '@shared/console';
+import { adminDate, formatCount } from '@shared/console/lib/format';
 import { useHasPermission } from '../../hooks/useAdminManagement';
 import {
     usePublishItem,

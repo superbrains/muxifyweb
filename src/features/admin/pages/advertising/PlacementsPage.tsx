@@ -23,9 +23,9 @@ import {
     AdminPageLayout,
     DataTable,
     StatusBadge,
-} from '../../components/ui';
-import type { DataColumn } from '../../components/ui';
-import { formatCount, formatMinorAmount } from '../../lib/format';
+} from '@shared/console';
+import type { DataColumn } from '@shared/console';
+import { formatCount, formatMinorAmount } from '@shared/console/lib/format';
 import { useHasPermission } from '../../hooks/useAdminManagement';
 import {
     useCreatePlacement,

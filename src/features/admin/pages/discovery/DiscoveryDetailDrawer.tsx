@@ -10,9 +10,9 @@ import {
     MetaGrid,
     StatusBadge,
     toneStyle,
-} from '../../components/ui';
-import type { MetaField } from '../../components/ui';
-import { adminDateTime, formatCount } from '../../lib/format';
+} from '@shared/console';
+import type { MetaField } from '@shared/console';
+import { adminDateTime, formatCount } from '@shared/console/lib/format';
 import {
     useDeactivateOverride,
     useDeleteOverride,

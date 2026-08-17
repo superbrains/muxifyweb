@@ -1,0 +1,37 @@
+# Production image for the ADMIN console, served from admin.getmuxify.com.
+#
+# Same source tree as Dockerfile.prod, different Vite target: `npm run build:admin` emits
+# dist-admin/ from admin.html, which mounts only the admin route table. Nothing from the creator
+# app is reachable — or present — in this bundle, and vice versa. That separation is the reason
+# this is a second image rather than a second path on the existing one.
+#
+# The sibling `Dockerfile` runs the Vite dev server and is for local development only.
+
+FROM node:20-alpine AS build
+WORKDIR /app
+
+# Copy manifests first so `npm ci` is cached independently of source changes.
+COPY package.json package-lock.json ./
+RUN npm ci --legacy-peer-deps
+
+COPY . .
+
+# Vite inlines import.meta.env.VITE_* at BUILD time, so these have to be build args — setting them
+# as runtime environment variables on the container does nothing at all.
+# VITE_ADMIN_URL is deliberately absent: it points *at* this app, and is only consumed by the
+# creator build to redirect admins here.
+ARG VITE_API_BASE_URL
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
+
+# `npm run build:admin` runs `tsc -b` first, so a type error fails the image build. Deliberate.
+RUN npm run build:admin
+
+# Fail the build if any creator-only route leaked into the admin bundle, or — the one that
+# actually matters — if this image were ever built from the wrong target.
+RUN test -f dist-admin/admin.html
+
+FROM nginx:1.27-alpine AS runtime
+COPY --from=build /app/dist-admin /usr/share/nginx/html
+COPY nginx.admin.conf /etc/nginx/conf.d/default.conf
+
+EXPOSE 80

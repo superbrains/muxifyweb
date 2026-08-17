@@ -2,7 +2,7 @@ import React from 'react';
 import { Box } from '@chakra-ui/react';
 import { useSearchParams } from 'react-router-dom';
 import { AnimatedTabs } from '@shared/components';
-import { AdminPageLayout } from '../components/ui';
+import { AdminPageLayout } from '@shared/console';
 import { TicketsPanel } from '../components/support/TicketsPanel';
 import { ModerationPanel } from '../components/support/ModerationPanel';
 

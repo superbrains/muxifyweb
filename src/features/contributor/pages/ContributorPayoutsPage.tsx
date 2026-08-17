@@ -13,8 +13,8 @@ import { FiAlertTriangle, FiInfo } from 'react-icons/fi';
 import { formatNaira } from '@shared/utils';
 import { useChakraToast } from '@shared/hooks';
 import { getApiErrorMessage } from '@/shared/lib/errorUtils';
-import { DataTable, KpiStrip, StatusBadge } from '@/features/admin/components/ui';
-import type { DataColumn, KpiItem } from '@/features/admin/components/ui';
+import { DataTable, KpiStrip, StatusBadge } from '@shared/console';
+import type { DataColumn, KpiItem } from '@shared/console';
 import {
     useContributorEarningsSummary,
     useContributorProfile,

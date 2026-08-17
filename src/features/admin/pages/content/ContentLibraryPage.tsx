@@ -8,8 +8,8 @@ import {
     DataTable,
     FilterBar,
     KpiStrip,
-} from '../../components/ui';
-import type { BulkAction, KpiItem } from '../../components/ui';
+} from '@shared/console';
+import type { BulkAction, KpiItem } from '@shared/console';
 import { useContentStats } from '../../hooks/useContent';
 import {
     CONTENT_OWNER_ROLE_OPTIONS,

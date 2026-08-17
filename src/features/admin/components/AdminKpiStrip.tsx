@@ -1,7 +1,7 @@
 import React from 'react';
 import { SimpleGrid } from '@chakra-ui/react';
 import { KpiCard } from '@/features/record-label/components/KpiCard';
-import { formatCount } from '../lib/format';
+import { formatCount } from '@shared/console/lib/format';
 import type { AdminOverviewDto } from '../types';
 
 interface AdminKpiStripProps {

@@ -7,10 +7,10 @@ import {
     AdminPageLayout,
     FilterBar,
     StatusBadge,
-} from '../../components/ui';
-import { Paginator } from '../../components/Paginator';
+} from '@shared/console';
+import { Paginator } from '@shared/console/components/Paginator';
 import { useAuthedImageSrc } from '@/shared/hooks/useAuthedImageSrc';
-import { adminDate } from '../../lib/format';
+import { adminDate } from '@shared/console/lib/format';
 import { useHasPermission } from '../../hooks/useAdminManagement';
 import { useAdCreatives } from '../../hooks/useAdvertising';
 import {

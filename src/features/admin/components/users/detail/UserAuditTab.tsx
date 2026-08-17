@@ -1,10 +1,10 @@
 import React from 'react';
 import { Box } from '@chakra-ui/react';
-import { AuditTimeline } from '../../ui';
-import type { AuditEntry } from '../../ui';
-import { Paginator } from '../../Paginator';
+import { AuditTimeline } from '@shared/console';
+import type { AuditEntry } from '@shared/console';
+import { Paginator } from '@shared/console/components/Paginator';
 import { useUserAudit } from '../../../hooks/useUsers';
-import { AdminError, AdminLoading } from '../../AdminStateBlock';
+import { AdminError, AdminLoading } from '@shared/console/components/AdminStateBlock';
 
 const PAGE_SIZE = 20;
 

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Badge, Box, Drawer, HStack, Portal, SimpleGrid, Spinner, Text, VStack } from '@chakra-ui/react';
-import { adminDate, formatCount, formatMinorAmount } from '../../lib/format';
+import { adminDate, formatCount, formatMinorAmount } from '@shared/console/lib/format';
 import { useCreatorEarnings, useCreatorSplits } from '../../hooks/useFinance';
 
 function Stat({ label, value }: { label: string; value: string }) {

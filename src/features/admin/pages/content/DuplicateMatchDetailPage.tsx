@@ -9,11 +9,11 @@ import {
     ConfirmActionModal,
     StatusBadge,
     toneStyle,
-} from '../../components/ui';
-import { adminDate } from '../../lib/format';
+} from '@shared/console';
+import { adminDate } from '@shared/console/lib/format';
 import { useHasPermission } from '../../hooks/useAdminManagement';
 import { useMatch, useConfirmMatch, useDismissMatch } from '../../hooks/useContent';
-import type { ComparisonSide } from '../../components/ui';
+import type { ComparisonSide } from '@shared/console';
 
 const tierTone = (tier: string) => {
     switch (tier.toLowerCase()) {

@@ -2,7 +2,7 @@ import React from 'react';
 import { Box, HStack, Text, VStack } from '@chakra-ui/react';
 import ReactApexChart from 'react-apexcharts';
 import type { ApexOptions } from 'apexcharts';
-import { adminRelative, formatCount } from '../../../lib/format';
+import { adminRelative, formatCount } from '@shared/console/lib/format';
 import type { RiskCompliance } from '../../../types/platform';
 import { levelStyle } from './riskFormat';
 

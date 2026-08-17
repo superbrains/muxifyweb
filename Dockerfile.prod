@@ -17,8 +17,12 @@ COPY . .
 # as runtime environment variables on the container does nothing at all.
 ARG VITE_API_BASE_URL
 ARG VITE_LOCATION_API_KEY
+# Origin of the separately-deployed admin console, used to redirect signed-in staff off this app.
+# Leave unset to fall back to the in-app /admin route (which this build no longer contains).
+ARG VITE_ADMIN_URL
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL \
-    VITE_LOCATION_API_KEY=$VITE_LOCATION_API_KEY
+    VITE_LOCATION_API_KEY=$VITE_LOCATION_API_KEY \
+    VITE_ADMIN_URL=$VITE_ADMIN_URL
 
 # `npm run build` runs `tsc -b` first, so a type error fails the image build. Deliberate.
 RUN npm run build

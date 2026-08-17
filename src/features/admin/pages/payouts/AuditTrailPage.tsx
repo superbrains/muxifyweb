@@ -7,10 +7,10 @@ import {
     AdminPageLayout,
     AuditTimeline,
     FilterBar,
-} from '../../components/ui';
-import type { AuditEntry } from '../../components/ui';
-import { Paginator } from '../../components/Paginator';
-import { adminDate, formatCount } from '../../lib/format';
+} from '@shared/console';
+import type { AuditEntry } from '@shared/console';
+import { Paginator } from '@shared/console/components/Paginator';
+import { adminDate, formatCount } from '@shared/console/lib/format';
 import { getApiErrorMessage } from '@/shared/lib/errorUtils';
 import { usePayoutAudit } from '../../hooks/useFinance';
 import type { PayoutAuditEntryDto, PayoutAuditQuery } from '../../types/finance';

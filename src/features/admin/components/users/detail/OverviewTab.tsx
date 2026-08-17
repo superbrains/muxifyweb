@@ -2,7 +2,7 @@ import React from 'react';
 import { SimpleGrid, Stack, Text } from '@chakra-ui/react';
 import { StatusBadge } from '../../StatusBadge';
 import { verificationStatusStyle } from '../../../lib/statusColor';
-import { adminDateTime } from '../../../lib/format';
+import { adminDateTime } from '@shared/console/lib/format';
 import { Field, Panel } from './Panel';
 import type { AdminUserDetailDto, AdminUserProfileDto } from '../../../types';
 

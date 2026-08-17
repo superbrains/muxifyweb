@@ -6,7 +6,7 @@ import {
     AdminError,
     AdminLoading,
     AdminPageLayout,
-} from '../../components/ui';
+} from '@shared/console';
 import { useHasPermission } from '../../hooks/useAdminManagement';
 import { usePlatformSettings, useUpdateSetting } from '../../hooks/usePlatform';
 import type { PlatformSetting } from '../../types/platform';

@@ -1,8 +1,8 @@
 import React from 'react';
 import { Box, Button, HStack, SimpleGrid, Spinner, Text, VStack } from '@chakra-ui/react';
 import { FiLock, FiLogOut, FiMonitor, FiRefreshCw, FiUnlock } from 'react-icons/fi';
-import { AdminError, StatusBadge } from '../ui';
-import { adminDateTime, adminRelative } from '../../lib/format';
+import { AdminError, StatusBadge } from '@shared/console';
+import { adminDateTime, adminRelative } from '@shared/console/lib/format';
 import { useHasPermission } from '../../hooks/useAdminManagement';
 import {
     useFlagPasswordReset,

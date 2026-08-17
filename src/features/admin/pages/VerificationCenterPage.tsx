@@ -9,14 +9,14 @@ import {
     IdentityCell,
     KpiStrip,
     StatusBadge,
-} from '../components/ui';
-import type { DataColumn, KpiItem } from '../components/ui';
+} from '@shared/console';
+import type { DataColumn, KpiItem } from '@shared/console';
 import { AnimatedTabs } from '@shared/components';
 import { VerificationFilterBar } from '../components/verification/VerificationFilterBar';
 import { VerificationReviewDrawer } from '../components/verification/VerificationReviewDrawer';
 import { useVerifications, useVerificationSummary } from '../hooks/useVerifications';
 import { verificationStatusStyle } from '../lib/statusColor';
-import { adminDate, adminRelative, formatCount } from '../lib/format';
+import { adminDate, adminRelative, formatCount } from '@shared/console/lib/format';
 import type {
     VerificationEntityType,
     VerificationListItemDto,

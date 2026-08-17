@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button, HStack } from '@chakra-ui/react';
-import { isoDaysAgo, todayIso } from '../../lib/format';
+import { isoDaysAgo, todayIso } from '@shared/console/lib/format';
 import type { DateWindow } from '../../types/platform';
 
 export type QuickRangeKey = '7d' | '30d' | '90d' | '12m';

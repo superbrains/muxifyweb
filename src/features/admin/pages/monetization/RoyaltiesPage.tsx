@@ -9,10 +9,10 @@ import {
     DataTable,
     IdentityCell,
     KpiStrip,
-} from '../../components/ui';
-import type { DataColumn, KpiItem } from '../../components/ui';
+} from '@shared/console';
+import type { DataColumn, KpiItem } from '@shared/console';
 import { CreatorEarningsDrawer } from '../../components/finance/CreatorEarningsDrawer';
-import { formatCount, formatMinorAmount } from '../../lib/format';
+import { formatCount, formatMinorAmount } from '@shared/console/lib/format';
 import { useRoyalties } from '../../hooks/useMonetization';
 import { useFinanceEarnings } from '../../hooks/useFinance';
 import { monetizationService } from '../../services/monetizationService';

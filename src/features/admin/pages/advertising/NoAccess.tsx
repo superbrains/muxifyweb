@@ -1,6 +1,6 @@
 import React from 'react';
 import { FiLock } from 'react-icons/fi';
-import { AdminEmptyState } from '../../components/ui';
+import { AdminEmptyState } from '@shared/console';
 
 /** Shared "no permission" surface for view-gated advertising pages. */
 export const NoAccess: React.FC = () => (

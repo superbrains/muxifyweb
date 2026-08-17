@@ -1,5 +1,5 @@
 import React from 'react';
-import { AdminPageLayout } from '../../../components/ui';
+import { AdminPageLayout } from '@shared/console';
 import { ModerationPanel } from '../../../components/support/ModerationPanel';
 import { PLATFORM_ROLES } from '../../../config/adminRoles';
 

@@ -9,12 +9,12 @@ import {
     IdentityCell,
     KpiStrip,
     StatusBadge,
-} from '../../../components/ui';
-import type { DataColumn, KpiItem } from '../../../components/ui';
+} from '@shared/console';
+import type { DataColumn, KpiItem } from '@shared/console';
 import { DateRangeFilter, ExportButton, ToolbarCard } from '../../../components/finance/FinanceFilters';
 import { Select } from '@shared/components';
-import { adminDateTime, formatCount } from '../../../lib/format';
-import { exportCsv } from '../../../lib/exportCsv';
+import { adminDateTime, formatCount } from '@shared/console/lib/format';
+import { exportCsv } from '@shared/console/lib/exportCsv';
 import { useFinanceGifts, useFinanceGiftSummary, useReverseGift } from '../../../hooks/useFinance';
 import type { FinanceGift, GiftQuery } from '../../../types/finance';
 

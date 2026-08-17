@@ -1,9 +1,9 @@
 import React from 'react';
 import { Box, Text } from '@chakra-ui/react';
 import { AdminTable, type AdminTableColumn } from '../AdminTable';
-import { AdminError, AdminLoading } from '../AdminStateBlock';
-import { Paginator } from '../Paginator';
-import { adminDateTime } from '../../lib/format';
+import { AdminError, AdminLoading } from '@shared/console/components/AdminStateBlock';
+import { Paginator } from '@shared/console/components/Paginator';
+import { adminDateTime } from '@shared/console/lib/format';
 import { useAuditLog } from '../../hooks/useAdminManagement';
 import type { AdminAuditLogDto } from '../../services/adminManagementService';
 

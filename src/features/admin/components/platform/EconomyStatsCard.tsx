@@ -2,7 +2,7 @@ import React from 'react';
 import { Box, HStack, Text, VStack } from '@chakra-ui/react';
 import ReactApexChart from 'react-apexcharts';
 import type { ApexOptions } from 'apexcharts';
-import { formatCount, formatMinorAmount } from '../../lib/format';
+import { formatCount, formatMinorAmount } from '@shared/console/lib/format';
 import type { BusinessAnalytics } from '../../types/platform';
 import { ChartCard } from './ChartCard';
 

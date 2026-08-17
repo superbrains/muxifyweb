@@ -1,4 +1,4 @@
-import type { SelectFilter } from '../../components/ui';
+import type { SelectFilter } from '@shared/console';
 import {
     CREATOR_CATEGORY_OPTIONS,
     DISCOVERY_VERTICAL_OPTIONS,

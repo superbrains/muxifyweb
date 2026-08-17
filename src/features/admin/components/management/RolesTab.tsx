@@ -3,7 +3,7 @@ import { Box, Button, HStack, Text } from '@chakra-ui/react';
 import { FiPlus } from 'react-icons/fi';
 import { CustomMenu, ConfirmModal } from '@shared/components';
 import { AdminTable, type AdminTableColumn } from '../AdminTable';
-import { AdminError, AdminLoading } from '../AdminStateBlock';
+import { AdminError, AdminLoading } from '@shared/console/components/AdminStateBlock';
 import { RoleEditorModal } from './RoleEditorModal';
 import { useDeleteRole, useHasPermission, useRoles } from '../../hooks/useAdminManagement';
 import type { AdminRoleDto } from '../../services/adminManagementService';

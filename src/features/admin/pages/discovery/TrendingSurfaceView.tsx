@@ -1,8 +1,8 @@
 import React from 'react';
 import { Box, VStack } from '@chakra-ui/react';
 import type { IconType } from 'react-icons';
-import { AdminError, BulkActionBar, DataTable, KpiStrip } from '../../components/ui';
-import type { DataColumn } from '../../components/ui';
+import { AdminError, BulkActionBar, DataTable, KpiStrip } from '@shared/console';
+import type { DataColumn } from '@shared/console';
 import type { AdminTrendingItemDto, AdminTrendingPageDto, CurationAction } from '../../types/discovery';
 import { CurateActions } from './discoveryShared';
 import { buildSurfaceKpis } from './discoveryUtils';

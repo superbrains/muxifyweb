@@ -1,6 +1,6 @@
 import React from 'react';
 import { Box, SimpleGrid, Skeleton, Text, VStack } from '@chakra-ui/react';
-import { formatCount, formatMinorAmount } from '../../../lib/format';
+import { formatCount, formatMinorAmount } from '@shared/console/lib/format';
 import type { FinanceOverview } from '../../../types/finance';
 
 interface StatTileProps {

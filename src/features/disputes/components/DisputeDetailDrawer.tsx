@@ -2,7 +2,7 @@ import React from 'react';
 import { Box, HStack, Link, Text, VStack } from '@chakra-ui/react';
 import { FiFileText, FiPaperclip } from 'react-icons/fi';
 import { formatMinorAmount } from '@/features/record-label/lib/format';
-import { DetailDrawer, StatusBadge, CopyableId } from '@/features/admin/components/ui';
+import { DetailDrawer, StatusBadge, CopyableId } from '@shared/console';
 import { AuthedImage } from '@shared/components/AuthedImage';
 import { useAuthedImageSrc } from '@shared/hooks/useAuthedImageSrc';
 import { useDispute } from '../hooks/useDisputes';

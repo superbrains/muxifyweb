@@ -1,4 +1,4 @@
-import type { KpiItem, StatusTone } from '../../components/ui';
+import type { KpiItem, StatusTone } from '@shared/console';
 import type { AdminTrendingItemDto } from '../../types/discovery';
 
 /** Tone for each curation action — shared by badges, buttons and the overrides page. */

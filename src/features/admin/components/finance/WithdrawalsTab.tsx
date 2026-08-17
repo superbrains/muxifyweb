@@ -2,14 +2,14 @@ import React from 'react';
 import { Button, HStack, Text, VStack } from '@chakra-ui/react';
 import { Select } from '@shared/components';
 import { AdminTable, type AdminTableColumn } from '../AdminTable';
-import { Paginator } from '../Paginator';
-import { AdminLoading, AdminError } from '../AdminStateBlock';
-import { IdentityCell } from '../IdentityCell';
+import { Paginator } from '@shared/console/components/Paginator';
+import { AdminLoading, AdminError } from '@shared/console/components/AdminStateBlock';
+import { IdentityCell } from '@shared/console/components/IdentityCell';
 import { StatusBadge } from '../StatusBadge';
 import { getApiErrorMessage } from '@/shared/lib/errorUtils';
-import { adminDate, formatMinorAmount } from '../../lib/format';
+import { adminDate, formatMinorAmount } from '@shared/console/lib/format';
 import { financeStatusStyle } from '../../lib/financeStatusColor';
-import { exportCsv } from '../../lib/exportCsv';
+import { exportCsv } from '@shared/console/lib/exportCsv';
 import {
     useApproveWithdrawal,
     useMarkWithdrawalPaid,

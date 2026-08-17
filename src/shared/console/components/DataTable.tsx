@@ -1,7 +1,7 @@
 import React from 'react';
 import { Box, Center, Checkbox, HStack, Icon, Skeleton, Text, VStack } from '@chakra-ui/react';
 import { FiChevronDown, FiChevronUp, FiInbox } from 'react-icons/fi';
-import { Paginator } from '../Paginator';
+import { Paginator } from './Paginator';
 
 export interface DataColumn<T> {
     key: string;

@@ -13,10 +13,10 @@ import {
     KpiStrip,
     MetaGrid,
     StatusBadge,
-} from '../../components/ui';
-import type { DataColumn, KpiItem, MetaField } from '../../components/ui';
+} from '@shared/console';
+import type { DataColumn, KpiItem, MetaField } from '@shared/console';
 import { getApiErrorMessage } from '@/shared/lib/errorUtils';
-import { adminDateTime } from '../../lib/format';
+import { adminDateTime } from '@shared/console/lib/format';
 import {
     useApprovalRequests,
     useApprovalSummary,

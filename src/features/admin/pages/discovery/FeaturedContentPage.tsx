@@ -27,9 +27,9 @@ import {
     FilterBar,
     KpiStrip,
     StatusBadge,
-} from '../../components/ui';
-import type { DataColumn, KpiItem } from '../../components/ui';
-import { adminDate } from '../../lib/format';
+} from '@shared/console';
+import type { DataColumn, KpiItem } from '@shared/console';
+import { adminDate } from '@shared/console/lib/format';
 import { useHasPermission } from '../../hooks/useAdminManagement';
 import { discoveryService } from '../../services/discoveryService';
 import {

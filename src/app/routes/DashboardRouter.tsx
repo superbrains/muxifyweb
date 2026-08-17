@@ -31,7 +31,16 @@ const DashboardRouter: React.FC = () => {
     const isContributor = useIsContributor();
 
     // Admins never see a creator dashboard at "/" — send them to their console.
+    // The console is a separate app on its own origin, so this is a full page
+    // navigation, not a route change. VITE_ADMIN_URL is a public origin, not a
+    // secret; when it is unset (local dev, or the combined single-origin build)
+    // fall back to the in-app /admin route.
     if (isAdmin) {
+        const adminUrl = import.meta.env.VITE_ADMIN_URL;
+        if (adminUrl) {
+            window.location.replace(adminUrl);
+            return <LoadingScreen />;
+        }
         return <Navigate to="/admin" replace />;
     }
 

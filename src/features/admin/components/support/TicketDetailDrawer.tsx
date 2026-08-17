@@ -15,7 +15,7 @@ import { FiX } from 'react-icons/fi';
 import { Select } from '@shared/components';
 import { StatusBadge } from '../StatusBadge';
 import { ticketPriorityStyle, ticketStatusStyle } from '../../lib/statusColor';
-import { adminDateTime } from '../../lib/format';
+import { adminDateTime } from '@shared/console/lib/format';
 import { roleLabel } from '../../lib/statusColor';
 import { useReplyToTicket, useTicket, useUpdateTicketStatus } from '../../hooks/useSupport';
 import type { TicketMessageDto, TicketStatus } from '../../types';

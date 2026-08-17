@@ -4,7 +4,7 @@ import ReactApexChart from 'react-apexcharts';
 import type { ApexOptions } from 'apexcharts';
 import { baseChartTheme } from '@/features/record-label/lib/chartTheme';
 import { useActivitySeries } from '../../hooks/useAdminOverview';
-import { isoDaysAgo, todayIso } from '../../lib/format';
+import { isoDaysAgo, todayIso } from '@shared/console/lib/format';
 import type { ActivityRange } from '../../types';
 
 const formatBucket = (iso: string): string => {

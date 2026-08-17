@@ -30,10 +30,10 @@ import {
     MetaGrid,
     StatusBadge,
     toneStyle,
-} from '../../components/ui';
+} from '@shared/console';
 import { RescheduleModal } from '../../components/content/RescheduleModal';
-import type { DataColumn, DetailTab, MetaField } from '../../components/ui';
-import { adminDate, formatCount, formatDuration } from '../../lib/format';
+import type { DataColumn, DetailTab, MetaField } from '@shared/console';
+import { adminDate, formatCount, formatDuration } from '@shared/console/lib/format';
 import { useHasPermission } from '../../hooks/useAdminManagement';
 import {
     useContentItem,

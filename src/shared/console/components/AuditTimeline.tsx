@@ -1,6 +1,6 @@
 import React from 'react';
 import { Box, HStack, Text, VStack } from '@chakra-ui/react';
-import { adminDateTime } from '../../lib/format';
+import { adminDateTime } from '../lib/format';
 import { CopyableId } from './CopyableId';
 
 export interface AuditEntry {
